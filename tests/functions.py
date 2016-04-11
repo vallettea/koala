@@ -1,11 +1,11 @@
 import pytest
 
-from openpyxl.xml.functions import ConditionalElement
+from koala.xml.functions import ConditionalElement
 
 
 @pytest.fixture
 def root():
-    from openpyxl.xml.functions import Element
+    from koala.xml.functions import Element
     return Element("root")
 
 
@@ -41,7 +41,7 @@ def test_safe_iterator_none():
 
 @pytest.mark.parametrize("xml, tag",
                          [
-                             ("<root xmlns='http://openpyxl.org/ns' />", "root"),
+                             ("<root xmlns='http://ants.builders/ns' />", "root"),
                              ("<root />", "root"),
                          ]
                          )

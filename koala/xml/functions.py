@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-# Copyright (c) 2010-2015 openpyxl
 
 """
 XML compatability functions
@@ -7,14 +6,10 @@ XML compatability functions
 
 # Python stdlib imports
 import re
+import os
 from functools import partial
-# compatibility
 
-# package imports
-from openpyxl import LXML
-
-if LXML is True:
-    from lxml.etree import (
+from lxml.etree import (
     Element,
     ElementTree,
     SubElement,
@@ -24,34 +19,10 @@ if LXML is True:
     iterparse,
     QName,
     xmlfile
-    )
-    from xml.etree.cElementTree import iterparse
-else:
-    try:
-        from xml.etree.cElementTree import (
-        ElementTree,
-        Element,
-        SubElement,
-        fromstring,
-        tostring,
-        iterparse,
-        QName
-        )
-    except ImportError:
-        from xml.etree.ElementTree import (
-        ElementTree,
-        Element,
-        SubElement,
-        fromstring,
-        tostring,
-        iterparse,
-        QName
-        )
-    from .namespace import register_namespace
-    from et_xmlfile import xmlfile
+)
+   
 
-
-from openpyxl.xml.constants import (
+from koala.xml.constants import (
     CHART_NS,
     DRAWING_NS,
     SHEET_DRAWING_NS,
