@@ -3,17 +3,6 @@ import os.path
 import warnings
 from io import BytesIO
 
-
-from koala.xml.constants import (
-    SHEET_MAIN_NS,
-    REL_NS,
-    PKG_REL_NS,
-    CONTYPES_NS,
-    ARC_CONTENT_TYPES,
-    ARC_WORKBOOK,
-    ARC_WORKBOOK_RELS,
-    WORKSHEET_TYPE,
-)
 from koala.xml.functions import fromstring, safe_iterator
 from koala.unzip import read_archive
 from koala.excel import read_named_ranges, read_cells
