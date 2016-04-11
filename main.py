@@ -20,11 +20,11 @@ if __name__ == '__main__':
         archive = read_archive(file_name)        
 
         named_range = read_named_ranges(archive)
-        print named_range
+        print "%s named ranged parsed" % str(len(named_range))
 
         cells = read_cells(archive)
         
-
-        for cell in cells:
-          if cell['f'] is not None:
-                print cell['f']
+        print "%s cells parsed" % str(len(cells))
+        # for cell in cells:
+        #   if cell['f'] is not None:
+        #         print cell['f']

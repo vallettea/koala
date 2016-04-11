@@ -30,7 +30,7 @@ def read_cells(archive):
         
         root = fromstring(archive.read(sheet['path']))
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
-            cell = {'a': '%s!%s' % (sheet_name,c.attrib['r']), 'f': None, 'v': None}
+            cell = {'a': '%s!%s' % (sheet_name, c.attrib['r']), 'f': None, 'v': None}
             for child in c:
                 if child.text is None: 
                     continue
