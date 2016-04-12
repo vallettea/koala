@@ -9,7 +9,9 @@ from koala.xml.constants import (
     ARC_WORKBOOK_RELS,
     WORKSHEET_TYPE,
 )
-from koala.xml.functions import fromstring, safe_iterator
+from koala.xml.functions import fromstring, safe_iterator, cElementTree as ET
+
+# import xml.etree.cElementTree as ET
 
 def read_named_ranges(archive):
 
@@ -26,21 +28,34 @@ def read_cells(archive):
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
 
+        function_map = {}
+
         if sheet_name == 'IHS': continue
         
-        root = fromstring(archive.read(sheet['path']))
+        root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
+
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
             cell = {'a': '%s!%s' % (sheet_name, c.attrib['r']), 'f': None, 'v': None}
+            print 'Cell', cell['a']
             for child in c:
-                if child.text is None: 
-                    continue
-                elif child.tag == '{%s}f' % SHEET_MAIN_NS :
+                if child.tag == '{%s}f' % SHEET_MAIN_NS :
+                    if 'ref' in child.attrib:
+                        def temp(cell):
+                            return
+                        
+
+                    # if 't' in child.attrib and child.attrib['t'] == 'shared':
+                    #     print 'Shared'
+
                     cell['f'] = child.text
                 elif child.tag == '{%s}v' % SHEET_MAIN_NS :
                     cell['v'] = child.text
+                elif child.text is None:
+                    continue
             if cell['f'] or cell['v']:
                 cells.append(cell)
     return cells
+
 
 def read_rels(archive):
     """Read relationships for a workbook"""

@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name = "koala",
@@ -21,5 +21,9 @@ setup(
 
     install_requires = [
         "lxml",
+        "numpy"
     ],
+
+    tests_require = ['nose >= 1.2'],
+    test_suite='nose.collector',
 )

@@ -7,6 +7,8 @@ XML compatability functions
 # Python stdlib imports
 import re
 import os
+import string
+from numpy import array
 from functools import partial
 
 from lxml.etree import (
@@ -19,6 +21,10 @@ from lxml.etree import (
     iterparse,
     QName,
     xmlfile
+)
+
+from xml.etree import (
+    cElementTree
 )
    
 
@@ -89,3 +95,40 @@ NS_REGEX = re.compile("({(?P<namespace>.*)})?(?P<localname>.*)")
 def localname(node):
     m = NS_REGEX.match(node.tag)
     return m.group('localname')
+
+def col2num(col): # http://stackoverflow.com/questions/7261936/convert-an-excel-or-spreadsheet-column-letter-to-its-number-in-pythonic-fashion
+    num = 0
+    for c in col:
+        if c in string.ascii_letters:
+            num = num * 26 + (ord(c.upper()) - ord('A')) + 1
+    return num
+
+
+def num2col(num): # http://stackoverflow.com/questions/23861680/convert-spreadsheet-number-to-column-letter
+    div = num
+    string = ""
+
+    while div > 0:
+        module = (div - 1) % 26
+        string = chr(65 + module) + string
+        div = int((div - module) / 26)
+
+    return string
+
+
+def cell2vec(cell):
+    found = re.search("^([A-Z]*)([1-9]*)$", cell).group
+
+    row = int(found(2))
+    col = int(col2num(found(1)))
+
+    return array([row, col])
+
+
+def vec2cell(vector):
+    # verify type(vector) == numpy.ndarray or list
+
+    return num2col(vector[1]) + str(vector[0])
+
+
+

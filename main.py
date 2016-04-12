@@ -7,7 +7,6 @@ from koala.xml.functions import fromstring, safe_iterator
 from koala.unzip import read_archive
 from koala.excel import read_named_ranges, read_cells
 
-
 if __name__ == '__main__':
 
 
@@ -27,4 +26,4 @@ if __name__ == '__main__':
         print "%s cells parsed" % str(len(cells))
         # for cell in cells:
         #   if cell['f'] is not None:
-        #         print cell['f']
+        #         print cell['a'],  cell['f']
