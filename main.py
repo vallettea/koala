@@ -8,12 +8,13 @@ from io import BytesIO
 
 from koala.xml.functions import fromstring, safe_iterator
 from koala.unzip import read_archive
-from koala.excel import read_named_ranges, read_cells
+from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.tokenizer import ExcelParser
+from koala.ast.graph import ExcelCompiler
 
 if __name__ == '__main__':
 
-    files = glob.iglob("./data/*.xlsx")
+    files = glob.iglob("./data/e*.xlsx")
     for file in files:  
 
         file_name = os.path.abspath(file)
@@ -26,13 +27,17 @@ if __name__ == '__main__':
         print "%s named ranged parsed in %s" % (str(len(named_range)), str(datetime.now() - startTime))
 
         startTime = datetime.now()
-        cells = read_cells(archive)
+        cells = read_cells(archive, ignore_sheets = ['IHS'])
+        print cells.keys()
         
         print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
-        for cell in cells:
-            if cell['f'] is not None:
-                print "=========="
-                print cell['f']
-                p = ExcelParser();
-                p.parse(cell['f'])
-                print p.prettyprint()
+
+        c = ExcelCompiler(named_range, cells)
+        c.gen_graph()
+        # for cell in cells:
+        #     if cell['f'] is not None:
+        #         print "=========="
+        #         print cell['f']
+        #         p = ExcelParser();
+        #         p.parse(cell['f'])
+        #         print p.prettyprint()

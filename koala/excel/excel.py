@@ -10,6 +10,7 @@ from koala.xml.constants import (
     WORKSHEET_TYPE,
 )
 from koala.xml.functions import fromstring, safe_iterator
+from koala.ast.excelutils import Cell
 
 def read_named_ranges(archive):
 
@@ -21,12 +22,12 @@ def read_named_ranges(archive):
     }
         
 
-def read_cells(archive):
-    cells = []
+def read_cells(archive, ignore_sheets = []):
+    cells = {}
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
 
-        if sheet_name == 'IHS': continue
+        if sheet_name in ignore_sheets: continue
         
         root = fromstring(archive.read(sheet['path']))
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
@@ -39,7 +40,7 @@ def read_cells(archive):
                 elif child.tag == '{%s}v' % SHEET_MAIN_NS :
                     cell['v'] = child.text
             if cell['f'] or cell['v']:
-                cells.append(cell)
+                cells[(sheet_name, c.attrib['r'])] = Cell(c.attrib['r'], sheet_name, value = cell['v'], formula = cell['f'])
     return cells
 
 def read_rels(archive):

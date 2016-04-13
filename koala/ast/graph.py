@@ -5,12 +5,11 @@
 # dir = os.path.dirname(__file__)
 # path = os.path.join(dir, '../')
 # sys.path.insert(0, path)
-from pycel.excelwrapper import ExcelOpxWrapper as ExcelWrapperImpl
 
 import textwrap
 import excellib
 from excellib import *
-from excelutil import *
+from excelutils import *
 from math import *
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
@@ -20,12 +19,9 @@ from tokenizer import ExcelParser, f_token, shunting_yard
 import cPickle
 import logging
 import networkx as nx
+from itertools import chain
 
-
-__version__ = filter(str.isdigit, "$Revision: 2524 $")
-__date__ = filter(str.isdigit, "$Date: 2011-09-06 17:05:00 +0100 (Tue, 06 Sep 2011) $")
-__author__ = filter(str.isdigit, "$Author: dg2d09 $")
-
+from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
     def __init__(self,G,cellmap):
@@ -436,7 +432,7 @@ def shunting_yard(expression, names):
         else:
             tokens.append(t)
 
-    # print "tokens: ", "|".join([x.tvalue for x in tokens])
+    print "tokens: ", "|".join([x.tvalue for x in tokens])
 
     # replace variables
     for t in tokens:
@@ -447,7 +443,7 @@ def shunting_yard(expression, names):
     # for t in tokens:
     #     print t.tvalue, t.ttype, t.tsubtype
 
-    #print "==> ", "".join([t.tvalue for t in tokens]) 
+    # print "==> ", "".join([t.tvalue for t in tokens]) 
 
 
     #http://office.microsoft.com/en-us/excel-help/calculation-operators-and-precedence-HP010078886.aspx
@@ -600,36 +596,25 @@ def build_ast(expression):
         
     return G,stack.pop()
 
-class Context(object):
-    """A small context object that nodes in the AST can use to emit code"""
-    def __init__(self,curcell,excel):
-        # the current cell for which we are generating code
-        self.curcell = curcell
-        # a handle to an excel instance
-        self.excel = excel
+
 
 class ExcelCompiler(object):
-    """Class responsible for taking an Excel spreadsheet and compiling it to a Spreadsheet instance
+    """Class responsible for taking cells and named_range and create a graph
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, filename=None, excel=None, *args,**kwargs):
+    def __init__(self, named_range, cells):
 
-        super(ExcelCompiler,self).__init__()
-        self.filename = filename
+        self.named_range = named_range
+        self.cells = cells
         
-        self.excel = ExcelWrapperImpl(filename=filename)
-        self.excel.connect()
-        self.names = dict(map(lambda x: (x[1], x[2].replace("$", "")), self.excel.rangednames))
-            
-        self.log = logging.getLogger("decode.{0}".format(self.__class__.__name__))
         
-    def cell2code(self,cell):
+    def cell2code(self, cell):
         """Generate python code for the given cell"""
         if cell.formula:
-            e = shunting_yard(cell.formula or str(cell.value), self.names)
+            e = shunting_yard(cell.formula or str(cell.value), self.named_range)
             ast,root = build_ast(e)
-            code = root.emit(ast,context=Context(cell,self.excel))
+            code = root.emit(ast)
         else:
             ast = None
             code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
@@ -645,18 +630,11 @@ class ExcelCompiler(object):
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
             
-    def gen_graph(self, seed, sheet=None):
-        """Given a starting point (e.g., A6, or A3:B7) on a particular sheet, generate
-           a Spreadsheet instance that captures the logic and control flow of the equations."""
+    def gen_graph(self):
         
-        # starting points
-        cursheet = sheet if sheet else self.excel.get_active_sheet()
-        self.excel.set_sheet(cursheet)
+        seeds = list(flatten(self.cells.values()))
         
-        seeds,nr,nc = Cell.make_cells(self.excel, seed, sheet=cursheet)
-        seeds = list(flatten(seeds))
-        
-        print "Seed %s expanded into %s cells" % (seed,len(seeds))
+        print "Seeds %s cells" % len(seeds)
         
         # only keep seeds with formulas or numbers
         seeds = [s for s in seeds if s.formula or isinstance(s.value,(int,float))]
@@ -682,32 +660,35 @@ class ExcelCompiler(object):
             
             print "Handling ", c1.address()
             print c1.formula
-            
-            # set the current sheet so relative addresses resolve properly
-            if c1.sheet != cursheet:
-                cursheet = c1.sheet
-                self.excel.set_sheet(cursheet)
+            cursheet = c1.sheet
             
             # parse the formula into code
-            pystr,ast = self.cell2code(c1)
+            pystr, ast = self.cell2code(c1)
 
             # set the code & compile it (will flag problems sooner rather than later)
             c1.python_expression = pystr
             c1.compile()    
-            print c1.python_expression            
             
             # get all the cells/ranges this formula refers to
             deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
             
             # remove dupes
             deps = uniqueify(deps)
-
+            # print deps
+            deps_with_sheet = []
             for dep in deps:
-                
+                if "!" not in dep:
+                    deps_with_sheet += [cursheet+"!"+dep]
+                else:
+                    deps_with_sheet += [dep]
+            # print deps_with_sheet
+
+            for dep in deps_with_sheet:
+
                 # if the dependency is a multi-cell range, create a range object
                 if is_range(dep):
                     # this will make sure we always have an absolute address
-                    rng = CellRange(dep,sheet=cursheet)
+                    rng = CellRange(dep, sheet=cursheet)
                     
                     if rng.address() in cellmap:
                         # already dealt with this range
@@ -716,7 +697,11 @@ class ExcelCompiler(object):
                         continue
                     else:
                         # turn into cell objects
-                        cells,nrows,ncols = Cell.make_cells(self.excel,dep,sheet=cursheet)
+                        sheet_name, ref = dep.split("!")
+                        cells_refs = list(rows_from_range(ref))
+                        nrows = len(cells_refs)
+                        ncols = len(cells_refs[0])                        
+                        cells = [self.cells[(sheet_name, ref)] for ref in list(chain(*cells_refs))]
 
                         # get the values so we can set the range value
                         if nrows == 1 or ncols == 1:
@@ -733,7 +718,8 @@ class ExcelCompiler(object):
                         target = rng
                 else:
                     # not a range, create the cell object
-                    cells = [Cell.resolve_cell(self.excel, dep, sheet=cursheet)]
+                    sheet_name, address = dep.split("!")
+                    cells = [self.cells[(sheet_name, address)]]
                     target = cellmap[c1.address()]
 
                 # process each cell                    
