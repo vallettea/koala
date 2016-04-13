@@ -5,12 +5,12 @@
 # dir = os.path.dirname(__file__)
 # path = os.path.join(dir, '../')
 # sys.path.insert(0, path)
-from pycel.excelwrapper import ExcelOpxWrapper as ExcelWrapperImpl
+# from pycel.excelwrapper import ExcelOpxWrapper as ExcelWrapperImpl
 
 import textwrap
-import excellib
-from excellib import *
-from excelutil import *
+# import excellib
+# from excellib import *
+# from excelutil import *
 from math import *
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
