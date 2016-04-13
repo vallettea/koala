@@ -47,7 +47,8 @@ def read_cells(archive, ignore_sheets = []):
                         if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
                         if "si" in child.attrib:
                             function_map[child.attrib['si']] = Translator(unicode('=' + child.text), c.attrib['r']) # translator of openpyxl needs a unicode argument that starts with '='
-
+                        else:
+                            print "Encountered cell with ref but not si"
                     if 't' in child.attrib and child.attrib['t'] == 'shared':
                         if debug: print '*** Found child %s of shared formula %s ***' % (c.attrib['r'], child.attrib['si']) 
                         translated = function_map[child.attrib['si']].translate_formula(c.attrib['r'])
