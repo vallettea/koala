@@ -117,7 +117,9 @@ def num2col(num): # http://stackoverflow.com/questions/23861680/convert-spreadsh
 
 
 def cell2vec(cell):
-    found = re.search("^([A-Z]*)([1-9]*)$", cell).group
+    # need to verify match exists
+
+    found = re.search("\$?([A-Za-z]{1,3})\$?([1-9][0-9]{0,6})$", cell).group
 
     row = int(found(2))
     col = int(col2num(found(1)))
@@ -126,9 +128,8 @@ def cell2vec(cell):
 
 
 def vec2cell(vector):
-    # verify type(vector) == numpy.ndarray or list
+    # need to verify type(vector) == numpy.ndarray or list
 
     return num2col(vector[1]) + str(vector[0])
-
 
 
