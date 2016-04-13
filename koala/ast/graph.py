@@ -431,7 +431,7 @@ def shunting_yard(expression, names):
         else:
             tokens.append(t)
 
-    print "tokens: ", "|".join([x.tvalue for x in tokens])
+    # print "tokens: ", "|".join([x.tvalue for x in tokens])
 
     # replace variables
     for t in tokens:
@@ -662,7 +662,6 @@ class ExcelCompiler(object):
             c1 = todo.pop()
             
             print "============= Handling ", c1.address()
-            print c1.formula
             cursheet = c1.sheet
             
             # parse the formula into code
@@ -676,8 +675,7 @@ class ExcelCompiler(object):
             deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
             # remove dupes
             deps = uniqueify(deps)
-            print deps
-            print pystr
+
             for dep in deps:
                 # if the dependency is a multi-cell range, create a range object
                 if is_range(dep):
@@ -696,16 +694,12 @@ class ExcelCompiler(object):
                         else:
                             sheet_name = cursheet
                             ref = dep
-                        cells_refs = list(rows_from_range(ref))
-                        nrows = len(cells_refs)
-                        ncols = len(cells_refs[0])                        
+                        cells_refs = list(rows_from_range(ref))                       
                         cells = [self.cells[(sheet_name, ref)] for ref in list(chain(*cells_refs)) if (sheet_name, ref) in self.cells.keys()]
-                        
+
                         # get the values so we can set the range value
-                        if nrows == 1 or ncols == 1:
-                            rng.value = [c.value for c in cells]
-                        else:
-                            rng.value = [ [c.value for c in cells[i]] for i in range(len(cells)) ] 
+                        rng.value = [c.value for c in cells]
+                        
 
                         # save the range
                         cellmap[rng.address()] = rng

@@ -32,12 +32,7 @@ if __name__ == '__main__':
         print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
 
         c = ExcelCompiler(named_range, cells)
-        c.gen_graph()
-        # for cell in cells:
-        #     if cell['f'] is not None:
-        #         print "=========="
-        #         print cell['f']
-        #         p = ExcelParser();
-        #         p.parse(cell['f'])
-        #         print p.prettyprint()
+        sp = c.gen_graph()
 
+        print "Serializing to disk..."
+        sp.save_to_file(fname + ".pickle")
