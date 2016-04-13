@@ -14,7 +14,7 @@ from koala.ast.graph import ExcelCompiler
 
 if __name__ == '__main__':
 
-    files = glob.iglob("./data/e*.xlsx")
+    files = glob.iglob("./example/*.xlsx")
     for file in files:  
 
         file_name = os.path.abspath(file)

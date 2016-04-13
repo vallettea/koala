@@ -204,8 +204,23 @@ class OperatorNode(ASTNode):
         op = self.opmap.get(xop,xop)
         
         # convert ":" operator to a range function
-        if op == ":": 
+        if op == ":":
+            # bb = args[0].emit(ast,context=context).replace("'","")
+            # if "!" in bb:
+            #     sheet_name = bb.split("!")[0]
+            # else:
+            #     sheet_name = None
+            # print [a.emit(ast,context=context) for a in args]
+            # corrected = []
+            # for a in args:
+            #     if "!" not in a.emit(ast,context=context).replace("'","") and sheet_name:
+            #         corrected.append( sheet_name+"!"+a.emit(ast,context=context).replace('"','')+'"')
+            #     else:
+            #         corrected.append(a.emit(ast,context=context))
+            # print corrected
+            # return "eval_range(%s)" % ','.join(corrected)
             return "eval_range(%s)" % ','.join([a.emit(ast,context=context) for a in args])
+
          
         if self.ttype == "operator-prefix":
             return "-" + args[0].emit(ast,context=context)
