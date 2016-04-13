@@ -205,20 +205,6 @@ class OperatorNode(ASTNode):
         
         # convert ":" operator to a range function
         if op == ":":
-            # bb = args[0].emit(ast,context=context).replace("'","")
-            # if "!" in bb:
-            #     sheet_name = bb.split("!")[0]
-            # else:
-            #     sheet_name = None
-            # print [a.emit(ast,context=context) for a in args]
-            # corrected = []
-            # for a in args:
-            #     if "!" not in a.emit(ast,context=context).replace("'","") and sheet_name:
-            #         corrected.append( sheet_name+"!"+a.emit(ast,context=context).replace('"','')+'"')
-            #     else:
-            #         corrected.append(a.emit(ast,context=context))
-            # print corrected
-            # return "eval_range(%s)" % ','.join(corrected)
             return "eval_range(%s)" % ','.join([a.emit(ast,context=context) for a in args])
 
          
@@ -385,7 +371,6 @@ class FunctionNode(ASTNode):
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         else:
             # map to the correct name
-            print "funmap called with ", fun
             f = self.funmap.get(fun,fun)
             str = f + "(" + ",".join([n.emit(ast,context=context) for n in args]) + ")"
 
@@ -608,7 +593,7 @@ def build_ast(expression):
             G.add_node(n,{'pos':0})
 
         stack.append(n)
-        
+
     return G,stack.pop()
 
 
@@ -673,7 +658,7 @@ class ExcelCompiler(object):
         while todo:
             c1 = todo.pop()
             
-            print "Handling ", c1.address()
+            print "============= Handling ", c1.address()
             print c1.formula
             cursheet = c1.sheet
             
@@ -686,20 +671,11 @@ class ExcelCompiler(object):
             
             # get all the cells/ranges this formula refers to
             deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
-            
             # remove dupes
             deps = uniqueify(deps)
-            # print deps
-            deps_with_sheet = []
+            print deps
+            print pystr
             for dep in deps:
-                if "!" not in dep:
-                    deps_with_sheet += [cursheet+"!"+dep]
-                else:
-                    deps_with_sheet += [dep]
-            # print deps_with_sheet
-
-            for dep in deps_with_sheet:
-
                 # if the dependency is a multi-cell range, create a range object
                 if is_range(dep):
                     # this will make sure we always have an absolute address
@@ -712,7 +688,11 @@ class ExcelCompiler(object):
                         continue
                     else:
                         # turn into cell objects
-                        sheet_name, ref = dep.split("!")
+                        if "!" in dep:
+                            sheet_name, ref = dep.split("!")
+                        else:
+                            sheet_name = cursheet
+                            ref = dep
                         cells_refs = list(rows_from_range(ref))
                         nrows = len(cells_refs)
                         ncols = len(cells_refs[0])                        
@@ -733,8 +713,12 @@ class ExcelCompiler(object):
                         target = rng
                 else:
                     # not a range, create the cell object
-                    sheet_name, address = dep.split("!")
-                    cells = [self.cells[(sheet_name, address)]]
+                    if "!" in dep:
+                        sheet_name, ref = dep.split("!")
+                    else:
+                        sheet_name = cursheet
+                        ref = dep
+                    cells = [self.cells[(sheet_name, ref)]]
                     target = cellmap[c1.address()]
 
                 # process each cell                    
