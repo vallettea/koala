@@ -661,7 +661,7 @@ class ExcelCompiler(object):
         while todo:
             c1 = todo.pop()
             
-            print "============= Handling ", c1.address()
+            # print "============= Handling ", c1.address()
             cursheet = c1.sheet
             
             # parse the formula into code
