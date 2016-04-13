@@ -721,8 +721,11 @@ class ExcelCompiler(object):
                     else:
                         sheet_name = cursheet
                         ref = dep
-                    cells = [self.cells[(sheet_name, ref)]]
-                    target = cellmap[c1.address()]
+                    try:
+                        cells = [self.cells[(sheet_name, ref)]]
+                        target = cellmap[c1.address()]
+                    except:
+                        target = []
 
                 # process each cell                    
                 for c2 in flatten(cells):
@@ -745,7 +748,8 @@ class ExcelCompiler(object):
                         self.add_node_to_graph(G, c2)
                         
                     # add an edge from the cell to the parent (range or cell)
-                    G.add_edge(cellmap[c2.address()],target)
+                    if(target != []):
+                        G.add_edge(cellmap[c2.address()],target)
             
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
