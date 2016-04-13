@@ -14,6 +14,8 @@ from koala.xml.functions import fromstring, safe_iterator, cElementTree as ET
 from koala.openpyxl.translate import Translator 
 from koala.ast.excelutils import Cell
 
+debug = False
+
 def read_named_ranges(archive):
 
     root = fromstring(archive.read(ARC_WORKBOOK))
@@ -24,6 +26,8 @@ def read_named_ranges(archive):
     }
 
 def read_cells(archive, ignore_sheets = []):
+    global debug
+
     cells = {}
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
@@ -36,17 +40,17 @@ def read_cells(archive, ignore_sheets = []):
 
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
             cell = {'a': '%s!%s' % (sheet_name, c.attrib['r']), 'f': None, 'v': None}
-            print 'Cell', cell['a']
+            if debug: print 'Cell', cell['a']
             for child in c:
                 if child.tag == '{%s}f' % SHEET_MAIN_NS :
                     if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
-                        print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
+                        if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
                         function_map[child.attrib['si']] = Translator(unicode('=' + child.text), c.attrib['r']) # translator of openpyxl needs a unicode argument that starts with '='
 
                     if 't' in child.attrib and child.attrib['t'] == 'shared':
-                        print '*** Found child %s of shared formula %s ***' % (c.attrib['r'], child.attrib['si']) 
+                        if debug: print '*** Found child %s of shared formula %s ***' % (c.attrib['r'], child.attrib['si']) 
                         translated = function_map[child.attrib['si']].translate_formula(c.attrib['r'])
-                        cell['f'] = translated
+                        cell['f'] = translated[1:] # we need to get rid of the '='
 
                     else:
                         cell['f'] = child.text

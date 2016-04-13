@@ -147,7 +147,6 @@ class Translator(object):
         if not tokens:
             return ""
         elif tokens[0].type == Token.LITERAL:
-            print 'HERE', tokens[0].value
             return tokens[0].value
         out = ['=']
         # per the spec:
@@ -160,7 +159,6 @@ class Translator(object):
         row_delta = drow - self.row
         col_delta = dcol - self.col
 
-        print 'Delta', row_delta, col_delta
         for token in tokens:
             if token.type == Token.OPERAND and token.subtype == Token.RANGE:
                 out.append(self.translate_range(token.value, row_delta,
