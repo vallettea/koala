@@ -259,7 +259,6 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
-
         # resolve the range into cells
         rng = self.tvalue.replace('$','')
         sheet = context.curcell.sheet + "!" if context else ""
@@ -473,7 +472,6 @@ def shunting_yard(expression, names):
     
     for t in tokens:
         if t.ttype == "operand":
-
             output.append(create_node(t))
             if were_values:
                 were_values.pop()
@@ -572,6 +570,11 @@ def build_ast(expression):
             if n.ttype == "operator-infix":
                 arg2 = stack.pop()
                 arg1 = stack.pop()
+                # Hack to write the name of sheet in 2argument address
+                if(n.tvalue == ':'):
+                    if '!' in arg1.tvalue and '!' not in arg2.tvalue:
+                        arg2.tvalue = arg1.tvalue.split('!')[0] + '!' + arg2.tvalue
+
                 G.add_node(arg1,{'pos':1})
                 G.add_node(arg2,{'pos':2})
                 G.add_edge(arg1, n)
