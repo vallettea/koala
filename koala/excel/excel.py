@@ -45,7 +45,8 @@ def read_cells(archive, ignore_sheets = []):
                 if child.tag == '{%s}f' % SHEET_MAIN_NS :
                     if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
                         if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
-                        function_map[child.attrib['si']] = Translator(unicode('=' + child.text), c.attrib['r']) # translator of openpyxl needs a unicode argument that starts with '='
+                        if "si" in child.attrib:
+                            function_map[child.attrib['si']] = Translator(unicode('=' + child.text), c.attrib['r']) # translator of openpyxl needs a unicode argument that starts with '='
 
                     if 't' in child.attrib and child.attrib['t'] == 'shared':
                         if debug: print '*** Found child %s of shared formula %s ***' % (c.attrib['r'], child.attrib['si']) 
