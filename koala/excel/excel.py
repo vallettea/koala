@@ -9,8 +9,12 @@ from koala.xml.constants import (
     ARC_WORKBOOK_RELS,
     WORKSHEET_TYPE,
 )
-from koala.xml.functions import fromstring, safe_iterator
+
+from koala.xml.functions import fromstring, safe_iterator, cElementTree as ET
+from koala.openpyxl.translate import Translator 
 from koala.ast.excelutils import Cell
+
+debug = False
 
 def read_named_ranges(archive):
 
@@ -20,28 +24,45 @@ def read_named_ranges(archive):
         name_node.get('name') : name_node.text
         for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
     }
-        
 
 def read_cells(archive, ignore_sheets = []):
+    global debug
+
     cells = {}
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
 
+        function_map = {}
+
         if sheet_name in ignore_sheets: continue
         
-        root = fromstring(archive.read(sheet['path']))
+        root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
+
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
             cell = {'a': '%s!%s' % (sheet_name, c.attrib['r']), 'f': None, 'v': None}
+            if debug: print 'Cell', cell['a']
             for child in c:
-                if child.text is None: 
-                    continue
-                elif child.tag == '{%s}f' % SHEET_MAIN_NS :
-                    cell['f'] = child.text
+                if child.tag == '{%s}f' % SHEET_MAIN_NS :
+                    if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
+                        if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
+                        function_map[child.attrib['si']] = Translator(unicode('=' + child.text), c.attrib['r']) # translator of openpyxl needs a unicode argument that starts with '='
+
+                    if 't' in child.attrib and child.attrib['t'] == 'shared':
+                        if debug: print '*** Found child %s of shared formula %s ***' % (c.attrib['r'], child.attrib['si']) 
+                        translated = function_map[child.attrib['si']].translate_formula(c.attrib['r'])
+                        cell['f'] = translated[1:] # we need to get rid of the '='
+
+                    else:
+                        cell['f'] = child.text
+
                 elif child.tag == '{%s}v' % SHEET_MAIN_NS :
                     cell['v'] = child.text
+                elif child.text is None:
+                    continue
             if cell['f'] or cell['v']:
                 cells[(sheet_name, c.attrib['r'])] = Cell(c.attrib['r'], sheet_name, value = cell['v'], formula = cell['f'])
     return cells
+
 
 def read_rels(archive):
     """Read relationships for a workbook"""

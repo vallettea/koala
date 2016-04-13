@@ -1,5 +1,12 @@
 import pytest
 
+import os.path
+import sys
+
+dir = os.path.dirname(__file__)
+path = os.path.join(dir, '../../')
+sys.path.insert(0, path)
+
 from koala.excel.utils import (
     column_index_from_string,
     coordinate_from_string,
