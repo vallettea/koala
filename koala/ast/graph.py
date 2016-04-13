@@ -699,8 +699,8 @@ class ExcelCompiler(object):
                         cells_refs = list(rows_from_range(ref))
                         nrows = len(cells_refs)
                         ncols = len(cells_refs[0])                        
-                        cells = [self.cells[(sheet_name, ref)] for ref in list(chain(*cells_refs))]
-
+                        cells = [self.cells[(sheet_name, ref)] for ref in list(chain(*cells_refs)) if (sheet_name, ref) in self.cells.keys()]
+                        
                         # get the values so we can set the range value
                         if nrows == 1 or ncols == 1:
                             rng.value = [c.value for c in cells]

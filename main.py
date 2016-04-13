@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
         startTime = datetime.now()
         cells = read_cells(archive, ignore_sheets = ['IHS'])
-        print cells.keys()
         
         print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
 
