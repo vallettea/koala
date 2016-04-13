@@ -9,8 +9,10 @@ from koala.xml.constants import (
     ARC_WORKBOOK_RELS,
     WORKSHEET_TYPE,
 )
+
 from koala.xml.functions import fromstring, safe_iterator, cElementTree as ET
 from koala.openpyxl.translate import Translator 
+from koala.ast.excelutils import Cell
 
 def read_named_ranges(archive):
 
@@ -20,17 +22,15 @@ def read_named_ranges(archive):
         name_node.get('name') : name_node.text
         for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
     }
-        
 
-def read_cells(archive):
-    cells = []
-
+def read_cells(archive, ignore_sheets = []):
+    cells = {}
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
 
         function_map = {}
 
-        if sheet_name == 'IHS': continue
+        if sheet_name in ignore_sheets: continue
         
         root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
@@ -56,7 +56,7 @@ def read_cells(archive):
                 elif child.text is None:
                     continue
             if cell['f'] or cell['v']:
-                cells.append(cell)
+                cells[(sheet_name, c.attrib['r'])] = Cell(c.attrib['r'], sheet_name, value = cell['v'], formula = cell['f'])
     return cells
 
 
