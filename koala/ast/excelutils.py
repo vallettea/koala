@@ -239,8 +239,11 @@ def is_range(address):
 
 def split_range(rng):
     if rng.find('!') > 0:
-        sh,r = rng.split("!")
-        start,end = r.split(':')
+        try:
+            sh,r = rng.split("!")
+            start,end = r.split(':')
+        except:
+            print "ERORO", rng
     else:
         sh = None
         start,end = rng.split(':')
