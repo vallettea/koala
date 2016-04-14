@@ -373,7 +373,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, names):
+def shunting_yard(expression, named_range):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -386,11 +386,6 @@ def shunting_yard(expression, names):
 
     #remove %
     expression = expression.replace("%", "")
-
-    # replace names
-    for name in names:
-        if name in expression:
-            expression = expression.replace(name, names[name])
         
     p = ExcelParser();
     p.parse(expression)
@@ -526,7 +521,15 @@ def shunting_yard(expression, names):
     
     # convert to list
     result = [x for x in output]
-    return result
+
+    # replacing named_range
+    final_result = []
+    for x in result:
+        if x.tvalue in named_range:
+            final_result = final_result + named_range[x.tvalue]
+        else:
+            final_result.append(x)
+    return final_result
    
 def build_ast(expression):
     """build an AST from an Excel formula expression in reverse polish notation"""
@@ -580,8 +583,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, named_range, cells):
-        from collections import OrderedDict
-        self.named_range = OrderedDict(sorted(named_range.items(), key=lambda t: len(t[0]),reverse=True))
+        self.named_range = {name : shunting_yard(named_range[name], named_range) for name in named_range}
         self.cells = cells
         
         
