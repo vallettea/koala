@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
         print sp.evaluate('Sheet1!B4')
         sp.set_value('Sheet1!A4',10)
+
         print sp.evaluate('Sheet1!B4')
 
 

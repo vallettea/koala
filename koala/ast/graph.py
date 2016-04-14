@@ -386,6 +386,11 @@ def shunting_yard(expression, names):
 
     #remove %
     expression = expression.replace("%", "")
+
+    # replace names
+    for name in names:
+        if name in expression:
+            expression = expression.replace(name, names[name])
         
     p = ExcelParser();
     p.parse(expression)
@@ -409,15 +414,6 @@ def shunting_yard(expression, names):
             tokens.append(t)
 
     # print "tokens: ", "|".join([x.tvalue for x in tokens])
-
-    # replace variables
-    for t in tokens:
-        k = t.tvalue
-        if k in names:
-            t.tvalue = names[k]
-
-    # for t in tokens:
-    #     print t.tvalue, t.ttype, t.tsubtype
 
     # print "==> ", "".join([t.tvalue for t in tokens]) 
 
@@ -584,8 +580,8 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, named_range, cells):
-
-        self.named_range = named_range
+        from collections import OrderedDict
+        self.named_range = OrderedDict(sorted(named_range.items(), key=lambda t: len(t[0]),reverse=True))
         self.cells = cells
         
         
@@ -696,6 +692,7 @@ class ExcelCompiler(object):
                         cells = [self.cells[sheet_name +"!"+ ref]]
                         target = cellmap[c1.address()]
                     except:
+                        cells = []
                         target = []
 
                 # process each cell                    
