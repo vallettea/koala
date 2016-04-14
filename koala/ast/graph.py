@@ -143,7 +143,7 @@ class Spreadsheet(object):
                     rng2 = rng2.split('!')[1]
                 # for s in self.cellmap:
                 #     print self.cellmap[s]
-                #return eval_range('%s:%s' % (rng, rng2))
+                # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
                 
         try:
