@@ -25,10 +25,10 @@ class Test_Excel(unittest.TestCase):
         self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 12)
 
     def test_shared_formulas_content(self):
-        self.assertEqual(self.cells[('Shared_formula', 'G2')].formula, 'G1 + 10 * L1 + $A$1')
+        self.assertEqual(self.cells[('Shared_formula!G2')].formula, 'G1 + 10 * L1 + $A$1')
 
     def test_text_content(self):
-        self.assertEqual(self.cells[('Shared_formula', 'C12')].value, 'Romain')
+        self.assertEqual(self.cells[('Shared_formula!C12')].value, 'Romain')
 
     def test_types(self):
     	nb_int = len(filter(lambda (ref, cell): type(cell.value) == int, self.cells.items()))

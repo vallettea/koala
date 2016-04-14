@@ -140,31 +140,6 @@ def lookup(value, lookup_range, result_range):
             else:
                 return result_range[i-1]
 
-def linest(*args, **kwargs):
-
-    Y = args[0]
-    X = args[1]
-    
-    if len(args) == 3:
-        const = args[2]
-        if isinstance(const,str):
-            const = (const.lower() == "true")
-    else:
-        const = True
-        
-    degree = kwargs.get('degree',1)
-    
-    # build the vandermonde matrix
-    A = np.vander(X, degree+1)
-    
-    if not const:
-        # force the intercept to zero
-        A[:,-1] = np.zeros((1,len(X)))
-    
-    # perform the fit
-    (coefs, residuals, rank, sing_vals) = np.linalg.lstsq(A, Y)
-        
-    return coefs
 
 def npv(*args):
     discount_rate = args[0]

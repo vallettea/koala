@@ -91,8 +91,14 @@ def read_cells(archive, ignore_sheets = []):
 
                 elif child.text is None:
                     continue
+
             if cell['f'] is not None or cell['v'] is not None:
-                cells[(sheet_name, cell_address)] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                if "!" in cell_address:
+                    print "! found "
+                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                else:
+                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+
     return cells
 
 
