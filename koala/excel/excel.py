@@ -83,7 +83,10 @@ def read_cells(archive, ignore_sheets = []):
 
                 elif child.tag == '{%s}v' % SHEET_MAIN_NS :
                     if cell_data_type == 's' or cell_data_type == 'str': # value is a string
-                        cell['v'] = shared_strings[int(child.text)]
+                        try: # if it fails, it means that cell content is a string calculated from a formula
+                            cell['v'] = shared_strings[int(child.text)]
+                        except:
+                            cell['v'] = child.text
                     elif cell_data_type == 'b':
                         cell['v'] = bool(int(child.text))
                     elif cell_data_type == 'n':
@@ -166,7 +169,7 @@ def read_string_table(xml_source):
 
             text = Text.from_tree(node).content
             text = text.replace('x005F_', '')
-            strings.append(str(text)) # Careful, some unicode encoding might not be valid
+            strings.append(text)
 
             node.clear()
 

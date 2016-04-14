@@ -22,7 +22,7 @@ class Test_Excel(unittest.TestCase):
         self.cells = read_cells(archive)
         
     def test_nb_formulas(self):
-        self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 12)
+        self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 13)
 
     def test_shared_formulas_content(self):
         self.assertEqual(self.cells[('Shared_formula!G2')].formula, 'G1 + 10 * L1 + $A$1')
@@ -36,7 +36,7 @@ class Test_Excel(unittest.TestCase):
         nb_bool = len(filter(lambda (ref, cell): type(cell.value) == bool, self.cells.items()))
         nb_str = len(filter(lambda (ref, cell): type(cell.value) == str, self.cells.items()))
 
-        self.assertTrue(nb_int == 21 and nb_float == 3 and nb_bool == 2 and nb_str == 9)
+        self.assertTrue(nb_int == 21 and nb_float == 3 and nb_bool == 2 and nb_str == 10)
 
 if __name__ == '__main__':
     unittest.main()

@@ -37,9 +37,10 @@ def calculate_graph(file):
 
 if __name__ == '__main__':
 
-    files = glob.glob("./example/example2.xlsx")
-    pool = Pool(processes = 4)
-    pool.map(calculate_graph, files)
+    files = glob.glob("./data/*.xlsx")
+    # files = glob.glob("./example/example2.xlsx")
+    # pool = Pool(processes = 4)
+    # pool.map(calculate_graph, files)
     # files = glob.glob("./data/m*.xlsx")
     # pool = Pool(processes = 4)
     # pool.map(calculate_graph, files)
