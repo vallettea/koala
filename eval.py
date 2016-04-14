@@ -1,4 +1,5 @@
 import glob
+import sys
 from datetime import datetime
 
 
@@ -15,7 +16,7 @@ from koala.ast.graph import ExcelCompiler
 
 if __name__ == '__main__':
 
-    files = glob.glob("./example/example.xlsx")
+    files = glob.glob("./data/*.xlsx")
 
     for file in files:
         file_name = os.path.abspath(file)
@@ -34,10 +35,12 @@ if __name__ == '__main__':
         c = ExcelCompiler(named_range, cells)
         sp = c.gen_graph()
 
-        print sp.evaluate('Sheet1!B4')
-        sp.set_value('Sheet1!A4',10)
+        sys.setrecursionlimit(10000)
 
-        print sp.evaluate('Sheet1!B4')
+        print sp.evaluate('Cashflow!G187')
+        sp.set_value('InputData!G14', 2025)
+
+        print sp.evaluate('Cashflow!G187')
 
 
 
