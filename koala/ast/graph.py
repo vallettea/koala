@@ -103,6 +103,7 @@ class Spreadsheet(object):
             data = [ self.evaluate(c) for c in cells ]
         else:
             data = [ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] 
+        #print 'data', data
         
         rng.value = data
         
@@ -112,6 +113,7 @@ class Spreadsheet(object):
 
         if is_addr:
             try:
+                print '->', cell
                 cell = self.cellmap[cell]
             except:
                 print 'Empty cell at '+ cell
@@ -132,11 +134,15 @@ class Spreadsheet(object):
             if rng2 is None:
                 return self.evaluate_range(rng)
             else:
-                sheet = rng.split('!')[0]
+                print 'eval_range', rng
+                if '!' in rng:
+                    sheet = rng.split('!')[0]
+                else:
+                    sheet = None
                 if '!' in rng2:
                     rng2 = rng2.split('!')[1]
-                for s in self.cellmap:
-                    print self.cellmap[s]
+                # for s in self.cellmap:
+                #     print self.cellmap[s]
                 #return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
                 
@@ -212,11 +218,6 @@ class OperatorNode(ASTNode):
             return "-" + args[0].emit(ast,context=context)
 
         parent = self.parent(ast)
-        # dont render the ^{1,2,..} part in a linest formula
-        #TODO: bit of a hack
-        if op == "**":
-            if parent and parent.tvalue.lower() == "linest": 
-                return args[0].emit(ast,context=context)
 
         #TODO silly hack to work around the fact that None < 0 is True (happens on blank cells)
         if op == "<" or op == "<=":
@@ -261,7 +262,7 @@ class RangeNode(OperandNode):
     def emit(self,ast,context=None):
         # resolve the range into cells
         rng = self.tvalue.replace('$','')
-        sheet = context.curcell.sheet + "!" if context else ""
+        sheet = context + "!" if context else ""
 
         is_a_range = is_range(rng)
 
@@ -339,30 +340,6 @@ class FunctionNode(ASTNode):
         elif fun == "arrayrow":
             #simply create a list
             str += ",".join([n.emit(ast,context=context) for n in args])
-        elif fun == "linest" or fun == "linestmario":
-            
-            str = fun + "(" + ",".join([n.emit(ast,context=context) for n in args])
-
-            if not context:
-                degree,coef = -1,-1
-            else:
-                #linests are often used as part of an array formula spanning multiple cells,
-                #one cell for each coefficient.  We have to figure out where we currently are
-                #in that range
-                degree,coef = get_linest_degree(context.excel,context.curcell)
-                
-            # if we are the only linest (degree is one) and linest is nested -> return vector
-            # else return the coef.
-            if degree == 1 and self.parent(ast):
-                if fun == "linest":
-                    str += ",degree=%s)" % degree
-                else:
-                    str += ")"
-            else:
-                if fun == "linest":
-                    str += ",degree=%s)[%s]" % (degree,coef-1)
-                else:
-                    str += ")[%s]" % (coef-1)
 
         elif fun == "and":
             str = "all([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
@@ -436,7 +413,7 @@ def shunting_yard(expression, names):
     # replace variables
     for t in tokens:
         k = t.tvalue
-        if k in names.keys():
+        if k in names:
             t.tvalue = names[k]
 
     # for t in tokens:
@@ -574,7 +551,7 @@ def build_ast(expression):
                 if(n.tvalue == ':'):
                     if '!' in arg1.tvalue and '!' not in arg2.tvalue:
                         arg2.tvalue = arg1.tvalue.split('!')[0] + '!' + arg2.tvalue
-
+                    
                 G.add_node(arg1,{'pos':1})
                 G.add_node(arg2,{'pos':2})
                 G.add_edge(arg1, n)
@@ -612,12 +589,12 @@ class ExcelCompiler(object):
         self.cells = cells
         
         
-    def cell2code(self, cell):
+    def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
             e = shunting_yard(cell.formula or str(cell.value), self.named_range)
             ast,root = build_ast(e)
-            code = root.emit(ast)
+            code = root.emit(ast, context=sheet)
         else:
             ast = None
             code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
@@ -661,11 +638,11 @@ class ExcelCompiler(object):
         while todo:
             c1 = todo.pop()
             
-            # print "============= Handling ", c1.address()
+            print "============= Handling ", c1.address()
             cursheet = c1.sheet
             
             # parse the formula into code
-            pystr, ast = self.cell2code(c1)
+            pystr, ast = self.cell2code(c1, cursheet)
 
             # set the code & compile it (will flag problems sooner rather than later)
             c1.python_expression = pystr
@@ -695,7 +672,7 @@ class ExcelCompiler(object):
                             sheet_name = cursheet
                             ref = dep
                         cells_refs = list(rows_from_range(ref))                       
-                        cells = [self.cells[(sheet_name, ref)] for ref in list(chain(*cells_refs)) if (sheet_name, ref) in self.cells.keys()]
+                        cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
 
                         # get the values so we can set the range value
                         rng.value = [c.value for c in cells]
@@ -716,7 +693,7 @@ class ExcelCompiler(object):
                         sheet_name = cursheet
                         ref = dep
                     try:
-                        cells = [self.cells[(sheet_name, ref)]]
+                        cells = [self.cells[sheet_name +"!"+ ref]]
                         target = cellmap[c1.address()]
                     except:
                         target = []
@@ -731,7 +708,7 @@ class ExcelCompiler(object):
                             #print "appended ", c2.address()
                         else:
                             # constant cell, no need for further processing, just remember to set the code
-                            pystr,ast = self.cell2code(c2)
+                            pystr,ast = self.cell2code(c2, cursheet)
                             c2.python_expression = pystr
                             c2.compile()     
                             #print "skipped ", c2.address()
