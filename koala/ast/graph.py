@@ -21,6 +21,8 @@ import logging
 import networkx as nx
 from itertools import chain
 
+from numpy import array
+
 from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
@@ -73,7 +75,7 @@ class Spreadsheet(object):
         if cell.value is None: return
         #print "resetting", cell.address()
         cell.value = None
-        map(self.reset,self.G.successors_iter(cell)) 
+        map(self.reset,self.G.successors_iter(cell))
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
@@ -100,9 +102,9 @@ class Spreadsheet(object):
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
         if nrows == 1 or ncols == 1:
-            data = [ self.evaluate(c) for c in cells ]
+            data = array([ self.evaluate(c) for c in cells ])
         else:
-            data = [ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] 
+            data = array([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
         #print 'data', data
         
         rng.value = data
@@ -113,11 +115,11 @@ class Spreadsheet(object):
 
         if is_addr:
             try:
-                print '->', cell
+                # print '->', cell
                 cell = self.cellmap[cell]
             except:
-                print 'Empty cell at '+ cell
-                return []
+                # print 'Empty cell at '+ cell
+                return 0
 
             
         # no formula, fixed value
@@ -150,7 +152,7 @@ class Spreadsheet(object):
             #for s in self.cellmap:
             #    print self.cellmap[s]
 
-            print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
             #print "Cell %s evalled to %s" % (cell.address(),vv)
             if vv is None:
@@ -158,8 +160,13 @@ class Spreadsheet(object):
             cell.value = vv
         except Exception as e:
             if e.message.startswith("Problem evalling"):
+                print 'PROBLEM'
+                print '\n', eval_range("InputData!L59","InputData!DG59")
+                print '\n', eval_range("Calculations!L11","Calculations!DG11")
+                print '\n', eval_range("Calculations!L72","Calculations!DG72")
                 raise e
             else:
+                # print 'PROBLEM\n', eval_cell("InputData!G14"), '\n', eval_cell("InputData!G28")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
         
         return cell.value
@@ -635,7 +642,7 @@ class ExcelCompiler(object):
         while todo:
             c1 = todo.pop()
             
-            print "============= Handling ", c1.address()
+            # print "============= Handling ", c1.address()
             cursheet = c1.sheet
             
             # parse the formula into code
