@@ -26,7 +26,7 @@ def calculate_graph(file):
 
     startTime = datetime.now()
     cells = read_cells(archive, ignore_sheets = ['IHS'])
-    
+
     print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
 
     c = ExcelCompiler(named_range, cells)
@@ -37,6 +37,6 @@ def calculate_graph(file):
 
 if __name__ == '__main__':
 
-    files = glob.glob("./data/*.xlsx")
+    files = glob.glob("./example/example2.xlsx")
     pool = Pool(processes = 4)
     pool.map(calculate_graph, files)

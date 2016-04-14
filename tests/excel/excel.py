@@ -17,15 +17,26 @@ class Test_Excel(unittest.TestCase):
     
 
     def setUp(self):
-        file_name = os.path.abspath("../example/example2.xlsx")
+        file_name = os.path.abspath("./example/example2.xlsx")
         archive = read_archive(file_name)        
-        self.cells = read_cells(archive) 
-
+        self.cells = read_cells(archive)
+        
     def test_nb_formulas(self):
-        self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 8)
+        self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 12)
 
     def test_shared_formulas_content(self):
         self.assertEqual(self.cells[('Shared_formula', 'G2')].formula, 'G1 + 10 * L1 + $A$1')
+
+    def test_text_content(self):
+        self.assertEqual(self.cells[('Shared_formula', 'C12')].value, 'Romain')
+
+    def test_types(self):
+    	nb_int = len(filter(lambda (ref, cell): type(cell.value) == int, self.cells.items()))
+        nb_float = len(filter(lambda (ref, cell): type(cell.value) == float, self.cells.items()))
+        nb_bool = len(filter(lambda (ref, cell): type(cell.value) == bool, self.cells.items()))
+        nb_str = len(filter(lambda (ref, cell): type(cell.value) == str, self.cells.items()))
+
+        self.assertTrue(nb_int == 21 and nb_float == 3 and nb_bool == 2 and nb_str == 9)
 
 if __name__ == '__main__':
     unittest.main()

@@ -638,9 +638,8 @@ class ExcelCompiler(object):
         seeds = list(flatten(self.cells.values()))
         
         print "Seeds %s cells" % len(seeds)
-        
         # only keep seeds with formulas or numbers
-        seeds = [s for s in seeds if s.formula or isinstance(s.value,(int,float))]
+        seeds = [s for s in seeds if s.formula or isinstance(s.value,(int, float, str))]
 
         print "%s filtered seeds " % len(seeds)
         

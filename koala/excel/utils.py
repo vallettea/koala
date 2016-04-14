@@ -22,6 +22,14 @@ SHEETRANGE_RE = re.compile("""
 ^(('(?P<quoted>([^']|'')*)')|(?P<notquoted>[^']*))!
 (?P<cells>{0})$""".format(RANGE_EXPR), re.VERBOSE)
 
+FLOAT_REGEX = re.compile(r"\.|[E-e]")
+
+def _cast_number(value): # https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/cell/read_only.py?at=default&fileviewer=file-view-default
+    "Convert numbers as string to an int or float"
+    m = FLOAT_REGEX.search(value)
+    if m is not None:
+        return float(value)
+    return int(value) # if no . nor E|e is found, it's an integer
 
 def get_column_interval(start, end):
     start = column_index_from_string(start)
