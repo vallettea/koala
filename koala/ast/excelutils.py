@@ -5,6 +5,22 @@ import functools
 import re
 import string
 
+class List(list):
+    def __mul__(self, other):
+        result = List([])
+        for i, x in enumerate(self):
+            if isinstance(other, (List, list)):
+                # print 'OTHER 1', other, i, other[i]
+                result.append(x * other[i])
+            elif isinstance(other, (int, float, long)):
+                # print 'OTHER 2', other
+                result.append(x * other)
+            else:
+                raise TypeError('%s should be a list or a number' % str(other))
+
+        return result
+
+
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
 #TODO: only supports rectangular ranges
@@ -63,7 +79,7 @@ class Cell(object):
         cls.ctr += 1
         return cls.ctr
     
-    def __init__(self, address, sheet, value=None, formula=None):
+    def __init__(self, address, sheet, value=None, formula=None, ref=None, index=None):
         super(Cell,self).__init__()
         
         # remove $'s
@@ -85,6 +101,7 @@ class Cell(object):
         # we assume a cell's location can never change
         self.__sheet = str(sheet)
         self.__formula = str(formula) if formula else None
+        self.__index = index
         
         self.__sheet = sh
         self.__col = c
@@ -117,6 +134,10 @@ class Cell(object):
     @property
     def id(self):
         return self.__id
+
+    @property
+    def index(self):
+        return self.__index
 
     @property
     def compiled_expression(self):
@@ -585,6 +606,13 @@ def find_corresponding_index(range, criteria):
             valid.append(index)
 
     return valid
+
+def check_length(array1, array2):
+    
+    if len(array1) != len(array2):
+        raise ValueError('Arrays don\'t have the same size')
+    else:
+        return array2
 
 if __name__ == '__main__':
     pass

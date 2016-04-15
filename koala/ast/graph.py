@@ -20,21 +20,7 @@ import cPickle
 import logging
 import networkx as nx
 from itertools import chain
-
-class List(list):
-    def __mul__(self, other):
-        result = []
-        for i, x in enumerate(self):
-            if isinstance(other, (List, list)):
-                result.append(x * other[i])
-            elif isinstance(other, (int, float, long)):
-                result.append(x * other)
-            else:
-                raise TypeError('%s should be a list or a number' % str(other))
-
-        return result
-
-        # return map(lambda (i, x): x * other[i], enumerate(self))
+from excelutils import List
 
 from ..excel.utils import rows_from_range
 
@@ -141,7 +127,16 @@ class Spreadsheet(object):
         # recalculate formula
         # the compiled expression calls this function
         def eval_cell(address):
-            return self.evaluate(address)
+            evaluation = self.evaluate(address)
+
+            # if evaluation is a list, that's because the cell is part of a shared formula, so we need to extract the corresponding value from the list
+            if type(evaluation) == List:
+                if cell.index:
+                    evaluation = evaluation[cell.index]
+                else:
+                    evaluation = evaluation[0]
+
+            return evaluation
         
         def eval_range(rng, rng2=None):
             if rng2 is None:
@@ -167,6 +162,9 @@ class Spreadsheet(object):
             #print "Cell %s evalled to %s" % (cell.address(),vv)
             if vv is None:
                 print "WARNING %s is None" % (cell.address())
+            # elif isinstance(vv, (List, list)):
+            #     print 'Output is list => converting', cell.index
+            #     vv = vv[cell.index]
             cell.value = vv
         except Exception as e:
             if e.message.startswith("Problem evalling"):
