@@ -21,7 +21,20 @@ import logging
 import networkx as nx
 from itertools import chain
 
-from numpy import array
+class List(list):
+    def __mul__(self, other):
+        result = []
+        for i, x in enumerate(self):
+            if isinstance(other, (List, list)):
+                result.append(x * other[i])
+            elif isinstance(other, (int, float, long)):
+                result.append(x * other)
+            else:
+                raise TypeError('%s should be a list or a number' % str(other))
+
+        return result
+
+        # return map(lambda (i, x): x * other[i], enumerate(self))
 
 from ..excel.utils import rows_from_range
 
@@ -91,7 +104,6 @@ class Spreadsheet(object):
                 self.evaluate(c,is_addr=False)
                 
     def evaluate_range(self,rng,is_addr=True):
-
         if is_addr:
             rng = self.cellmap[rng]
 
@@ -102,9 +114,9 @@ class Spreadsheet(object):
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
         if nrows == 1 or ncols == 1:
-            data = array([ self.evaluate(c) for c in cells ])
+            data = List([ self.evaluate(c) for c in cells ]) 
         else:
-            data = array([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
+            data = List([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
         #print 'data', data
         
         rng.value = data
@@ -112,7 +124,6 @@ class Spreadsheet(object):
         return data
 
     def evaluate(self,cell,is_addr=True):
-
         if is_addr:
             try:
                 # print '->', cell
@@ -136,7 +147,7 @@ class Spreadsheet(object):
             if rng2 is None:
                 return self.evaluate_range(rng)
             else:
-                print 'eval_range', rng
+                # print 'eval_range', rng
                 if '!' in rng:
                     sheet = rng.split('!')[0]
                 else:
@@ -147,7 +158,6 @@ class Spreadsheet(object):
                 #     print self.cellmap[s]
                 # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
-                
         try:
             #for s in self.cellmap:
             #    print self.cellmap[s]
@@ -160,16 +170,16 @@ class Spreadsheet(object):
             cell.value = vv
         except Exception as e:
             if e.message.startswith("Problem evalling"):
-                print 'PROBLEM'
-                print '\n', eval_range("InputData!L59","InputData!DG59")
-                print '\n', eval_range("Calculations!L11","Calculations!DG11")
-                print '\n', eval_range("Calculations!L72","Calculations!DG72")
                 raise e
             else:
-                # print 'PROBLEM\n', eval_cell("InputData!G14"), '\n', eval_cell("InputData!G28")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
-        
-        return cell.value
+
+        try:
+            return cell.value
+        except:
+            for f in missing_functions:
+                print 'MISSING', f
+            # return missing_functions
 
 class ASTNode(object):
     """A generic node in the AST"""
@@ -191,7 +201,7 @@ class ASTNode(object):
     def parent(self,ast):
         args = ast.successors(self)
         return args[0] if args else None
-    
+
     def emit(self,ast,context=None):
         """Emit code"""
         self.token.tvalue
