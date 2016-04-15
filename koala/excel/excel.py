@@ -15,7 +15,7 @@ from koala.xml.constants import (
 
 from koala.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
 from koala.openpyxl.translate import Translator 
-from koala.ast.excelutils import Cell
+from koala.ast.excelutils import Cell, flatten, resolve_range
 
 from koala.openpyxl.text import Text
 from koala.openpyxl.utils import IndexedList
@@ -61,7 +61,7 @@ def read_cells(archive, ignore_sheets = []):
             cell_data_type = c.get('t', 'n') # if no type assigned, assign 'number'
             cell_address = c.attrib['r']
 
-            cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None}
+            cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None, 'i': None}
             if debug: print 'Cell', cell['a']
             for child in c:
                 child_data_type = child.get('t', 'n') # if no type assigned, assign 'number'
@@ -70,13 +70,20 @@ def read_cells(archive, ignore_sheets = []):
                     if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
                         if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
                         if "si" in child.attrib:
-                            function_map[child.attrib['si']] = Translator(unicode('=' + child.text), cell_address) # translator of openpyxl needs a unicode argument that starts with '='
+                            function_map[child.attrib['si']] = (child.attrib['ref'], Translator(unicode('=' + child.text), cell_address)) # translator of openpyxl needs a unicode argument that starts with '='
                         else:
                             print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
                     if child_data_type == 'shared':
                         if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si']) 
-                        translated = function_map[child.attrib['si']].translate_formula(cell_address)
+                        
+                        ref = function_map[child.attrib['si']][0]
+                        formula = function_map[child.attrib['si']][1]
+
+                        translated = formula.translate_formula(cell_address)
                         cell['f'] = translated[1:] # we need to get rid of the '='
+
+                        # this is needed to resolve shared formulas when multiplying ranges for instance
+                        cell['i'] = list(flatten(resolve_range(ref)[0])).index(cell_address)
 
                     else:
                         cell['f'] = child.text
@@ -98,9 +105,9 @@ def read_cells(archive, ignore_sheets = []):
             if cell['f'] is not None or cell['v'] is not None:
                 if "!" in cell_address:
                     print "! found "
-                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], index= cell['i'])
                 else:
-                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], index= cell['i'])
 
     return cells
 
