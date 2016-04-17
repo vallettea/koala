@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta content="" name="koala" />
+		<title>Excel compiler</title>
+		<link rel="stylesheet" media="screen" href="./css/main.css" />
+	</head>
+	<body>
+		<article class="overflow">
+			<div class="adapt-width">
+				<div id="sheet">
+					<div id="ExcelCompiler">
+						<h2>ExcelCompiler</h2>
+						<h4><span class="rectangle">1</span> ExcelCompiler(<span class="violet">named_range</span>, <span class="violet">cells</span>)</h4>
+						<div class="indent">
+							<strong>shunting_yard</strong>(<span class="violet">named_range</span>)
+						</div>
+						<h4><span class="rectangle">2</span> gen_graph()</h4>
+						<div class="indent">
+							<p>seeds &larr; [&forall; c &isin; <span class="violet">cells</span>  / c.f | c.v ]</p>
+							<p><span class="red">todo</span> &larr; [&forall; c &isin; <span class="violet">cells</span>  / c.f ]</p>
+							<p><span class="orange">cellmap</span> &larr; dict(x.address,x) &forall; x &isin; seeds</p>
+							<p><span class="orange">G</span> &larr; new Digraph</p>
+							<h4 class="graph">
+								&forall; c &isin; <span class="orange">cellmap.values</span><br/>
+								<img src="./img/G1.png" />
+							</h4>
+							<h4>while <span class="red">todo</span> :</h4>
+							<div class="indent line">
+								<p><span class="red">c1</span> &larr; <span class="red">todo</span>.pop</p>
+								<p><span class="green">pystr, ast</span> &larr; <span class="rectangle">3</span> <strong>cell2code</strong>(<span class="red">c1</span>, curSheet)</p>
+								<div class="indent line">
+									<p>If <span class="red">c1</span>.f :</p>
+									<div class="indent line">
+										<p><span class="rectangle">4</span> e &larr; <strong>shunting_yard</strong>(<span class="red">c1</span>.f, or <span class="red">c1</span>.v, <span class="violet">named_range</span>)</p>
+										<p><span class="red">c1</span>.f &rarr; RPN Notation <i>ie 1 | 2 | + | 4 | × | 3 | + |</i></p>
+										<p><span class="rectangle">5</span> <span class="green">ast, root</span> &larr; <strong>build_ast</strong>(e)</p>
+										<h4 class="graph">&forall; n &isin; e<br/>
+											<img src="./img/G2.png" />
+											&forall; a<sub>i</sub> &isin; args
+										</h4>
+										<p><span class="green">code</span> &larr; <span class="green">root</span><strong>.emit</strong>
+									</div>
+									<p>Else :</p>
+									<div class="indent line">
+										<p><span class="green">ast</span> &larr; &empty; </p>
+										<p><span class="green">code</span> &larr; str(<span class="red">c1</span>.v) | <span class="red">c1</span>.v</p>
+									</div>
+									<p>Endif</p>
+								</div>
+								<p>End <i>cell2code</i></p>
+								<p><span class="red">c1</span>.python_expr &larr; <span class="green">code</span></p>
+								<p><span class="red">deps</span> &larr; uniqueify( [ x.tvalue &forall; x &isin; <span class="green">ast</span>.nodes & x <strong><u>is RangeNode</u></strong> ] )</p>
+								<p>&forall; <span class="red">dep</span> &isin; <span class="red">deps</span> :</p>
+								<div class="indent line">
+									<p>If <strong>is_range</strong>(<span class="red">dep</span>) :</p>
+									<div class="indent line">
+										<p><span class="rectangle">6</span> <span class="blue">rng</span> &larr; <strong>CellRange</strong>(<span class="red">dep</span>, <i>sheet=</i>cursheet)</p>
+										<div class="indent">
+											<p>⊢ <span class="rectangle">7</span> <strong>resolve_range</strong>(<span class="red">dep</span>, <i>sheet=</i>cursheet)</p>
+											<div class="indent">
+												<p>⊢ <span class="pink">#rows, #cols, celladdrs</span> = [ add0, add1, ..., addn ]</p>
+											</div>
+										</div>
+										<p>If <span class="blue">rng</span>.address &isin; <span class="orange">cellmap</span> :</p>
+										<div class="indent line">
+											<h4 class="graph">
+												<img src="./img/G3.png" />
+											</h4>
+											<div class="indent">
+												<p><strong>continue</strong></p>
+											</div>
+										</div>
+										<p>Else :</p>
+										<div class="indent line">
+											<p><span class="red">ref</span> &larr; <span class="red">dep</span></p>
+											<p>cells_ref &larr; <i>list</i>(<strong>rows_from_range</strong>(<span class="red">ref</span>))</p>
+											<p><span class="grey">cells</span> &larr; [<span class="violet">cells</span>[c] / &forall; c &isin; cell_refs && c &isin; <span class="violet">cells</span>]</p>
+											<p><span class="blue">rng</span>.value &larr; [ c.v &forall; c in <span class="grey">cells</span> ]</p>
+											<p><span class="orange">cellmap</span>[<span class="blue">rng</span>.address] &larr; <span class="blue">rng</span></p>
+											<h4 class="graph">
+												<img src="./img/G3.png" />
+											</h4>
+											<p><span class="lightblue">target</span> &larr; <span class="blue">rng</span></p>
+										</div>
+										<p>Endif <i>rng.address</i></p>
+									</div>
+									<p>Else :</p>
+									<div class="indent line">
+										<p><span class="red">ref</span> &larr; <span class="red">dep</span></p>
+										try:
+										<div class="indent">
+											<p><span class="grey">cells</span> &larr; [ <span class="violet">cells</span>[<span class="red">ref</span>] ]</p>
+											<p><span class="lightblue">target</span> &larr; <span class="orange">cellmap</span>[<span class="red">c1</span>.address]</p>
+										</div>
+										catch:
+										<div class="indent">
+											<p><span class="grey">cells</span> &larr; [ ]</p>
+											<p><span class="lightblue">target</span> &larr; [ ]</p>
+										</div>
+									</div>
+									<p>Endif <i>is_range</i></p>
+									<p>&forall; c2 &isin; <strong>flatten</strong>(<span class="grey">cells</span>):</p>
+									<div class="indent line">
+										<p>If c2.address &notin; <span class="orange">cellmap</span> :</p>
+										<div class="indent line">
+											<p>If c2.f :</p>
+											<div class="indent line">
+												<p><span class="red">todo</span>.append(c2)</p>
+											</div>
+											<p>Else :</p>
+											<div class="indent line">
+												<p><span class="green">pystr, ast</span> &larr; <span class="rectangle">3</span> <strong>cell2code</strong>(c2, curSheet)</p>
+												<p>c2.python_expression &larr; <span class="green">pystr</span></p>
+												<p>c2.compile()</span></p>
+											</div>
+											<p>Endif <i>c2.f</i></p>
+											<p><span class="orange">cellmap</span>[c2.address] &larr; c2</p>
+										</div>
+										<p>Endif <i>c2.address</i></p>
+										<p>If <span class="lightblue">target</span> != [ ] :</p>
+										<div class="indent line">
+											<h4 class="graph">
+												<img src="./img/G4.png" />
+											</h4>
+										</div>
+										<p>Endif <i>target</i></p>
+									</div>
+									<p>End <i>&forall; c2</i></p> 
+								</div>
+								<p>End <i>&forall; dep</i></p> 
+							</div>
+							<p>End <i>while todo</i></p> 
+							<p><strong>return Spreadsheet</strong>(<span class="orange">G</span>,<span class="orange">cellmap</span>)</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</article>
+	</body>
+</html>
