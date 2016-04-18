@@ -511,7 +511,8 @@ def isNa(value):
     except:
         return True
 
-def sumproduct(*arrays): # NEED TEST
+def sumproduct(*arrays): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
+    # NEED TEST
     array_list = list(arrays)
     
     reduce(check_length, array_list) # check that all arrays have the same size
@@ -519,6 +520,11 @@ def sumproduct(*arrays): # NEED TEST
 
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: x * y, array_list))
 
+def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
+    try:
+        return(eval(value))
+    except:
+        return value_if_error
 
 if __name__ == '__main__':
     pass
