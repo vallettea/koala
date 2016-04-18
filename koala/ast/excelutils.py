@@ -4,7 +4,7 @@ import collections
 import functools
 import re
 import string
-from numpy import array, ndarray, asarray, multiply
+from numpy import array, ndarray, asarray, multiply, divide
 
 
 class List(ndarray):
@@ -12,8 +12,11 @@ class List(ndarray):
     def __new__(cls, input):
         return asarray(input).view(cls) # http://stackoverflow.com/questions/5149269/subclassing-numpy-ndarray-problem
 
-    def __mul__(self, other):
+    def __mul__(self, other): # element-wise multiplication
         return multiply(self, other)
+
+    def __div__(self, other): # element-wise division
+        return divide(self, other)
 
 
 
