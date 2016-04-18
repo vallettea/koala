@@ -19,17 +19,9 @@ def calculate_graph(file):
     file_name = os.path.abspath(file)
     
     startTime = datetime.now()
-    archive = read_archive(file_name)        
 
-    named_range = read_named_ranges(archive)
-    print "%s named ranged parsed in %s" % (str(len(named_range)), str(datetime.now() - startTime))
-
-    startTime = datetime.now()
-    cells = read_cells(archive, ignore_sheets = ['IHS'])
-
-    print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
-
-    c = ExcelCompiler(named_range, cells)
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
     sp = c.gen_graph()
 
     print "Serializing to disk...", file

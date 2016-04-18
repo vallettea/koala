@@ -6,6 +6,7 @@
 # path = os.path.join(dir, '../')
 # sys.path.insert(0, path)
 
+import os.path
 import textwrap
 import excellib
 from excellib import *
@@ -23,6 +24,8 @@ from itertools import chain
 
 from numpy import array
 
+from koala.unzip import read_archive
+from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
@@ -63,14 +66,22 @@ class Spreadsheet(object):
     
     def set_value(self,cell,val,is_addr=True):
         if is_addr:
-            cell = self.cellmap[cell]
+            address = cell.replace('$','')
+            # for s in self.cellmap:
+            #     print 'c', self.cellmap[s].address(), self.cellmap[s].value
+            cell = self.cellmap[address]
+
+        if cell.is_named_range :
+            # Take care of the case where named_range is not directly a cell address (type offset ...)
+            # It will raise an exception, but we want this to prevent wrong usage
+            return self.set_value(self.cellmap[cell.formula], val,False)
 
         if cell.value != val:
             # reset the node + its dependencies
             self.reset(cell)
             # set the value
             cell.value = val
-        
+
     def reset(self, cell):
         if cell.value is None: return
         #print "resetting", cell.address()
@@ -118,8 +129,8 @@ class Spreadsheet(object):
                 # print '->', cell
                 cell = self.cellmap[cell]
             except:
-                # print 'Empty cell at '+ cell
-                return 0
+                print 'Empty cell at '+ cell
+                return []
 
             
         # no formula, fixed value
@@ -136,22 +147,16 @@ class Spreadsheet(object):
             if rng2 is None:
                 return self.evaluate_range(rng)
             else:
-                print 'eval_range', rng
                 if '!' in rng:
                     sheet = rng.split('!')[0]
                 else:
                     sheet = None
                 if '!' in rng2:
                     rng2 = rng2.split('!')[1]
-                # for s in self.cellmap:
-                #     print self.cellmap[s]
                 # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
                 
         try:
-            #for s in self.cellmap:
-            #    print self.cellmap[s]
-
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
             #print "Cell %s evalled to %s" % (cell.address(),vv)
@@ -160,13 +165,8 @@ class Spreadsheet(object):
             cell.value = vv
         except Exception as e:
             if e.message.startswith("Problem evalling"):
-                print 'PROBLEM'
-                print '\n', eval_range("InputData!L59","InputData!DG59")
-                print '\n', eval_range("Calculations!L11","Calculations!DG11")
-                print '\n', eval_range("Calculations!L72","Calculations!DG72")
                 raise e
             else:
-                # print 'PROBLEM\n', eval_cell("InputData!G14"), '\n', eval_cell("InputData!G28")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
         
         return cell.value
@@ -259,7 +259,7 @@ class OperandNode(ASTNode):
             return str(self.tvalue)
 
 class RangeNode(OperandNode):
-    """Represents a spreadsheet cell or range, e.g., A5 or B3:C20"""
+    """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
     def __init__(self,*args):
         super(RangeNode,self).__init__(*args)
     
@@ -267,21 +267,27 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
-        # resolve the range into cells
-        rng = self.tvalue.replace('$','')
-        sheet = context + "!" if context else ""
 
-        is_a_range = is_range(rng)
+        is_a_range = False
 
-        if is_a_range:
-            sh,start,end = split_range(rng)
+        if self.tsubtype == "named_range":
+            str = self.tvalue 
         else:
-            sh,col,row = split_address(rng)
+            # resolve the range into cells
+            rng = self.tvalue.replace('$','')
+            sheet = context + "!" if context else ""
 
-        if sh:
-            str = '"' + rng + '"'
-        else:
-            str = '"' + sheet + rng + '"'
+            is_a_range = is_range(rng)
+
+            if is_a_range:
+                sh,start,end = split_range(rng)
+            else:
+                sh,col,row = split_address(rng)
+
+            if sh:
+                str = '"' + rng + '"'
+            else:
+                str = '"' + sheet + rng + '"'
 
 
         to_eval = True
@@ -362,7 +368,7 @@ class FunctionNode(ASTNode):
 def create_node(t):
     """Simple factory function"""
     if t.ttype == "operand":
-        if t.tsubtype == "range":
+        if t.tsubtype == "range" or t.tsubtype == "named_range":
             return RangeNode(t)
         else:
             return OperandNode(t)
@@ -380,7 +386,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_range):
+def shunting_yard(expression, named_ranges):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -412,10 +418,11 @@ def shunting_yard(expression, named_range):
         elif t.ttype == "subexpression" and t.tsubtype == "stop":
             t.tvalue = ')'
             tokens.append(t)
+        elif t.ttype == "operand" and t.tsubtype == "range" and t.tvalue in named_ranges:
+            t.tsubtype = "named_range"
+            tokens.append(t)
         else:
             tokens.append(t)
-
-    # print "tokens: ", "|".join([x.tvalue for x in tokens])
 
     # print "==> ", "".join([t.tvalue for t in tokens]) 
 
@@ -527,16 +534,7 @@ def shunting_yard(expression, named_range):
     #print "Output is: ", "|".join([x.tvalue for x in output])
     
     # convert to list
-    result = [x for x in output]
-
-    # replacing named_range
-    final_result = []
-    for x in result:
-        if x.tvalue in named_range:
-            final_result = final_result + named_range[x.tvalue]
-        else:
-            final_result.append(x)
-    return final_result
+    return [x for x in output]
    
 def build_ast(expression):
     """build an AST from an Excel formula expression in reverse polish notation"""
@@ -555,7 +553,7 @@ def build_ast(expression):
                 arg1 = stack.pop()
                 # Hack to write the name of sheet in 2argument address
                 if(n.tvalue == ':'):
-                    if '!' in arg1.tvalue and '!' not in arg2.tvalue:
+                    if '!' in arg1.tvalue and arg2.ttype == 'operand' and '!' not in arg2.tvalue:
                         arg2.tvalue = arg1.tvalue.split('!')[0] + '!' + arg2.tvalue
                     
                 G.add_node(arg1,{'pos':1})
@@ -589,15 +587,23 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, named_range, cells):
-        self.named_range = {name : shunting_yard(named_range[name], named_range) for name in named_range}
-        self.cells = cells
-        
+    def __init__(self, file, ignore_sheets = []):
+
+        file_name = os.path.abspath(file)
+        # Decompose subfiles structure in zip file
+        archive = read_archive(file_name)
+        # Parse cells
+        self.cells = read_cells(archive, ignore_sheets)
+        # Parse named_range
+        self.named_ranges = read_named_ranges(archive)
+        # Transform named_ranges in artificial ranges
+        for n in self.named_ranges:
+            self.cells[n] = Cell(n, None, None, self.named_ranges[n], True )
         
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
-            e = shunting_yard(cell.formula or str(cell.value), self.named_range)
+            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges)
             ast,root = build_ast(e)
             code = root.emit(ast, context=sheet)
         else:
@@ -610,7 +616,10 @@ class ExcelCompiler(object):
         G.node[n]['sheet'] = n.sheet
         
         if isinstance(n,Cell):
-            G.node[n]['label'] = n.col + str(n.row)
+            if n.is_named_range:
+                G.node[n]['label'] = n.address()
+            else:
+                G.node[n]['label'] = n.col + str(n.row)
         else:
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
@@ -618,7 +627,7 @@ class ExcelCompiler(object):
     def gen_graph(self):
         
         seeds = list(flatten(self.cells.values()))
-        
+
         print "Seeds %s cells" % len(seeds)
         # only keep seeds with formulas or numbers
         seeds = [s for s in seeds if s.formula or isinstance(s.value,(int, float, str))]

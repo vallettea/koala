@@ -57,40 +57,51 @@ class CellRange(object):
     
 class Cell(object):
     ctr = 0
-    
+    __named_range = None
+
     @classmethod
     def next_id(cls):
         cls.ctr += 1
         return cls.ctr
     
-    def __init__(self, address, sheet, value=None, formula=None):
+    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False ):
         super(Cell,self).__init__()
         
-        # remove $'s
-        address = address.replace('$','')
-        
-        sh,c,r = split_address(address)
-        
-        # both are empty
-        if not sheet and not sh:
-            raise Exception("Sheet name may not be empty for cell address %s" % address)
-        # both exist but disagree
-        elif sh and sheet and sh != sheet:
-            raise Exception("Sheet name mismatch for cell address %s: %s vs %s" % (address,sheet, sh))
-        elif not sh and sheet:
-            sh = sheet 
-        else:
-            pass
-                
-        # we assume a cell's location can never change
-        self.__sheet = str(sheet)
-        self.__formula = str(formula) if formula else None
-        
-        self.__sheet = sh
-        self.__col = c
-        self.__row = int(r)
-        self.__col_idx = col2num(c)
+        if is_named_range == False:
+
+            # remove $'s
+            address = address.replace('$','')
             
+            sh,c,r = split_address(address)
+            
+            # both are empty
+            if not sheet and not sh:
+                raise Exception("Sheet name may not be empty for cell address %s" % address)
+            # both exist but disagree
+            elif sh and sheet and sh != sheet:
+                raise Exception("Sheet name mismatch for cell address %s: %s vs %s" % (address,sheet, sh))
+            elif not sh and sheet:
+                sh = sheet 
+            else:
+                pass
+                    
+            # we assume a cell's location can never change
+            self.__sheet = str(sheet)
+            
+            self.__sheet = sh
+            self.__col = c
+            self.__row = int(r)
+            self.__col_idx = col2num(c)
+
+        else:
+            self.__named_range = address
+            self.__sheet = None
+            self.__sheet = None
+            self.__col = None
+            self.__row = None
+            self.__col_idx = None
+            
+        self.__formula = str(formula) if formula else None
         self.value = str(value) if isinstance(value,unicode) else value
         self.python_expression = None
         self._compiled_expression = None
@@ -98,6 +109,10 @@ class Cell(object):
         # every cell has a unique id
         self.__id = Cell.next_id()
 
+    @property
+    def is_named_range(self):
+        return self.__named_range is not None
+    
     @property
     def sheet(self):
         return self.__sheet
@@ -137,7 +152,9 @@ class Cell(object):
         return self.address().replace('!','_').replace(' ','_')
         
     def address(self, absolute=True):
-        if absolute:
+        if self.__named_range is not None:
+            return self.__named_range
+        elif absolute:
             return "%s!%s%s" % (self.__sheet,self.__col,self.__row)
         else:
             return "%s%s" % (self.__col,self.__row)
