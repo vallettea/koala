@@ -14,8 +14,10 @@ from koala.ast.tokenizer import ExcelParser
 from koala.ast.graph import ExcelCompiler
 
 
+
 if __name__ == '__main__':
 
+    # files = glob.glob("./example/example3.xlsx")
     files = glob.glob("./data/*.xlsx")
 
     for file in files:
@@ -37,10 +39,13 @@ if __name__ == '__main__':
 
         sys.setrecursionlimit(10000)
 
-        print sp.evaluate('Cashflow!G187')
+        # print 'First evaluation', sp.evaluate('Sheet1!L1')
+        # sp.set_value('Sheet1!K1', 100)
+        # print 'Second evaluation', sp.evaluate('Sheet1!L1')
+
+        print 'First evaluation', sp.evaluate('Cashflow!G187')
         sp.set_value('InputData!G14', 2025)
-
-        print sp.evaluate('Cashflow!G187')
-
-
+        startTime = datetime.now()
+        print 'Second evaluation', sp.evaluate('Cashflow!G187')
+        print "Evaluation done in %s" % (str(datetime.now() - startTime))
 

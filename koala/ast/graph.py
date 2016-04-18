@@ -100,10 +100,9 @@ class Spreadsheet(object):
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
         if nrows == 1 or ncols == 1:
-            data = List([ self.evaluate(c) for c in cells ]) 
+            data = List([ self.evaluate(c) for c in cells ])
         else:
             data = List([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
-        #print 'data', data
         
         rng.value = data
         
@@ -159,7 +158,7 @@ class Spreadsheet(object):
 
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
-            #print "Cell %s evalled to %s" % (cell.address(),vv)
+
             if vv is None:
                 print "WARNING %s is None" % (cell.address())
             # elif isinstance(vv, (List, list)):
@@ -173,6 +172,11 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
+            if type(cell.value) == List:
+                if cell.index:
+                    cell.value = cell.value[cell.index]
+                else:
+                    cell.value = cell.value[0]
             return cell.value
         except:
             for f in missing_functions:

@@ -10,7 +10,7 @@ from datetime import datetime
 from math import log
 from decimal import Decimal, ROUND_HALF_UP
 import re
-from pycel.excelutil import (
+from excelutils import (
     flatten, 
     split_address, 
     col2num, 
@@ -20,7 +20,8 @@ from pycel.excelutil import (
     normalize_year,
     is_leap_year,
     get_max_days_in_month,
-    find_corresponding_index
+    find_corresponding_index,
+    check_length
 )
 
 ######################################################################################
@@ -149,7 +150,7 @@ def index(*args):
         
     if isinstance(array[0],(list,tuple,np.ndarray)):
         # rectangular array
-        array[row-1][col-1]
+        return array[row-1][col-1]
     elif row == 1 or col == 1:
         return array[row-1] if col == 1 else array[col-1]
     else:
@@ -510,6 +511,13 @@ def isNa(value):
     except:
         return True
 
+def sumproduct(*arrays): # NEED TEST
+    array_list = list(arrays)
+    
+    reduce(check_length, array_list) # check that all arrays have the same size
+
+
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: x * y, array_list))
 
 
 if __name__ == '__main__':
