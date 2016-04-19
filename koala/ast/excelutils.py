@@ -4,57 +4,6 @@ import collections
 import functools
 import re
 import string
-from numpy import array, ndarray, asarray, multiply, divide
-
-
-class List(ndarray):
-
-    def __new__(cls, input):
-        return asarray(input).view(cls) # http://stackoverflow.com/questions/5149269/subclassing-numpy-ndarray-problem
-
-    def __mul__(self, other): # element-wise multiplication
-        return multiply(self, other)
-
-    def __div__(self, other): # element-wise division
-        return divide(self, other)
-
-
-
-    # def __mul__(self, other):
-    #     result = List([])
-    #     for i, x in enumerate(self):
-    #         if isinstance(other, (List, list)):
-    #             result.append(x * other[i])
-    #         elif isinstance(other, (int, float, long)):
-    #             result.append(x * other)
-    #         else:
-    #             raise TypeError('%s should be a list or a number' % str(other))
-
-    #     return result
-
-    # def __sub__(self, other):
-    #     result = List([])
-    #     for i, x in enumerate(self):
-    #         if isinstance(other, (List, list)):
-    #             result.append(x - other[i])
-    #         elif isinstance(other, (int, float, long)):
-    #             result.append(x - other)
-    #         else:
-    #             raise TypeError('%s should be a list or a number' % str(other))
-
-    #     return result
-
-    # def __add__(self, other):
-    #     result = List([])
-    #     for i, x in enumerate(self):
-    #         if isinstance(other, (List, list)):
-    #             result.append(x + other[i])
-    #         elif isinstance(other, (int, float, long)):
-    #             result.append(x + other)
-    #         else:
-    #             raise TypeError('%s should be a list or a number' % str(other))
-
-    #     return result
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
