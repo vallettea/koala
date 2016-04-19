@@ -20,7 +20,7 @@ import cPickle
 import logging
 import networkx as nx
 from itertools import chain
-from excelutils import List
+from Range import Range
 
 from ..excel.utils import rows_from_range
 
@@ -100,15 +100,18 @@ class Spreadsheet(object):
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
         if nrows == 1 or ncols == 1:
-            data = List([ self.evaluate(c) for c in cells ])
+            data = Range(cells, [ self.evaluate(c) for c in cells ])
         else:
-            data = List([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
+            # Warning, n-dimensional ranges will not work with Range operations
+            raise Exception('Multi dimensional Range => needs to be addressed')
+            data = Range([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
         
         rng.value = data
         
         return data
 
     def evaluate(self,cell,is_addr=True):
+
         if is_addr:
             try:
                 # print '->', cell
@@ -129,11 +132,11 @@ class Spreadsheet(object):
             evaluation = self.evaluate(address)
 
             # if evaluation is a list, that's because the cell is part of a shared formula, so we need to extract the corresponding value from the list
-            if type(evaluation) == List:
-                if cell.index:
-                    evaluation = evaluation[cell.index]
-                else:
-                    evaluation = evaluation[0]
+            # if type(evaluation) == List:
+            #     if cell.index:
+            #         evaluation = evaluation[cell.index]
+            #     else:
+            #         evaluation = evaluation[0]
 
             return evaluation
         
@@ -152,6 +155,7 @@ class Spreadsheet(object):
                 #     print self.cellmap[s]
                 # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
+        
         try:
             #for s in self.cellmap:
             #    print self.cellmap[s]
@@ -169,14 +173,18 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
+                # print 'PB L208', eval_range("Calculations!L196","Calculations!DG196")
+                # print 'PB L208' eval_cell("Calculations!I132")
+                print 'PB'
+                # print else eval_range("Calculations!L132","Calculations!DG132")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
-            if type(cell.value) == List:
-                if cell.index:
-                    cell.value = cell.value[cell.index]
-                else:
-                    cell.value = cell.value[0]
+            # if type(cell.value) == List:
+            #     if cell.index:
+            #         cell.value = cell.value[cell.index]
+            #     else:
+            #         cell.value = cell.value[0]
             return cell.value
         except:
             for f in missing_functions:
@@ -209,8 +217,9 @@ class ASTNode(object):
         self.token.tvalue
     
 class OperatorNode(ASTNode):
-    def __init__(self,*args):
-        super(OperatorNode,self).__init__(*args)
+    def __init__(self, args, ref):
+        super(OperatorNode,self).__init__(args)
+        self.ref = ref
         
         # convert the operator to python equivalents
         self.opmap = {
@@ -235,6 +244,126 @@ class OperatorNode(ASTNode):
          
         if self.ttype == "operator-prefix":
             return "-" + args[0].emit(ast,context=context)
+
+        if op == "+":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.add(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.add(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "-":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.substract(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.substract(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "*":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.multiply(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.multiply(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "/":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.divide(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.divide(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "=":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "<>":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_not_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_not_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == ">":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_strictly_superior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_strictly_superior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "<":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_strictly_inferior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_strictly_inferior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == ">=":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_superior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_superior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        if op == "<=":
+            arg1 = args[0]
+            arg2 = args[1]
+
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+            if is_arg1_range:
+                return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            elif is_arg2_range:
+                return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
         parent = self.parent(ast)
 
@@ -371,7 +500,7 @@ class FunctionNode(ASTNode):
 
         return str
 
-def create_node(t):
+def create_node(t, ref):
     """Simple factory function"""
     if t.ttype == "operand":
         if t.tsubtype == "range":
@@ -381,7 +510,7 @@ def create_node(t):
     elif t.ttype == "function":
         return FunctionNode(t)
     elif t.ttype.startswith("operator"):
-        return OperatorNode(t)
+        return OperatorNode(t, ref)
     else:
         return ASTNode(t)
 
@@ -392,7 +521,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_range):
+def shunting_yard(expression, named_range, ref = None):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -459,7 +588,7 @@ def shunting_yard(expression, named_range):
     
     for t in tokens:
         if t.ttype == "operand":
-            output.append(create_node(t))
+            output.append(create_node(t, ref))
             if were_values:
                 were_values.pop()
                 were_values.append(True)
@@ -475,7 +604,7 @@ def shunting_yard(expression, named_range):
         elif t.ttype == "argument":
 
             while stack and (stack[-1].tsubtype != "start"):
-                output.append(create_node(stack.pop()))   
+                output.append(create_node(stack.pop(), ref))   
             
             if were_values.pop(): arg_count[-1] += 1
             were_values.append(False)
@@ -501,7 +630,7 @@ def shunting_yard(expression, named_range):
                         or
                       (o1.associativity == "right" and o1.precedence < o2.precedence) ):
                     
-                    output.append(create_node(stack.pop()))
+                    output.append(create_node(stack.pop(), ref))
                 else:
                     break
                 
@@ -513,7 +642,7 @@ def shunting_yard(expression, named_range):
         elif t.tsubtype == "stop":
 
             while stack and stack[-1].tsubtype != "start":
-                output.append(create_node(stack.pop()))
+                output.append(create_node(stack.pop(), ref))
             
             if not stack:
                 raise Exception("Mismatched or misplaced parentheses")
@@ -521,7 +650,7 @@ def shunting_yard(expression, named_range):
             stack.pop()
 
             if stack and stack[-1].ttype == "function":
-                f = create_node(stack.pop())
+                f = create_node(stack.pop(), ref)
                 a = arg_count.pop()
                 w = were_values.pop()
                 if w: a += 1
@@ -533,7 +662,7 @@ def shunting_yard(expression, named_range):
         if stack[-1].tsubtype == "start" or stack[-1].tsubtype == "stop":
             raise Exception("Mismatched or misplaced parentheses")
         
-        output.append(create_node(stack.pop()))
+        output.append(create_node(stack.pop(), ref))
 
     #print "Stack is: ", "|".join(stack)
     #print "Output is: ", "|".join([x.tvalue for x in output])
@@ -552,7 +681,6 @@ def shunting_yard(expression, named_range):
    
 def build_ast(expression):
     """build an AST from an Excel formula expression in reverse polish notation"""
-    
     #use a directed graph to store the tree
     G = DiGraph()
     
@@ -609,7 +737,7 @@ class ExcelCompiler(object):
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
-            e = shunting_yard(cell.formula or str(cell.value), self.named_range)
+            e = shunting_yard(cell.formula or str(cell.value), self.named_range, cell.address())
             ast,root = build_ast(e)
             code = root.emit(ast, context=sheet)
         else:
