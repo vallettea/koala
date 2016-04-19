@@ -8,8 +8,7 @@ def check_array(array, index):
 
 class Range(list):
 
-    # def __new__(cls, input):
-    #     return asarray(input).view(cls) # http://stackoverflow.com/questions/5149269/subclassing-numpy-ndarray-problem
+    # CAUTION, for now, only 1 dimension ranges are supported
 
     def add(self, other, index):
         if type(other) == Range:
@@ -36,7 +35,7 @@ class Range(list):
             return check_array(self, index) / other
 
     # not sure if this is needed:
-    
+
     # def OR(self, other, index):
     #     if type(other) == Range:
     #         return check_array(self, index) or check_array(other, index)
