@@ -45,6 +45,8 @@ class Range(OrderedDict):
             row = re.search(CELL_REF_RE, cell).group(2)
             result.append(((row, col), values[index]))
 
+        self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
+
         OrderedDict.__init__(self, result)
 
     # CAUTION, for now, only 1 dimension ranges are supported
@@ -59,10 +61,13 @@ class Range(OrderedDict):
 
         return first - second
 
-    def multiply(self, other, ref):
+    def multiply_one(self, other, ref):
         first, second = get_values(ref, self, other)
 
         return first * second
+
+    def multiply_all(self, other, ref = None):
+        return Range(self.cells, map(lambda (key, value): value * other.values()[key], enumerate(self.values())))
 
     def divide(self, other, ref):
         first, second = get_values(ref, self, other)
@@ -84,10 +89,19 @@ class Range(OrderedDict):
 
         return first > second
 
+    def is_strictly_superior_all(self, other, ref):
+        return Range(self.keys(), map(lambda (key, value): value > other.values()[key], enumerate(self.values())))
+
     def is_strictly_inferior(self, other, ref):
         first, second = get_values(ref, self, other)
 
         return first < second
+
+    def is_strictly_inferior_all(self, other, ref):
+        if type(other) == Range:
+            return Range(self.cells, map(lambda (key, value): value < other.values()[key], enumerate(self.values())))
+        else:
+            return Range(self.cells, map(lambda (key, value): value < other, enumerate(self.values())))
 
     def is_superior_or_equal(self, other, ref):
         first, second = get_values(ref, self, other)

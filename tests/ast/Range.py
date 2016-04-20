@@ -51,7 +51,13 @@ class Test_Excel(unittest.TestCase):
         range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.multiply(range1, range2, 'C2'), 30) # 10 * 3 = 30
+        self.assertEqual(Range.multiply_one(range1, range2, 'C2'), 30) # 10 * 3 = 30
+
+    def test_multiply_all(self):
+        range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
+        range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
+
+        self.assertEqual(Range.multiply_all(range1, range2, 'C2'), [3, 30, 3]) # 10 * 3 = 30
 
     # DIVIDE
     def test_divide(self):
