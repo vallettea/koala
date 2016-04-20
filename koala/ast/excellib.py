@@ -24,6 +24,8 @@ from excelutils import (
     check_length
 )
 
+from Range import Range
+
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
 # only add an entry to this map if the python name is different to the excel name
@@ -511,14 +513,13 @@ def isNa(value):
     except:
         return True
 
-def sumproduct(*arrays): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
+def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     # NEED TEST
-    array_list = list(arrays)
+    range_list = list(ranges)
     
-    reduce(check_length, array_list) # check that all arrays have the same size
+    reduce(check_length, range_list) # check that all ranges have the same size
 
-
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: x * y, array_list))
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.multiply_all(x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
     try:

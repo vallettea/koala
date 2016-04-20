@@ -591,12 +591,12 @@ def find_corresponding_index(range, criteria):
 
     return valid
 
-def check_length(array1, array2):
+def check_length(range1, range2):
     
-    if len(array1) != len(array2):
-        raise ValueError('Arrays don\'t have the same size')
+    if len(range1.values()) != len(range2.values()):
+        raise ValueError('Ranges don\'t have the same size')
     else:
-        return array2
+        return range2
 
 if __name__ == '__main__':
     pass
