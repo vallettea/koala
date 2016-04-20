@@ -173,9 +173,10 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print 'PB L208', eval_range("Calculations!L196","Calculations!DG196")
-                # print 'PB L208' eval_cell("Calculations!I132")
-                print 'PB'
+                # Range.multiply(eval_range("InputData!L78","InputData!DG78"),Range.multiply(eval_range("InputData!L59","InputData!DG59"),eval_range("Calculations!L11","Calculations!DG11"),'Calculations!L72'),'Calculations!L72')
+                # print 'PB L72', eval_range("InputData!L78","InputData!DG78")
+                # print 'PB L72', eval_range("InputData!L59","InputData!DG59")
+                # print 'PB L72', eval_range("Calculations!L11","Calculations!DG11")
                 # print else eval_range("Calculations!L132","Calculations!DG132")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
@@ -212,6 +213,21 @@ class ASTNode(object):
         args = ast.successors(self)
         return args[0] if args else None
 
+    def find_special_function(self, ast):
+        found = False
+        current = self
+
+        while current is not None:
+            # print 'VERIF', current.tvalue.lower()
+
+            if current.tvalue.lower() == 'sumproduct':
+                found = True
+                break
+            else:
+                current = current.parent(ast)
+
+        return found
+
     def emit(self,ast,context=None):
         """Emit code"""
         self.token.tvalue
@@ -229,6 +245,19 @@ class OperatorNode(ASTNode):
                  "":"+" #union
                  }
 
+        self.op_range_translator = {
+            "*": "multiply",
+            "/": "divide",
+            "+": "add",
+            "-": "substract",
+            "==": "is_equal",
+            "<>": "is_different",
+            ">": "is_strictly_superior",
+            "<": "is_strictly_inferior",
+            ">=": "is_superior_or_equal",
+            "<=": "is_inferior_or_equal"
+        }
+
     def emit(self,ast,context=None):
         xop = self.tvalue
         
@@ -245,125 +274,149 @@ class OperatorNode(ASTNode):
         if self.ttype == "operator-prefix":
             return "-" + args[0].emit(ast,context=context)
 
-        if op == "+":
+        if op in ["+", "-", "*", "/", "=", "<>", ">", "<", ">=", "<="]:
+            function = self.op_range_translator.get(op) + '_all' if self.find_special_function(ast) else '_one'
+
             arg1 = args[0]
             arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+            # check if args are Ranges from eval_range or result of Range operations
+            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range' or arg1.emit(ast,context=context)[:6] == 'Range.'
+            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range' or arg2.emit(ast,context=context)[:6] == 'Range.'
 
             if is_arg1_range:
-                return "Range.add(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+                return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
             elif is_arg2_range:
-                return "Range.add(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+                return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-        if op == "-":
-            arg1 = args[0]
-            arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        # if op == "+":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            if is_arg1_range:
-                return "Range.substract(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.substract(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-        if op == "*":
-            arg1 = args[0]
-            arg2 = args[1]
+        #     if is_arg1_range:
+        #         return "Range.add(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.add(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        # if op == "-":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            if is_arg1_range:
-                return "Range.multiply(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.multiply(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-        if op == "/":
-            arg1 = args[0]
-            arg2 = args[1]
+        #     if is_arg1_range:
+        #         return "Range.substract(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.substract(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        # if op == "*":
 
-            if is_arg1_range:
-                return "Range.divide(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.divide(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     function = 'multiply_all' if self.find_special_function(ast) else 'multiply_one'
 
-        if op == "=":
-            arg1 = args[0]
-            arg2 = args[1]
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-            if is_arg1_range:
-                return "Range.is_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     if is_arg1_range:
+        #         return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-        if op == "<>":
-            arg1 = args[0]
-            arg2 = args[1]
+        # if op == "/":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-            if is_arg1_range:
-                return "Range.is_not_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_not_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     if is_arg1_range:
+        #         return "Range.divide(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.divide(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-        if op == ">":
-            arg1 = args[0]
-            arg2 = args[1]
+        # if op == "==":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-            if is_arg1_range:
-                return "Range.is_strictly_superior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_strictly_superior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     if is_arg1_range:
+        #         return "Range.is_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.is_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-        if op == "<":
-            arg1 = args[0]
-            arg2 = args[1]
+        # if op == "<>":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-            if is_arg1_range:
-                return "Range.is_strictly_inferior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_strictly_inferior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     if is_arg1_range:
+        #         return "Range.is_not_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.is_not_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
-        if op == ">=":
-            arg1 = args[0]
-            arg2 = args[1]
+        # if op == ">":
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     function = 'is_strictly_superior_all' if self.find_special_function(ast) else 'is_strictly_superior_one'
 
-            if is_arg1_range:
-                return "Range.is_superior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_superior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     print 'FUNCTION', function, self.find_special_function(ast)
 
-        if op == "<=":
-            arg1 = args[0]
-            arg2 = args[1]
+        #     arg1 = args[0]
+        #     arg2 = args[1]
 
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
 
-            if is_arg1_range:
-                return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     if is_arg1_range:
+        #         return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        # if op == "<":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
+
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+        #     if is_arg1_range:
+        #         return "Range.is_strictly_inferior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.is_strictly_inferior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        # if op == ">=":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
+
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+        #     if is_arg1_range:
+        #         return "Range.is_superior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.is_superior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
+
+        # if op == "<=":
+        #     arg1 = args[0]
+        #     arg2 = args[1]
+
+        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
+        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
+
+        #     if is_arg1_range:
+        #         return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+        #     elif is_arg2_range:
+        #         return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
         parent = self.parent(ast)
 
