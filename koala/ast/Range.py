@@ -63,18 +63,26 @@ class Range(OrderedDict):
 
     def is_associated(self, other):
         if self.length != other.length:
-            return False
+            return None
 
-        nb_associated = 0
+        nb_v = 0
+        nb_c = 0
 
         for index, key in enumerate(self.keys()):
             r1, c1 = key
             r2, c2 = other.keys()[index]
 
-            if r1 == r2 or c1 == c2:
-                nb_associated += 1
+            if r1 == r2:
+                nb_v += 1
+            if c1 == c2:
+                nb_c += 1
 
-        return nb_associated == self.length
+        if nb_v == self.length:
+            return 'v'
+        elif nb_c == self.length:
+            return 'c'
+        else:
+            return None
 
 
     @staticmethod

@@ -34,19 +34,19 @@ class Test_Excel(unittest.TestCase):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])
 
-        self.assertEqual(range1.is_associated(range2), True)
+        self.assertEqual(range1.is_associated(range2), 'v')
 
     def test_is_associated_horizontal(self):
         range1 = Range(['A1', 'B1', 'C1'], [1, 2, 3])
         range2 = Range(['A2', 'B2', 'C2'], [1, 2, 3])
 
-        self.assertEqual(range1.is_associated(range2), True)
+        self.assertEqual(range1.is_associated(range2), 'c')
 
     def test_is_not_associated(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B2', 'B3', 'B4'], [1, 2, 3])
 
-        self.assertEqual(range1.is_associated(range2), False)
+        self.assertEqual(range1.is_associated(range2), None)
 
     # ADD
     def test_add_array_one(self):
