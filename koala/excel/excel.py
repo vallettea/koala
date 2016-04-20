@@ -29,7 +29,7 @@ def read_named_ranges(archive):
     root = fromstring(archive.read(ARC_WORKBOOK))
 
     return {
-        name_node.get('name') : name_node.text
+        name_node.get('name') : name_node.text.replace('$','')
         for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
     }
 

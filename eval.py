@@ -3,44 +3,37 @@ import sys
 from datetime import datetime
 
 
-import os.path
 import warnings
 from io import BytesIO
 
 from koala.xml.functions import fromstring, safe_iterator
-from koala.unzip import read_archive
-from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.tokenizer import ExcelParser
 from koala.ast.graph import ExcelCompiler
+from koala.ast.excelutils import Cell
 
 
 if __name__ == '__main__':
 
-    files = glob.glob("./data/*.xlsx")
+    file = "./example/example.xlsx"
 
-    for file in files:
-        file_name = os.path.abspath(file)
-        
-        startTime = datetime.now()
-        archive = read_archive(file_name)        
+    print file        
+    startTime = datetime.now()
 
-        named_range = read_named_ranges(archive)
-        print "%s named ranged parsed in %s" % (str(len(named_range)), str(datetime.now() - startTime))
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
 
-        startTime = datetime.now()
-        cells = read_cells(archive, ignore_sheets = ['IHS'])
-        
-        print "%s cells parsed in %s" % (str(len(cells)), str(datetime.now() - startTime))
+    sp = c.gen_graph()
 
-        c = ExcelCompiler(named_range, cells)
-        sp = c.gen_graph()
+    sys.setrecursionlimit(10000)
+    print '- Eval INPUT', sp.evaluate('INPUT')
+    print '- Eval A1' , sp.evaluate('Sheet1!A1')
+    print '- Eval RESULT', sp.evaluate('RESULT')
+    print 'set_value INPUT <- 2025'
+    sp.set_value('INPUT', 2025)
 
-        sys.setrecursionlimit(10000)
-
-        print sp.evaluate('Cashflow!G187')
-        sp.set_value('InputData!G14', 2025)
-
-        print sp.evaluate('Cashflow!G187')
+    print '- Eval INPUT', sp.evaluate('INPUT')
+    print '- Eval A1', sp.evaluate('Sheet1!A1')
+    print '- Eval RESULT', sp.evaluate('RESULT')
 
 
 
