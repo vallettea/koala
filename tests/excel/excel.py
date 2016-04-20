@@ -15,7 +15,6 @@ from koala.excel.excel import read_named_ranges, read_cells
 
 class Test_Excel(unittest.TestCase):
     
-
     def setUp(self):
         file_name = os.path.abspath("./example/example2.xlsx")
         archive = read_archive(file_name)        
