@@ -61,7 +61,7 @@ def read_cells(archive, ignore_sheets = []):
             cell_data_type = c.get('t', 'n') # if no type assigned, assign 'number'
             cell_address = c.attrib['r']
 
-            cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None, 'i': None}
+            cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None}
             if debug: print 'Cell', cell['a']
             for child in c:
                 child_data_type = child.get('t', 'n') # if no type assigned, assign 'number'
@@ -71,8 +71,8 @@ def read_cells(archive, ignore_sheets = []):
                         if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
                         if "si" in child.attrib:
                             function_map[child.attrib['si']] = (child.attrib['ref'], Translator(unicode('=' + child.text), cell_address)) # translator of openpyxl needs a unicode argument that starts with '='
-                        else:
-                            print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
+                        # else:
+                        #     print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
                     if child_data_type == 'shared':
                         if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si']) 
                         
@@ -105,9 +105,9 @@ def read_cells(archive, ignore_sheets = []):
             if cell['f'] is not None or cell['v'] is not None:
                 if "!" in cell_address:
                     print "! found "
-                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], index= cell['i'])
+                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
                 else:
-                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], index= cell['i'])
+                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
 
     return cells
 
