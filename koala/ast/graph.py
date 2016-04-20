@@ -16,11 +16,15 @@ from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 from networkx.readwrite.gexf import write_gexf
+from networkx.readwrite import json_graph
+import networkx as nx
+
 from tokenizer import ExcelParser, f_token, shunting_yard
 import cPickle
 import logging
-import networkx as nx
 from itertools import chain
+import json
+import gzip
 
 from numpy import array
 
@@ -46,6 +50,34 @@ class Spreadsheet(object):
         f = open(fname,'wb')
         cPickle.dump(self, f, protocol=2)
         f.close()
+
+    def dump(self, fname):
+        data = json_graph.node_link_data(self.G)
+        nodes = []
+        for node in data["nodes"]:
+            cell = node["id"]
+            nodes += [{
+                "address": cell.address(),
+                "formula": cell.formula,
+                "value": cell.value,
+                "python_expression": cell.python_expression,
+                "is_named_range": cell.is_named_range
+            }]
+        data["nodes"] = nodes
+        with gzip.GzipFile(fname, 'w') as outfile:
+            outfile.write(json.dumps(data))
+
+    @staticmethod
+    def load(fname):
+        with gzip.GzipFile(fname, 'r') as infile:
+            data = json.loads(infile.read())
+        def cell_from_dict(d):
+            return {"id": Cell(d["address"], None, value=d["value"], formula=d["formula"], is_named_range=d["is_named_range"])}
+        nodes = map(cell_from_dict, data["nodes"])
+        data["nodes"] = nodes
+        G = json_graph.node_link_graph(data)
+        return Spreadsheet(G, G.nodes())
+
 
     def export_to_dot(self,fname):
         write_dot(self.G,fname)
