@@ -275,20 +275,12 @@ class OperatorNode(ASTNode):
             return "-" + args[0].emit(ast,context=context)
 
         if op in ["+", "-", "*", "/", "=", "<>", ">", "<", ">=", "<="]:
-            function = self.op_range_translator.get(op) + '_all' if self.find_special_function(ast) else '_one'
+            function = self.op_range_translator.get(op) + ('_all' if self.find_special_function(ast) else '_one')
 
             arg1 = args[0]
             arg2 = args[1]
 
-            # check if args are Ranges from eval_range or result of Range operations
-            is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range' or arg1.emit(ast,context=context)[:6] == 'Range.'
-            is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range' or arg2.emit(ast,context=context)[:6] == 'Range.'
-
-            if is_arg1_range:
-                return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-            elif is_arg2_range:
-                return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
+            return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
 
         # if op == "+":
         #     arg1 = args[0]
