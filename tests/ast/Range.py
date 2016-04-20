@@ -13,6 +13,10 @@ class Test_Excel(unittest.TestCase):
     def setUp(self):
         pass
         
+    def test_define_Range_with_different_input_sizes(self):
+        with self.assertRaises(ValueError):
+            Range(['A1', 'A3'], [1, 2, 3])
+
     def test_get_values(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])
@@ -25,6 +29,18 @@ class Test_Excel(unittest.TestCase):
 
         with self.assertRaises(Exception):
             get_values('C5', range1, range2)
+
+    def test_is_associated(self):
+        range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
+        range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])
+
+        self.assertEqual(range1.is_associated(range2), True)
+
+    def test_is_not_associated(self):
+        range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
+        range2 = Range(['B2', 'B3', 'B4'], [1, 2, 3])
+
+        self.assertEqual(range1.is_associated(range2), False)
 
     # ADD
     def test_add_array_one(self):

@@ -44,6 +44,9 @@ def get_values(ref, first = None, second = None):
 class Range(OrderedDict):
 
     def __init__(self, cells, values):
+        if len(cells) != len(values):
+            raise ValueError("cells and values in a Range must have the same size")
+
         result = []
 
         for index, cell in enumerate(cells):
@@ -52,10 +55,27 @@ class Range(OrderedDict):
             result.append(((row, col), values[index]))
 
         self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
+        self.length = len(cells)
 
         OrderedDict.__init__(self, result)
 
     # CAUTION, for now, only 1 dimension ranges are supported
+
+    def is_associated(self, other):
+        if self.length != other.length:
+            return False
+
+        nb_associated = 0
+
+        for index, key in enumerate(self.keys()):
+            r1, c1 = key
+            r2, c2 = other.keys()[index]
+
+            if r1 == r2 or c1 == c2:
+                nb_associated += 1
+
+        return nb_associated == self.length
+
 
     @staticmethod
     def add_one(self, other, ref):
