@@ -18,8 +18,9 @@ def get_values(ref, first, second = None):
         r, c = key
         if r == row or c == col:
             first_value = value
+            break
 
-    if not first_value:
+    if first_value is None:
         raise Exception('First argument of Range operation is not valid')
 
     if type(second) == Range:
@@ -27,8 +28,9 @@ def get_values(ref, first, second = None):
             r, c = key
             if r == row or c == col:
                 second_value = value
+                break
 
-        if not second_value:
+        if second_value is None:
             raise Exception('Second argument of Range operation is not valid')
     
     return (first_value, second_value)
