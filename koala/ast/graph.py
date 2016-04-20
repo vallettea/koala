@@ -7,9 +7,9 @@
 # sys.path.insert(0, path)
 
 import textwrap
-import excellib
-from excellib import *
-from excelutils import *
+import ..excel.functions
+from ..excel.functions import *
+from ..excel.excelutils import *
 from math import *
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
