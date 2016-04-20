@@ -1,10 +1,5 @@
 
-# import os
-# import sys
 
-# dir = os.path.dirname(__file__)
-# path = os.path.join(dir, '../')
-# sys.path.insert(0, path)
 
 import os.path
 import textwrap
