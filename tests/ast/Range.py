@@ -27,86 +27,86 @@ class Test_Excel(unittest.TestCase):
             get_values('C5', range1, range2)
 
     # ADD
-    def test_add_array(self):
+    def test_add_array_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])
 
-        self.assertEqual(Range.add(range1, range2, 'C1'), 2) # 1 + 1 = 2
+        self.assertEqual(Range.add_one(range1, range2, 'C1'), 2) # 1 + 1 = 2
 
-    def test_add_array_constant(self):
+    def test_add_array_one_constant(self):
         range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         constant = 2
 
-        self.assertEqual(Range.add(range, constant, 'C1'), 3) # 1 + 2 = 3
+        self.assertEqual(Range.add_one(range, constant, 'C1'), 3) # 1 + 2 = 3
 
-    # SUBSTRACT
-    def test_substract(self):
+    def test_add_all(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.substract(range1, range2, 'C2'), 7) # 10 - 3 = 7
+        self.assertEqual(Range.add_all(range1, range2, 'C2').values(), [4, 13, 4])
+
+    # SUBSTRACT
+    def test_substract_one(self):
+        range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
+        range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
+
+        self.assertEqual(Range.substract_one(range1, range2, 'C2'), 7) # 10 - 3 = 7
     
     # MULTIPLY
-    def test_multiply(self):
+    def test_multiply_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
         self.assertEqual(Range.multiply_one(range1, range2, 'C2'), 30) # 10 * 3 = 30
 
-    def test_multiply_all(self):
-        range1 = Range(['A1', 'A2', 'A3'], [1, 10, 3])
-        range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
-
-        self.assertEqual(Range.multiply_all(range1, range2, 'C2'), [3, 30, 3]) # 10 * 3 = 30
-
     # DIVIDE
-    def test_divide(self):
+    def test_divide_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.divide(range1, range2, 'C2'), 10) # 30 / 3 = 10
+        self.assertEqual(Range.divide_one(range1, range2, 'C2'), 10) # 30 / 3 = 10
 
     # IS_EQUAL
-    def test_is_equal(self):
+    def test_is_equal_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.is_equal(range1, range2, 'C2'), False) # 30 == 3 is False
+        self.assertEqual(Range.is_equal_one(range1, range2, 'C2'), False) # 30 == 3 is False
 
     # IS_EQUAL
-    def test_is_not_equal(self):
+    def test_is_not_equal_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.is_not_equal(range1, range2, 'C2'), True) # 30 != 3 is True
+        self.assertEqual(Range.is_not_equal_one(range1, range2, 'C2'), True) # 30 != 3 is True
 
     # IS_STRICTLY_SUPERIOR
-    def test_is_strictly_superior(self):
+    def test_is_strictly_superior_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.is_strictly_superior(range1, range2, 'C2'), True) # 30 > 3 is True
+        self.assertEqual(Range.is_strictly_superior_one(range1, range2, 'C2'), True) # 30 > 3 is True
 
     # IS_STRICTLY_INFERIOR
-    def test_is_strictly_inferior(self):
+    def test_is_strictly_inferior_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 1])
 
-        self.assertEqual(Range.is_strictly_inferior(range1, range2, 'C2'), False) # 30 < 3 is False
+        self.assertEqual(Range.is_strictly_inferior_one(range1, range2, 'C2'), False) # 30 < 3 is False
 
     # IS_SUPERIOR_OR_EQUAL
-    def test_is_superior_or_equal(self):
+    def test_is_superior_or_equal_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 3])
 
-        self.assertEqual(Range.is_superior_or_equal(range1, range2, 'C3'), True) # 3 >= 3 is True
+        self.assertEqual(Range.is_superior_or_equal_one(range1, range2, 'C3'), True) # 3 >= 3 is True
 
     # IS_INFERIOR_OR_EQUAL
-    def test_is_inferior_or_equal(self):
+    def test_is_inferior_or_equal_one(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 30, 3])
         range2 = Range(['B1', 'B2', 'B3'], [3, 3, 3])
 
-        self.assertEqual(Range.is_inferior_or_equal(range1, range2, 'C1'), True) # 1 <= 3 is False
+        self.assertEqual(Range.is_inferior_or_equal_one(range1, range2, 'C1'), True) # 1 <= 3 is False
 
 
 if __name__ == '__main__':
