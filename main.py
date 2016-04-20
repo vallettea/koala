@@ -1,3 +1,5 @@
+import pyximport; pyximport.install()
+
 import glob
 from datetime import datetime
 
@@ -22,7 +24,10 @@ def calculate_graph(file):
 
     c = ExcelCompiler(file, ignore_sheets = ['IHS'])
     print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    
+    startTime = datetime.now()
     sp = c.gen_graph()
+    print "Gen graph in %s" % str(datetime.now() - startTime)
 
     startTime = datetime.now()
     print "Serializing to disk...", file
