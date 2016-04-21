@@ -16,6 +16,7 @@ from koala.ast.Range import Range, get_values
 class Test_Excel(unittest.TestCase):
     
     def setUp(self):
+        # This needs to be in setup so that further tests begin from scratch
         file_name = "./tests/ast/basic_evaluation.xlsx"
         archive = read_archive(file_name)        
 

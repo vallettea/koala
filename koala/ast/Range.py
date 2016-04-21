@@ -75,22 +75,29 @@ class Range(OrderedDict):
             raise ValueError("cells and values in a Range must have the same size")
 
         result = []
+        cleaned_cells = []
 
         for index, cell in enumerate(cells):
             col = re.search(CELL_REF_RE, cell).group(1)
             row = re.search(CELL_REF_RE, cell).group(2)
 
+            cleaned_cells.append(cell.split('!')[1])
             result.append(((row, col), values[index]))
 
+        # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
+        cells = cleaned_cells
         self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
         
         self.nb_cols = int(col2num(cells[self.length - 1][0])) - int(col2num(cells[0][0])) + 1
+
+        # get last cell
+        last = cells[self.length - 1]
+        first = cells[0]
+
         self.nb_rows = int(cells[self.length - 1][1]) - int(cells[0][1]) + 1
 
         OrderedDict.__init__(self, result)
-
-    # CAUTION, for now, only 1 dimension ranges are supported
 
     def is_associated(self, other):
         if self.length != other.length:
