@@ -94,13 +94,12 @@ class Range(OrderedDict):
         self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
         
-        self.nb_cols = int(col2num(cells[self.length - 1][0])) - int(col2num(cells[0][0])) + 1
-
         # get last cell
         last = cells[self.length - 1]
         first = cells[0]
 
-        self.nb_rows = int(cells[self.length - 1][1]) - int(cells[0][1]) + 1
+        self.nb_cols = int(col2num(last[0])) - int(col2num(first[0])) + 1
+        self.nb_rows = int(last[1]) - int(first[1]) + 1
 
         OrderedDict.__init__(self, result)
 
