@@ -70,6 +70,7 @@ def xlog(a):
 
 def xmax(*args):
     # ignore non numeric cells
+
     data = [x for x in flatten(args) if isinstance(x,(int,float))]
     
     # however, if no non numeric cells, return zero (is what excel does)
@@ -92,7 +93,16 @@ def xmin(*args):
 
 def xsum(*args):
     # ignore non numeric cells
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
+
+    values = []
+
+    for arg in args:
+        if type(arg) is Range:
+            values.append(arg.values())
+        elif is_number(arg):
+            values.append(arg)
+    
+    data = [x for x in flatten(values) if isinstance(x,(int,float))]
     
     # however, if no non numeric cells, return zero (is what excel does)
     if len(data) < 1:

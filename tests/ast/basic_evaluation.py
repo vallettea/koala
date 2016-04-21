@@ -18,12 +18,12 @@ class Test_Excel(unittest.TestCase):
     def setUp(self):
         # This needs to be in setup so that further tests begin from scratch
         file_name = "./tests/ast/basic_evaluation.xlsx"
-        archive = read_archive(file_name)        
+        # archive = read_archive(file_name)        
 
-        named_range = read_named_ranges(archive)
-        cells = read_cells(archive)
+        # named_range = read_named_ranges(archive)
+        # cells = read_cells(archive)
 
-        c = ExcelCompiler(named_range, cells)
+        c = ExcelCompiler(file_name)
         self.sp = c.gen_graph()
         
     def test_D1(self):
@@ -46,6 +46,8 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!F1'), 120)
 
+
+    # This FAILs, needs to be adjusted
     def test_G1(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!G1'), 41)

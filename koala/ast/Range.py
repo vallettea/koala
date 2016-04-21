@@ -81,7 +81,12 @@ class Range(OrderedDict):
             col = re.search(CELL_REF_RE, cell).group(1)
             row = re.search(CELL_REF_RE, cell).group(2)
 
-            cleaned_cells.append(cell.split('!')[1])
+            if '!' in cell:
+                cleaned_cell = cell.split('!')[1]
+            else:
+                cleaned_cell = cell
+
+            cleaned_cells.append(cleaned_cell)
             result.append(((row, col), values[index]))
 
         # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
