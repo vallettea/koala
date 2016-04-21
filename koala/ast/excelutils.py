@@ -5,6 +5,8 @@ import functools
 import re
 import string
 
+from Range import Range
+
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
 #TODO: only supports rectangular ranges
@@ -555,7 +557,6 @@ def criteria_parser(criteria):
                 return x > value
         elif operator == '>=':
             def check(x):
-                print '\n TEST', x
                 if not is_number(x):
                     raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
                 return x >= value
@@ -578,14 +579,14 @@ def criteria_parser(criteria):
     return check
 
 
-def find_corresponding_index(range, criteria):
+def find_corresponding_index(list, criteria):
 
     # parse criteria
     check = criteria_parser(criteria)
 
     valid = []
 
-    for index, item in enumerate(range):
+    for index, item in enumerate(list):
         if check(item):
             valid.append(index)
 

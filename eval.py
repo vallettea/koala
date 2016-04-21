@@ -17,8 +17,8 @@ from koala.ast.graph import ExcelCompiler
 
 if __name__ == '__main__':
 
-    files = glob.glob("./example/example.xlsx")
-    # files = glob.glob("./data/*.xlsx")
+    # files = glob.glob("./example/example.xlsx")
+    files = glob.glob("./data/*.xlsx")
 
     for file in files:
         file_name = os.path.abspath(file)
@@ -39,13 +39,13 @@ if __name__ == '__main__':
 
         sys.setrecursionlimit(10000)
 
-        print 'First evaluation', sp.evaluate('Sheet2!E2')
-        sp.set_value('Sheet2!A1', 10)
-        print 'Second evaluation', sp.evaluate('Sheet2!E2')
+        # print 'First evaluation', sp.evaluate('Sheet2!E2')
+        # sp.set_value('Sheet2!A1', 10)
+        # print 'Second evaluation', sp.evaluate('Sheet2!E2')
 
-        # print 'First evaluation', sp.evaluate('Cashflow!G187')
-        # sp.set_value('InputData!G14', 2025)
-        # startTime = datetime.now()
-        # print 'Second evaluation', sp.evaluate('Cashflow!G187')
-        # print "Evaluation done in %s" % (str(datetime.now() - startTime))
+        print 'First evaluation', sp.evaluate('Cashflow!G187')
+        sp.set_value('InputData!G14', 2025)
+        startTime = datetime.now()
+        print 'Second evaluation', sp.evaluate('Cashflow!G187')
+        print "Evaluation done in %s" % (str(datetime.now() - startTime))
 

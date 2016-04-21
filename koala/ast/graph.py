@@ -7,9 +7,9 @@
 # sys.path.insert(0, path)
 
 import textwrap
-import ..excel.functions
-from ..excel.functions import *
-from ..excel.excelutils import *
+import koala.ast.excellib as excelfun
+from koala.ast.excellib import *
+from koala.ast.excelutils import *
 from math import *
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
@@ -22,7 +22,7 @@ import networkx as nx
 from itertools import chain
 from Range import Range
 
-from ..excel.utils import rows_from_range
+from koala.excel.utils import rows_from_range
 
 class Spreadsheet(object):
     def __init__(self,G,cellmap):
@@ -99,12 +99,8 @@ class Spreadsheet(object):
 
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
-        if nrows == 1 or ncols == 1:
-            data = Range(cells, [ self.evaluate(c) for c in cells ])
-        else:
-            # Warning, n-dimensional ranges will not work with Range operations
-            raise Exception('Multi dimensional Range => needs to be addressed')
-            data = Range([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
+        # if nrows == 1 or ncols == 1:
+        data = Range(cells, [ self.evaluate(c) for c in cells ])
         
         rng.value = data
         
@@ -173,24 +169,13 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # Range.multiply(eval_range("InputData!L78","InputData!DG78"),Range.multiply(eval_range("InputData!L59","InputData!DG59"),eval_range("Calculations!L11","Calculations!DG11"),'Calculations!L72'),'Calculations!L72')
-                # print 'PB L72', eval_range("InputData!L78","InputData!DG78")
-                # print 'PB L72', eval_range("InputData!L59","InputData!DG59")
-                # print 'PB L72', eval_range("Calculations!L11","Calculations!DG11")
-                # print else eval_range("Calculations!L132","Calculations!DG132")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
-            # if type(cell.value) == List:
-            #     if cell.index:
-            #         cell.value = cell.value[cell.index]
-            #     else:
-            #         cell.value = cell.value[0]
             return cell.value
         except:
             for f in missing_functions:
                 print 'MISSING', f
-            # return missing_functions
 
 class ASTNode(object):
     """A generic node in the AST"""
@@ -236,7 +221,7 @@ class OperatorNode(ASTNode):
     def __init__(self, args, ref):
         super(OperatorNode,self).__init__(args)
         self.ref = ref
-        
+
         # convert the operator to python equivalents
         self.opmap = {
                  "^":"**",
@@ -281,134 +266,6 @@ class OperatorNode(ASTNode):
             arg2 = args[1]
 
             return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "+":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.add(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.add(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "-":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.substract(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.substract(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "*":
-
-        #     function = 'multiply_all' if self.find_special_function(ast) else 'multiply_one'
-
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "/":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.divide(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.divide(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "==":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.is_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.is_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "<>":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.is_not_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.is_not_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == ">":
-
-        #     function = 'is_strictly_superior_all' if self.find_special_function(ast) else 'is_strictly_superior_one'
-
-        #     print 'FUNCTION', function, self.find_special_function(ast)
-
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range." + function + "(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "<":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.is_strictly_inferior(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.is_strictly_inferior(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == ">=":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.is_superior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.is_superior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
-
-        # if op == "<=":
-        #     arg1 = args[0]
-        #     arg2 = args[1]
-
-        #     is_arg1_range = arg1.emit(ast,context=context)[:10] == 'eval_range'
-        #     is_arg2_range = arg2.emit(ast,context=context)[:10] == 'eval_range'
-
-        #     if is_arg1_range:
-        #         return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
-        #     elif is_arg2_range:
-        #         return "Range.is_inferior_or_equal(%s)" % ','.join([str(arg2.emit(ast,context=context)), str(arg1.emit(ast,context=context)), "'"+self.ref+"'"])
 
         parent = self.parent(ast)
 
@@ -496,7 +353,7 @@ class FunctionNode(ASTNode):
         self.numargs = 0
 
         # map  excel functions onto their python equivalents
-        self.funmap = excellib.FUNCTION_MAP
+        self.funmap = excelfun.FUNCTION_MAP
         
     def emit(self,ast,context=None):
         fun = self.tvalue.lower()
@@ -566,13 +423,14 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_range, ref = None):
+def shunting_yard(expression, named_range, ref = ''):
     """
     Tokenize an excel formula expression into reverse polish notation
     
     Core algorithm taken from wikipedia with varargs extensions from
     http://www.kallisti.net.nz/blog/2008/02/extension-to-the-shunting-yard-algorithm-to-allow-variable-numbers-of-arguments-to-functions/
     """
+
     #remove leading =
     if expression.startswith('='):
         expression = expression[1:]
