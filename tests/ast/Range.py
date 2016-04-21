@@ -17,6 +17,34 @@ class Test_Excel(unittest.TestCase):
         with self.assertRaises(ValueError):
             Range(['A1', 'A3'], [1, 2, 3])
 
+    def test_range_sizes(self):
+        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
+
+        self.assertEqual((range.nb_rows, range.nb_cols), (2, 3))
+
+    def test_get(self):
+        range1 = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
+        range2 = Range(['E2'], [5])
+
+        self.assertEqual(range1.get(2, 2), range2)
+
+    def test_get_row_0(self):
+        range1 = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
+        range2 = Range(['D2', 'E2', 'F2'], [4, 5, 6])
+
+        self.assertEqual(range1.get(2, 0), range2)
+
+    def test_get_col_0(self):
+        range1 = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
+        range2 = Range(['D1', 'D2'], [1, 4])
+
+        self.assertEqual(range1.get(0, 1), range2)
+
+    def test_get_values_scalar(self):
+        range = Range(['A3'], [1])
+
+        self.assertEqual(get_values('C3', range), (1, None))
+
     def test_get_values(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])

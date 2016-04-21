@@ -1,6 +1,33 @@
 
 import re
 from collections import OrderedDict
+# from excelutils import col2num
+import string
+def col2num(col):
+    
+    if not col:
+        raise Exception("Column may not be empty")
+    
+    tot = 0
+    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
+        if c == '$': continue
+        tot += (ord(c)-64) * 26 ** i
+    return tot
+
+def num2col(num):
+    
+    if num < 1:
+        raise Exception("Number must be larger than 0: %s" % num)
+    
+    s = ''
+    q = num
+    while q > 0:
+        (q,r) = divmod(q,26)
+        if r == 0:
+            q = q - 1
+            r = 26
+        s = string.ascii_uppercase[r-1] + s
+    return s
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
@@ -52,10 +79,14 @@ class Range(OrderedDict):
         for index, cell in enumerate(cells):
             col = re.search(CELL_REF_RE, cell).group(1)
             row = re.search(CELL_REF_RE, cell).group(2)
+
             result.append(((row, col), values[index]))
 
         self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
+        
+        self.nb_cols = int(col2num(cells[self.length - 1][0])) - int(col2num(cells[0][0])) + 1
+        self.nb_rows = int(cells[self.length - 1][1]) - int(cells[0][1]) + 1
 
         OrderedDict.__init__(self, result)
 
@@ -83,6 +114,46 @@ class Range(OrderedDict):
             return 'c'
         else:
             return None
+
+    def get(self, row, col = None):
+        nr = self.nb_rows
+        nc = self.nb_cols
+
+        values = self.values()
+        cells = self.cells
+
+        if nr == 1 or nc == 1: # 1-dim range
+            if col is not None:
+                raise ValueError('Trying to access 1-dim range value with 2 coordinates')
+            else:
+                return self.values()[row - 1]
+            
+        else: # could be optimised
+            indices = range(len(values))
+
+            if row == 0: # get column
+                filtered_indices = filter(lambda x: x % nc == col - 1, indices)
+
+                filtered_values = map(lambda i: values[i], filtered_indices)
+                filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+                return Range(filtered_cells, filtered_values)
+
+            elif col == 0: # get row
+
+                filtered_indices = filter(lambda x: (x / nc) == row - 1, indices)
+
+                filtered_values = map(lambda i: values[i], filtered_indices)
+                filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+                return Range(filtered_cells, filtered_values)
+
+            else:
+                base_col_number = col2num(cells[0][0])
+                new_ref = num2col(col + base_col_number - 1) + str(row)
+                new_value = values[(row - 1)* nc + (col - 1)]
+
+                return Range([new_ref], [new_value])
 
 
     @staticmethod
