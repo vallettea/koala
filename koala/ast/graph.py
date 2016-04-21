@@ -130,7 +130,6 @@ class Spreadsheet(object):
                 self.evaluate(c,is_addr=False)
                 
     def evaluate_range(self,rng,is_addr=True):
-        print '->', rng
         if is_addr:
             rng = self.cellmap[rng]
 
@@ -138,9 +137,7 @@ class Spreadsheet(object):
         if rng.value:
             return rng.value
 
-        print 'avant'
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
-        print cells
 
         # if nrows == 1 or ncols == 1:
         data = Range(cells, [ self.evaluate(c) for c in cells ])
@@ -153,13 +150,11 @@ class Spreadsheet(object):
 
         if is_addr:
             try:
-                print '->', cell
+                # print '->', cell
                 cell = self.cellmap[cell]
             except:
                 print 'Empty cell at '+ cell
                 return []
-
-        print 'FORMULA', cell.python_expression
             
         # no formula, fixed value
         if not cell.formula or cell.value != None:
@@ -172,7 +167,6 @@ class Spreadsheet(object):
             return self.evaluate(address)
         
         def eval_range(rng, rng2=None):
-            print 'rng', rng
             if rng2 is None:
                 return self.evaluate_range(rng)
             else:
