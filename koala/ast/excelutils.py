@@ -5,6 +5,8 @@ import functools
 import re
 import string
 
+from Range import Range
+
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
 #TODO: only supports rectangular ranges
@@ -64,6 +66,7 @@ class Cell(object):
         cls.ctr += 1
         return cls.ctr
     
+
     def __init__(self, address, sheet, value=None, formula=None, is_named_range=False ):
         super(Cell,self).__init__()
         
@@ -132,6 +135,10 @@ class Cell(object):
     @property
     def id(self):
         return self.__id
+
+    @property
+    def index(self):
+        return self.__index
 
     @property
     def compiled_expression(self):
@@ -567,7 +574,6 @@ def criteria_parser(criteria):
                 return x > value
         elif operator == '>=':
             def check(x):
-                print '\n TEST', x
                 if not is_number(x):
                     raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
                 return x >= value
@@ -590,18 +596,25 @@ def criteria_parser(criteria):
     return check
 
 
-def find_corresponding_index(range, criteria):
+def find_corresponding_index(list, criteria):
 
     # parse criteria
     check = criteria_parser(criteria)
 
     valid = []
 
-    for index, item in enumerate(range):
+    for index, item in enumerate(list):
         if check(item):
             valid.append(index)
 
     return valid
+
+def check_length(range1, range2):
+    
+    if len(range1.values()) != len(range2.values()):
+        raise ValueError('Ranges don\'t have the same size')
+    else:
+        return range2
 
 if __name__ == '__main__':
     pass

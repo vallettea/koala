@@ -20,8 +20,11 @@ from excelutils import (
     normalize_year,
     is_leap_year,
     get_max_days_in_month,
-    find_corresponding_index
+    find_corresponding_index,
+    check_length
 )
+
+from ..ast.Range import Range, get_values
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
@@ -67,6 +70,7 @@ def xlog(a):
 
 def xmax(*args):
     # ignore non numeric cells
+
     data = [x for x in flatten(args) if isinstance(x,(int,float))]
     
     # however, if no non numeric cells, return zero (is what excel does)
@@ -89,7 +93,16 @@ def xmin(*args):
 
 def xsum(*args):
     # ignore non numeric cells
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
+
+    values = []
+
+    for arg in args:
+        if type(arg) is Range:
+            values.append(arg.values())
+        elif is_number(arg):
+            values.append(arg)
+    
+    data = [x for x in flatten(values) if isinstance(x,(int,float))]
     
     # however, if no non numeric cells, return zero (is what excel does)
     if len(data) < 1:
@@ -97,30 +110,32 @@ def xsum(*args):
     else:
         return sum(data)
 
-def sumif(range, criteria, sum_range = []): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
+def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 
     # WARNING: 
     # - wildcards not supported
     # - doesn't really follow 2nd remark about sum_range length
 
-    if type(range) != list:
-        raise TypeError('%s must be a list' % str(range))
+    if type(range) != Range:
+        raise TypeError('%s must be a Range' % str(range))
 
-    if type(sum_range) != list:
-        raise TypeError('%s must be a list' % str(sum_range))
-
-    if isinstance(criteria, list) and not isinstance(criteria , (str, bool)): # ugly... 
+    if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
         return 0
 
-    indexes = find_corresponding_index(range, criteria)
+    indexes = find_corresponding_index(range.values(), criteria)
 
-    def f(x):
-        return sum_range[x] if x < len(sum_range) else 0
+    if sum_range:
+        if type(sum_range) != Range:
+            raise TypeError('%s must be a Range' % str(sum_range))
 
-    if len(sum_range) == 0:
-        return sum(map(lambda x: range[x], indexes))
-    else:
+        def f(x):
+            return sum_range.values()[x] if x < sum_range.length else 0
+        
         return sum(map(f, indexes))
+
+    else:
+        return sum(map(lambda x: range.values()[x], indexes))
+        
 
 
 
@@ -136,25 +151,44 @@ def right(text,n):
     else:
         # TODO: get rid of the decimal
         return str(int(text))[-n:]
-
-
-def index(*args):
-    array = args[0]
-    row = args[1]
-    
-    if len(args) == 3:
-        col = args[2]
-    else:
-        col = 1
         
-    if isinstance(array[0],(list,tuple,np.ndarray)):
-        # rectangular array
-        array[row-1][col-1]
-    elif row == 1 or col == 1:
-        return array[row-1] if col == 1 else array[col-1]
+
+def index(range, row, col = None, ref = None):
+    if type(range) != Range:
+        raise TypeError('%s must be a Range' % str(range))
+
+    if not is_number(row):
+        raise TypeError('%s must be a number' % str(row))
+
+    if row == 0 and col == 0:
+        raise ValueError('No index asked for Range')
+
+    if row > range.nb_rows:
+        raise Exception('Index %i out of range' % row)
+
+    # 1-dim case
+    if range.nb_cols == 1 or range.nb_rows == 1:
+        if col is not None:
+            raise ValueError('Range is one dimensional, can not reach index %i, %i' % (row, col))
+        else:
+            return range.get(row)
+
+    # 2-dim case
+    if col is None:
+        raise ValueError('Range is 2 dimensional, can not reach value with col = None')
+
+    if not is_number(col):
+        raise TypeError('%s must be a number' % str(col))
+
+    if col > range.nb_cols:
+        raise Exception('Index %i out of range' % col)
+
+    if row == 0 or col == 0:
+        return get_values(ref, range.get(row, col))[0]
+
     else:
-        raise Exception("index (%s,%s) out of range for %s" %(row,col,array))
-        
+        return range.get(row, col).values()[0]
+
 
 def lookup(value, lookup_range, result_range):
     
@@ -219,7 +253,7 @@ def npv(*args):
     return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
-def match(lookup_value, lookup_array, match_type=1):
+def match(lookup_value, lookup_range, match_type=1):
     
     def type_convert(value):
         if type(value) == str:
@@ -230,37 +264,39 @@ def match(lookup_value, lookup_array, match_type=1):
         return value;
 
     lookup_value = type_convert(lookup_value)
+    range_length = lookup_range.length
+    range_values = lookup_range.values()
 
     if match_type == 1:
         # Verify ascending sort
         posMax = -1
-        for i in range((len(lookup_array))):
-            current = type_convert(lookup_array[i])
+        for i in range(range_length):
+            current = type_convert(range_values[i])
 
-            if i is not len(lookup_array)-1 and current > type_convert(lookup_array[i+1]):
-                raise Exception('for match_type 0, lookup_array must be sorted ascending')
+            if i is not range_length-1 and current > type_convert(range_values[i+1]):
+                raise Exception('for match_type 0, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            raise ('no result in lookup_array for match_type 0')
+            raise ('no result in lookup_range for match_type 0')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
         # No string wildcard
-        return [type_convert(x) for x in lookup_array].index(lookup_value) + 1
+        return [type_convert(x) for x in range_values].index(lookup_value) + 1
 
     elif match_type == -1:
         # Verify descending sort
         posMin = -1
-        for i in range((len(lookup_array))):
-            current = type_convert(lookup_array[i])
+        for i in range((range_length)):
+            current = type_convert(range_values[i])
 
-            if i is not len(lookup_array)-1 and current < type_convert(lookup_array[i+1]):
-               raise ('for match_type 0, lookup_array must be sorted descending')
+            if i is not range_length-1 and current < type_convert(range_values[i+1]):
+               raise ('for match_type 0, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
-            raise Exception('no result in lookup_array for match_type 0')
+            raise Exception('no result in lookup_range for match_type 0')
         return posMin +1 #Excel starts at 1
 
 
@@ -279,8 +315,8 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     total = 0
 
     for arg in l:
-        if type(arg) == list:
-            total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg)) # count inside a list
+        if type(arg) == Range:
+            total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values())) # count inside a list
         elif is_number(arg): # int() is used for text representation of numbers
             total += 1
 
@@ -293,7 +329,7 @@ def countif(range, criteria): # Excel reference: https://support.office.com/en-u
     # - wildcards not supported
     # - support of strings with >, <, <=, =>, <> not provided
 
-    valid = find_corresponding_index(range, criteria)
+    valid = find_corresponding_index(range.values(), criteria)
 
     return len(valid)
 
@@ -308,21 +344,44 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
 
 
     if l >= 2:
-        indexes = find_corresponding_index(args[0], args[1]) # find indexes that match first layer of countif
+        indexes = find_corresponding_index(args[0].values(), args[1]) # find indexes that match first layer of countif
 
         remaining_ranges = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 0] # get only ranges
         remaining_criteria = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 1] # get only criteria
 
+        # verif that all Ranges are associated COULDNT MAKE THIS WORK CORRECTLY BECAUSE OF RECURSION
+        # association_type = None
+
+        # temp = [args[0]] + remaining_ranges
+
+        # for index, range in enumerate(temp): # THIS IS SHIT, but works ok
+        #     if type(range) == Range and index < len(temp) - 1:
+        #         asso_type = range.is_associated(temp[index + 1])
+
+        #         print 'asso', asso_type
+        #         if association_type is None:
+        #             association_type = asso_type
+        #         elif associated_type != asso_type:
+        #             association_type = None
+        #             break
+
+        # print 'ASSO', association_type
+
+        # if association_type is None:
+        #     raise ValueError('All items must be Ranges and associated')
+
         filtered_remaining_ranges = []
 
         for range in remaining_ranges: # filter items in remaining_ranges that match valid indexes from first countif layer
+            filtered_remaining_keys = []
             filtered_remaining_range = []
 
-            for index, item in enumerate(range):
+            for index, item in enumerate(range.values()):
                 if index in indexes:
-                    filtered_remaining_range.append(item)
+                    filtered_remaining_keys.append(range.cells[index]) # reconstructing cells from indexes
+                    filtered_remaining_range.append(item) # reconstructing values from indexes
 
-            filtered_remaining_ranges.append(filtered_remaining_range)
+            filtered_remaining_ranges.append(Range(filtered_remaining_keys, filtered_remaining_range))
 
         new_tuple = ()
 
@@ -510,7 +569,18 @@ def isNa(value):
     except:
         return True
 
+def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
+    range_list = list(ranges)
+    
+    reduce(check_length, range_list) # check that all ranges have the same size
 
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.multiply_all(x, y), range_list).values())
+
+def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
+    try:
+        return(eval(value))
+    except:
+        return value_if_error
 
 if __name__ == '__main__':
     pass

@@ -3,9 +3,9 @@
 
 import os.path
 import textwrap
-import excellib
-from excellib import *
-from excelutils import *
+import koala.ast.excellib as excelfun
+from koala.ast.excellib import *
+from koala.ast.excelutils import *
 from math import *
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
@@ -18,10 +18,11 @@ from tokenizer import ExcelParser, f_token, shunting_yard
 import cPickle
 import logging
 from itertools import chain
+
+from Range import Range
+
 import json
 import gzip
-
-from numpy import array
 
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
@@ -129,7 +130,6 @@ class Spreadsheet(object):
                 self.evaluate(c,is_addr=False)
                 
     def evaluate_range(self,rng,is_addr=True):
-
         if is_addr:
             rng = self.cellmap[rng]
 
@@ -139,11 +139,8 @@ class Spreadsheet(object):
 
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
-        if nrows == 1 or ncols == 1:
-            data = array([ self.evaluate(c) for c in cells ])
-        else:
-            data = array([ [self.evaluate(c) for c in cells[i]] for i in range(len(cells)) ] )
-        #print 'data', data
+        # if nrows == 1 or ncols == 1:
+        data = Range(cells, [ self.evaluate(c) for c in cells ])
         
         rng.value = data
         
@@ -158,7 +155,6 @@ class Spreadsheet(object):
             except:
                 print 'Empty cell at '+ cell
                 return []
-
             
         # no formula, fixed value
         if not cell.formula or cell.value != None:
@@ -182,21 +178,28 @@ class Spreadsheet(object):
                     rng2 = rng2.split('!')[1]
                 # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
-                
+        
         try:
-            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
-            #print "Cell %s evalled to %s" % (cell.address(),vv)
+
             if vv is None:
                 print "WARNING %s is None" % (cell.address())
+            # elif isinstance(vv, (List, list)):
+            #     print 'Output is list => converting', cell.index
+            #     vv = vv[cell.index]
             cell.value = vv
         except Exception as e:
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
-        
-        return cell.value
+
+        try:
+            return cell.value
+        except:
+            for f in missing_functions:
+                print 'MISSING', f
 
 class ASTNode(object):
     """A generic node in the AST"""
@@ -218,15 +221,31 @@ class ASTNode(object):
     def parent(self,ast):
         args = ast.successors(self)
         return args[0] if args else None
-    
+
+    def find_special_function(self, ast):
+        found = False
+        current = self
+
+        while current is not None:
+            # print 'VERIF', current.tvalue.lower()
+
+            if current.tvalue.lower() == 'sumproduct':
+                found = True
+                break
+            else:
+                current = current.parent(ast)
+
+        return found
+
     def emit(self,ast,context=None):
         """Emit code"""
         self.token.tvalue
     
 class OperatorNode(ASTNode):
-    def __init__(self,*args):
-        super(OperatorNode,self).__init__(*args)
-        
+    def __init__(self, args, ref):
+        super(OperatorNode,self).__init__(args)
+        self.ref = ref
+
         # convert the operator to python equivalents
         self.opmap = {
                  "^":"**",
@@ -234,6 +253,19 @@ class OperatorNode(ASTNode):
                  "&":"+",
                  "":"+" #union
                  }
+
+        self.op_range_translator = {
+            "*": "multiply",
+            "/": "divide",
+            "+": "add",
+            "-": "substract",
+            "==": "is_equal",
+            "<>": "is_different",
+            ">": "is_strictly_superior",
+            "<": "is_strictly_inferior",
+            ">=": "is_superior_or_equal",
+            "<=": "is_inferior_or_equal"
+        }
 
     def emit(self,ast,context=None):
         xop = self.tvalue
@@ -250,6 +282,14 @@ class OperatorNode(ASTNode):
          
         if self.ttype == "operator-prefix":
             return "-" + args[0].emit(ast,context=context)
+
+        if op in ["+", "-", "*", "/", "=", "<>", ">", "<", ">=", "<="]:
+            function = self.op_range_translator.get(op) + ('_all' if self.find_special_function(ast) else '_one')
+
+            arg1 = args[0]
+            arg2 = args[1]
+
+            return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
 
         parent = self.parent(ast)
 
@@ -298,7 +338,7 @@ class RangeNode(OperandNode):
         is_a_range = False
 
         if self.tsubtype == "named_range":
-            str = self.tvalue 
+            str = "'"+self.tvalue+"'" 
         else:
             # resolve the range into cells
             rng = self.tvalue.replace('$','')
@@ -343,7 +383,7 @@ class FunctionNode(ASTNode):
         self.numargs = 0
 
         # map  excel functions onto their python equivalents
-        self.funmap = excellib.FUNCTION_MAP
+        self.funmap = excelfun.FUNCTION_MAP
         
     def emit(self,ast,context=None):
         fun = self.tvalue.lower()
@@ -392,7 +432,7 @@ class FunctionNode(ASTNode):
 
         return str
 
-def create_node(t):
+def create_node(t, ref):
     """Simple factory function"""
     if t.ttype == "operand":
         if t.tsubtype == "range" or t.tsubtype == "named_range":
@@ -402,7 +442,7 @@ def create_node(t):
     elif t.ttype == "function":
         return FunctionNode(t)
     elif t.ttype.startswith("operator"):
-        return OperatorNode(t)
+        return OperatorNode(t, ref)
     else:
         return ASTNode(t)
 
@@ -413,13 +453,25 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges):
+def shunting_yard(expression, named_ranges, ref = ''):
     """
     Tokenize an excel formula expression into reverse polish notation
     
     Core algorithm taken from wikipedia with varargs extensions from
     http://www.kallisti.net.nz/blog/2008/02/extension-to-the-shunting-yard-algorithm-to-allow-variable-numbers-of-arguments-to-functions/
+    
+
+    The ref is the cell address which is passed down to the actual compiled python code.
+    Range basic operations signature require this reference, so it has to be written during OperatorNode.emit()
+    https://github.com/iOiurson/koala/blob/master/koala/ast/graph.py#L292.
+
+    This is needed because Excel range basic operations (+, -, * ...) are applied on matching cells.
+
+    Example:
+    Cell C2 has the following formula 'A1:A3 + B1:B3'.
+    The output will actually be A2 + B2, because the formula is relative to cell C2.
     """
+
     #remove leading =
     if expression.startswith('='):
         expression = expression[1:]
@@ -481,7 +533,7 @@ def shunting_yard(expression, named_ranges):
     
     for t in tokens:
         if t.ttype == "operand":
-            output.append(create_node(t))
+            output.append(create_node(t, ref))
             if were_values:
                 were_values.pop()
                 were_values.append(True)
@@ -497,7 +549,7 @@ def shunting_yard(expression, named_ranges):
         elif t.ttype == "argument":
 
             while stack and (stack[-1].tsubtype != "start"):
-                output.append(create_node(stack.pop()))   
+                output.append(create_node(stack.pop(), ref))   
             
             if were_values.pop(): arg_count[-1] += 1
             were_values.append(False)
@@ -523,7 +575,7 @@ def shunting_yard(expression, named_ranges):
                         or
                       (o1.associativity == "right" and o1.precedence < o2.precedence) ):
                     
-                    output.append(create_node(stack.pop()))
+                    output.append(create_node(stack.pop(), ref))
                 else:
                     break
                 
@@ -535,7 +587,7 @@ def shunting_yard(expression, named_ranges):
         elif t.tsubtype == "stop":
 
             while stack and stack[-1].tsubtype != "start":
-                output.append(create_node(stack.pop()))
+                output.append(create_node(stack.pop(), ref))
             
             if not stack:
                 raise Exception("Mismatched or misplaced parentheses")
@@ -543,7 +595,7 @@ def shunting_yard(expression, named_ranges):
             stack.pop()
 
             if stack and stack[-1].ttype == "function":
-                f = create_node(stack.pop())
+                f = create_node(stack.pop(), ref)
                 a = arg_count.pop()
                 w = were_values.pop()
                 if w: a += 1
@@ -555,7 +607,7 @@ def shunting_yard(expression, named_ranges):
         if stack[-1].tsubtype == "start" or stack[-1].tsubtype == "stop":
             raise Exception("Mismatched or misplaced parentheses")
         
-        output.append(create_node(stack.pop()))
+        output.append(create_node(stack.pop(), ref))
 
     #print "Stack is: ", "|".join(stack)
     #print "Output is: ", "|".join([x.tvalue for x in output])
@@ -565,7 +617,6 @@ def shunting_yard(expression, named_ranges):
    
 def build_ast(expression):
     """build an AST from an Excel formula expression in reverse polish notation"""
-    
     #use a directed graph to store the tree
     G = DiGraph()
     
@@ -630,7 +681,7 @@ class ExcelCompiler(object):
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
-            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges)
+            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges, cell.address())
             ast,root = build_ast(e)
             code = root.emit(ast, context=sheet)
         else:
