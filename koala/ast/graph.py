@@ -459,6 +459,17 @@ def shunting_yard(expression, named_ranges, ref = ''):
     
     Core algorithm taken from wikipedia with varargs extensions from
     http://www.kallisti.net.nz/blog/2008/02/extension-to-the-shunting-yard-algorithm-to-allow-variable-numbers-of-arguments-to-functions/
+    
+
+    The ref is the cell address which is passed down to the actual compiled python code.
+    Range basic operations signature require this reference, so it has to be written during OperatorNode.emit()
+    https://github.com/iOiurson/koala/blob/master/koala/ast/graph.py#L292.
+
+    This is needed because Excel range basic operations (+, -, * ...) are applied on matching cells.
+
+    Example:
+    Cell C2 has the following formula 'A1:A3 + B1:B3'.
+    The output will actually be A2 + B2, because the formula is relative to cell C2.
     """
 
     #remove leading =
