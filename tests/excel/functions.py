@@ -39,7 +39,7 @@ class Test_Sum(unittest.TestCase):
     def setup(self):
         pass
 
-    def test_sum_ignores_numeric(self):
+    def test_sum_ignores_non_numeric(self):
         range = Range(['A1', 'A2', 'A3'], [1, 'e', 3])
         self.assertEqual(xsum(range), 4)
 
