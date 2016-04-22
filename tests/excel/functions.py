@@ -34,7 +34,6 @@ from koala.ast.excellib import (
 
 from koala.ast.Range import Range
 
-
 class Test_Min(unittest.TestCase):
     def setup(self):
         pass
@@ -63,7 +62,7 @@ class Test_Sum(unittest.TestCase):
         range = Range(['A1', 'A2', 'A3'], [1, 'e', 3])
         self.assertEqual(xsum(range), 4)
 
-    def test_min_returns_zero(self):
+    def test_sum_returns_zero_when_no_numeric(self):
         range = Range(['A1', 'A2', 'A3'], [True, 'Er', 're'])
         value = 'ererr'
         self.assertEqual(xsum(range, value), 0)
