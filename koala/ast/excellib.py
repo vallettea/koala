@@ -21,7 +21,8 @@ from excelutils import (
     is_leap_year,
     get_max_days_in_month,
     find_corresponding_index,
-    check_length
+    check_length,
+    extract_numeric_values
 )
 
 from ..ast.Range import Range, get_values
@@ -69,46 +70,36 @@ def xlog(a):
 
 
 def xmax(*args):
-    # ignore non numeric cells
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
 
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
-    
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return max(data)
+        return max(values)
 
 
 def xmin(*args):
-    # ignore non numeric cells
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
-    
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
+
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return min(data)
+        return min(values)
 
 
 def xsum(*args):
-    # ignore non numeric cells
-
-    values = []
-
-    for arg in args:
-        if type(arg) is Range:
-            values.append(arg.values())
-        elif is_number(arg):
-            values.append(arg)
-    
-    data = [x for x in flatten(values) if isinstance(x,(int,float))]
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
     
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return sum(data)
+        return sum(values)
 
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 

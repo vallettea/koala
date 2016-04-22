@@ -9,8 +9,8 @@ path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
 from koala.ast.excellib import ( 
-    # xmax,
-    # xmin,
+    xmax,
+    xmin,
     xsum,
     # average,
     # lookup,
@@ -35,6 +35,26 @@ from koala.ast.excellib import (
 from koala.ast.Range import Range
 
 
+class Test_Min(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_min_range_and_value(self):
+        range = Range(['A1', 'A2', 'A3'], [1, 23, 3])
+        value = 20
+        self.assertEqual(xmin(range, value), 1)
+
+
+class Test_Max(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_max_range_and_value(self):
+        range = Range(['A1', 'A2', 'A3'], [1, 23, 3])
+        value = 20
+        self.assertEqual(xmax(range, value), 23)
+
+
 class Test_Sum(unittest.TestCase):
     def setup(self):
         pass
@@ -42,6 +62,11 @@ class Test_Sum(unittest.TestCase):
     def test_sum_ignores_non_numeric(self):
         range = Range(['A1', 'A2', 'A3'], [1, 'e', 3])
         self.assertEqual(xsum(range), 4)
+
+    def test_min_returns_zero(self):
+        range = Range(['A1', 'A2', 'A3'], [True, 'Er', 're'])
+        value = 'ererr'
+        self.assertEqual(xsum(range, value), 0)
 
     def test_sum_range_and_value(self):
         range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
