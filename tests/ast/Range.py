@@ -24,9 +24,8 @@ class Test_Excel(unittest.TestCase):
 
     def test_get(self):
         range1 = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-        range2 = Range(['E2'], [5])
 
-        self.assertEqual(range1.get(2, 2), range2)
+        self.assertEqual(range1.get(2, 2), 5)
 
     def test_get_row_0(self):
         range1 = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
