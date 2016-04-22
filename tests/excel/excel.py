@@ -54,8 +54,6 @@ class Test_NamedRanges(unittest.TestCase):
 
     def test_after_set_value(self):
         self.graph.set_value('INPUT', 2025)
-        print 'set_value'
-        print self.graph.evaluate('RESULT')
         self.assertTrue(self.graph.evaluate('INPUT') == 2025 and self.graph.evaluate('Sheet1!A1') == 2025 and self.graph.evaluate('RESULT') == 2211)
 
 
