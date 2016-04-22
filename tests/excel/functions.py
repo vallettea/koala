@@ -63,9 +63,14 @@ class Test_Sum(unittest.TestCase):
         self.assertEqual(xsum(range), 4)
 
     def test_sum_returns_zero_when_no_numeric(self):
-        range = Range(['A1', 'A2', 'A3'], [True, 'Er', 're'])
+        range = Range(['A1', 'A2', 'A3'], ['ER', 'Er', 're'])
         value = 'ererr'
         self.assertEqual(xsum(range, value), 0)
+
+    def test_sum_excludes_booleans_from_nested_ranges(self):
+        range = Range(['A1', 'A2', 'A3'], [True, 2, 1])
+        value = True
+        self.assertEqual(xsum(range, value), 4)
 
     def test_sum_range_and_value(self):
         range = Range(['A1', 'A2', 'A3'], [1, 2, 3])

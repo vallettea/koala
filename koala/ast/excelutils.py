@@ -623,13 +623,12 @@ def extract_numeric_values(*args):
 
     for arg in args:
         if type(arg) is Range:
-            values.append(arg.values())
+            temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            values.append(temp)
         elif is_number(arg):
             values.append(arg)
 
-    # In most cases, Booleans are discarded for Excel operations such as Min, Max, Sum
-    # Plus, a Boolean in python is considered as an int
-    return [x for x in flatten(values) if is_number(x) and type(x) is not bool]
+    return [x for x in flatten(values) if is_number(x)]
 
 
 
