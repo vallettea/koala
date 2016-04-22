@@ -13,7 +13,7 @@ from koala.ast.excellib import (
     xmin,
     xsum,
     average,
-    # lookup,
+    lookup,
     # linest,
     # npv,
     match,
@@ -33,6 +33,25 @@ from koala.ast.excellib import (
 )
 
 from koala.ast.Range import Range
+
+
+class Test_Lookup(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_lookup_with_result_range(self):
+        range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
+        range2 = Range(['B1', 'B2', 'B3'], ['blue', 'orange', 'green'])
+
+        self.assertEqual(lookup(2, range1, range2), 'orange')
+
+    def test_lookup_find_closest_inferior(self):
+        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
+        self.assertEqual(lookup(2.5, range), 2)
+
+    def test_lookup_basic(self):
+        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
+        self.assertEqual(lookup(2, range), 2)
 
 
 class Test_Average(unittest.TestCase):

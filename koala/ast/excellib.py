@@ -179,10 +179,10 @@ def index(range, row, col = None, ref = None):
         return get_values(ref, range.get(row, col))[0]
 
     else:
-        return range.get(row, col).values()[0]
+        return range.get(row, col)
 
 
-def lookup(value, lookup_range, result_range):
+def lookup(value, lookup_range, result_range = None):
     
     # TODO
     if not isinstance(value,(int,float)):
@@ -192,13 +192,17 @@ def lookup(value, lookup_range, result_range):
     
     # index of the last numeric value
     lastnum = -1
-    for i,v in enumerate(lookup_range):
+    for i,v in enumerate(lookup_range.values()):
         if isinstance(v,(int,float)):
             if v > value:
                 break
             else:
                 lastnum = i
-                
+
+    output_range = result_range.values() if result_range is not None else lookup_range.values()
+
+    print 'OUTPUT', output_range
+
     if lastnum < 0:
         raise Exception("No numeric data found in the lookup range")
     else:
@@ -207,9 +211,9 @@ def lookup(value, lookup_range, result_range):
         else:
             if i >= len(lookup_range)-1:
                 # return the biggest number smaller than value
-                return result_range[lastnum]
+                return output_range[lastnum]
             else:
-                return result_range[i-1]
+                return output_range[i-1]
 
 
 def linest(*args, **kwargs):
