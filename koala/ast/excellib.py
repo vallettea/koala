@@ -128,11 +128,12 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
         return sum(map(lambda x: range.values()[x], indexes))
         
 
-
-
 def average(*args):
-    l = list(flatten(*args))
-    return sum(l) / len(l)
+
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
+
+    return sum(values) / len(values)
 
 
 def right(text,n):

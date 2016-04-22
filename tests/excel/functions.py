@@ -12,7 +12,7 @@ from koala.ast.excellib import (
     xmax,
     xmin,
     xsum,
-    # average,
+    average,
     # lookup,
     # linest,
     # npv,
@@ -33,6 +33,17 @@ from koala.ast.excellib import (
 )
 
 from koala.ast.Range import Range
+
+
+class Test_Average(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_average(self):
+        range = Range(['A1', 'A2', 'A3'], [2, 4, 6])
+        value = 8
+        self.assertEqual(average(range, value), 5)
+
 
 class Test_Min(unittest.TestCase):
     def setup(self):
