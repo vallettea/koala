@@ -23,9 +23,11 @@ if __name__ == '__main__':
     startTime = datetime.now()
 
     c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
 
     sp = c.gen_graph()
+
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
     # print '- Eval INPUT', sp.evaluate('INPUT')
@@ -43,11 +45,9 @@ if __name__ == '__main__':
     # print '- Eval A1', sp.evaluate('Sheet1!A1')
     # print '- Eval RESULT', sp.evaluate('RESULT')
 
-
-
     print 'First evaluation', sp.evaluate('Cashflow!G187')
     sp.set_value('InputData!G14', 2025)
     startTime = datetime.now()
     print 'Second evaluation', sp.evaluate('Cashflow!G187')
-    print "Evaluation done in %s" % (str(datetime.now() - startTime))
+    print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 

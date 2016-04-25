@@ -21,7 +21,8 @@ from excelutils import (
     is_leap_year,
     get_max_days_in_month,
     find_corresponding_index,
-    check_length
+    check_length,
+    extract_numeric_values
 )
 
 from ..ast.Range import Range, get_values
@@ -68,47 +69,37 @@ def xlog(a):
         return log(a)
 
 
-def xmax(*args):
-    # ignore non numeric cells
+def xmax(*args): # Excel reference: https://support.office.com/en-us/article/MAX-function-e0012414-9ac8-4b34-9a47-73e662c08098
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
 
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
-    
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return max(data)
+        return max(values)
 
 
-def xmin(*args):
-    # ignore non numeric cells
-    data = [x for x in flatten(args) if isinstance(x,(int,float))]
-    
+def xmin(*args): # Excel reference: https://support.office.com/en-us/article/MIN-function-61635d12-920f-4ce2-a70f-96f202dcc152
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
+
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return min(data)
+        return min(values)
 
 
-def xsum(*args):
-    # ignore non numeric cells
-
-    values = []
-
-    for arg in args:
-        if type(arg) is Range:
-            values.append(arg.values())
-        elif is_number(arg):
-            values.append(arg)
-    
-    data = [x for x in flatten(values) if isinstance(x,(int,float))]
+def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM-function-043e1c7d-7726-4e80-8f32-07b23e057f89
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
     
     # however, if no non numeric cells, return zero (is what excel does)
-    if len(data) < 1:
+    if len(values) < 1:
         return 0
     else:
-        return sum(data)
+        return sum(values)
 
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 
@@ -137,11 +128,11 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
         return sum(map(lambda x: range.values()[x], indexes))
         
 
+def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
 
-
-def average(*args):
-    l = list(flatten(*args))
-    return sum(l) / len(l)
+    return sum(values) / len(values)
 
 
 def right(text,n):
@@ -153,7 +144,7 @@ def right(text,n):
         return str(int(text))[-n:]
         
 
-def index(range, row, col = None, ref = None):
+def index(range, row, col = None, ref = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
     if type(range) != Range:
         raise TypeError('%s must be a Range' % str(range))
 
@@ -187,10 +178,10 @@ def index(range, row, col = None, ref = None):
         return get_values(ref, range.get(row, col))[0]
 
     else:
-        return range.get(row, col).values()[0]
+        return range.get(row, col)
 
 
-def lookup(value, lookup_range, result_range):
+def lookup(value, lookup_range, result_range = None): # Excel reference: https://support.office.com/en-us/article/LOOKUP-function-446d94af-663b-451d-8251-369d5e3864cb
     
     # TODO
     if not isinstance(value,(int,float)):
@@ -200,13 +191,17 @@ def lookup(value, lookup_range, result_range):
     
     # index of the last numeric value
     lastnum = -1
-    for i,v in enumerate(lookup_range):
+    for i,v in enumerate(lookup_range.values()):
         if isinstance(v,(int,float)):
             if v > value:
                 break
             else:
                 lastnum = i
-                
+
+    output_range = result_range.values() if result_range is not None else lookup_range.values()
+
+    print 'OUTPUT', output_range
+
     if lastnum < 0:
         raise Exception("No numeric data found in the lookup range")
     else:
@@ -215,15 +210,15 @@ def lookup(value, lookup_range, result_range):
         else:
             if i >= len(lookup_range)-1:
                 # return the biggest number smaller than value
-                return result_range[lastnum]
+                return output_range[lastnum]
             else:
-                return result_range[i-1]
+                return output_range[i-1]
 
+# NEEDS TEST 
+def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us/article/LINEST-function-84d7d0d9-6e50-4101-977a-fa7abf772b6d
 
-def linest(*args, **kwargs):
-
-    Y = args[0]
-    X = args[1]
+    Y = args[0].values()
+    X = args[1].values()
     
     if len(args) == 3:
         const = args[2]
@@ -246,14 +241,14 @@ def linest(*args, **kwargs):
         
     return coefs
 
-
-def npv(*args):
+# NEEDS TEST
+def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568 
     discount_rate = args[0]
     cashflow = args[1]
     return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
-def match(lookup_value, lookup_range, match_type=1):
+def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
     
     def type_convert(value):
         if type(value) == str:

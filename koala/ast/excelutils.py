@@ -9,6 +9,8 @@ from Range import Range
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
+# We might need to test these util functions
+
 #TODO: only supports rectangular ranges
 class CellRange(object):
     def __init__(self,address,sheet=None):
@@ -615,6 +617,20 @@ def check_length(range1, range2):
         raise ValueError('Ranges don\'t have the same size')
     else:
         return range2
+
+def extract_numeric_values(*args):
+    values = []
+
+    for arg in args:
+        if type(arg) is Range:
+            temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            values.append(temp)
+        elif is_number(arg):
+            values.append(arg)
+
+    return [x for x in flatten(values) if is_number(x)]
+
+
 
 if __name__ == '__main__':
     pass

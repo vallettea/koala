@@ -164,7 +164,8 @@ class Range(OrderedDict):
                 new_ref = num2col(col + base_col_number - 1) + str(row)
                 new_value = values[(row - 1)* nc + (col - 1)]
 
-                return Range([new_ref], [new_value])
+                return new_value
+                # return Range([new_ref], [new_value])
 
 
     @staticmethod
