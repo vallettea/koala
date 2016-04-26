@@ -186,46 +186,73 @@ class Range(OrderedDict):
 
     @staticmethod
     def add(a, b):
-        return check_value(a) + check_value(b)
+        try:
+            return check_value(a) + check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def substract(a, b):
-        return check_value(a) - check_value(b)
+        try:
+            return check_value(a) - check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def multiply(a, b):
-        return check_value(a) * check_value(b)
+        try:
+            return check_value(a) * check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def divide(a, b):
         try:
             return check_value(a) / check_value(b)
-        except:
-            return Exception('Division by zero')
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_equal(a, b):
-        return check_value(a) == check_value(b)
+        try:
+            return check_value(a) == check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_not_equal(a, b):
-        return check_value(a) != check_value(b)
+        try:
+            return check_value(a) != check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_strictly_superior(a, b):
-        return check_value(a) > check_value(b)
+        try:
+            return check_value(a) > check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_strictly_inferior(a, b):
-        return check_value(a) < check_value(b)
+        try:
+            return check_value(a) < check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_superior_or_equal(a, b):
-        return check_value(a) >= check_value(b)
+        try:
+            return check_value(a) >= check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
     def is_inferior_or_equal(a, b):
-        return check_value(a) <= check_value(b)
+        try:
+            return check_value(a) <= check_value(b)
+        except Exception as e:
+            return e
 
 
 func_dict = {

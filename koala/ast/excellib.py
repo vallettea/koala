@@ -557,7 +557,6 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
 
 def isNa(value):
     # This function might need more solid testing
-
     try:
         eval(value)
         return False
@@ -572,10 +571,15 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.multiply_all(x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
-    try:
-        return(eval(value))
-    except:
+    if value is Exception:
         return value_if_error
+    else:
+        return value
+
+    # try:
+    #     return(eval(value))
+    # except:
+    #     return value_if_error
 
 if __name__ == '__main__':
     pass
