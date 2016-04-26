@@ -1,33 +1,8 @@
 
 import re
 from collections import OrderedDict
-# from excelutils import col2num
+from koala.excel.excelutil import col2num, num2col
 import string
-def col2num(col):
-    
-    if not col:
-        raise Exception("Column may not be empty")
-    
-    tot = 0
-    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
-        if c == '$': continue
-        tot += (ord(c)-64) * 26 ** i
-    return tot
-
-def num2col(num):
-    
-    if num < 1:
-        raise Exception("Number must be larger than 0: %s" % num)
-    
-    s = ''
-    q = num
-    while q > 0:
-        (q,r) = divmod(q,26)
-        if r == 0:
-            q = q - 1
-            r = 26
-        s = string.ascii_uppercase[r-1] + s
-    return s
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
