@@ -11,8 +11,9 @@ def get_values(ref, first = None, second = None):
     second_value = None
 
     try:
-        col = re.search(CELL_REF_RE, ref).group(1)
-        row = re.search(CELL_REF_RE, ref).group(2)
+        found = re.search(CELL_REF_RE, ref)
+        col = found.group(1)
+        row = found.group(2)
 
     except:
         raise Exception('Couldn\'t find match in cell ref')
@@ -53,8 +54,9 @@ class Range(OrderedDict):
         cleaned_cells = []
 
         for index, cell in enumerate(cells):
-            col = re.search(CELL_REF_RE, cell).group(1)
-            row = re.search(CELL_REF_RE, cell).group(2)
+            found = re.search(CELL_REF_RE, cell)
+            col = found.group(1)
+            row = found.group(2)
 
             if '!' in cell:
                 cleaned_cell = cell.split('!')[1]
@@ -73,8 +75,17 @@ class Range(OrderedDict):
         last = cells[self.length - 1]
         first = cells[0]
 
-        self.nb_cols = int(col2num(last[0])) - int(col2num(first[0])) + 1
-        self.nb_rows = int(last[1]) - int(first[1]) + 1
+        last_found = re.search(CELL_REF_RE, last)
+        first_found = re.search(CELL_REF_RE, first)
+
+        last_col = last_found.group(1)
+        last_row = last_found.group(2)
+
+        first_col = first_found.group(1)
+        first_row = first_found.group(2)
+
+        self.nb_cols = int(col2num(last_col)) - int(col2num(first_col)) + 1
+        self.nb_rows = int(last_row) - int(first_row) + 1
 
         OrderedDict.__init__(self, result)
 
