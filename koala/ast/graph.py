@@ -29,10 +29,11 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
-    def __init__(self,G,cellmap):
+    def __init__(self,G,cellmap, named_ranges):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
+        self.named_ranges = named_ranges
         self.params = None
 
     @staticmethod
@@ -99,7 +100,7 @@ class Spreadsheet(object):
             #     print 'c', self.cellmap[s].address(), self.cellmap[s].value
             cell = self.cellmap[address]
 
-        if cell.is_named_range :
+        if cell.is_named_range:
             # Take care of the case where named_range is not directly a cell address (type offset ...)
             # It will raise an exception, but we want this to prevent wrong usage
             return self.set_value(self.cellmap[cell.formula], val,False)
@@ -111,9 +112,10 @@ class Spreadsheet(object):
             cell.value = val
 
     def reset(self, cell):
-        if cell.value is None: return
-        #print "resetting", cell.address()
+        # print "resetting", cell.address(), 
+        if cell.value is None and cell.address() not in self.named_ranges: return
         cell.value = None
+        
         map(self.reset,self.G.successors_iter(cell))
 
     def print_value_tree(self,addr,indent):
@@ -152,6 +154,7 @@ class Spreadsheet(object):
             try:
                 # print '->', cell
                 cell = self.cellmap[cell]
+
             except:
                 print 'Empty cell at '+ cell
                 return []
@@ -178,9 +181,9 @@ class Spreadsheet(object):
                     rng2 = rng2.split('!')[1]
                 # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
-        
+
         try:
-            print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
 
             if vv is None:
@@ -677,7 +680,7 @@ class ExcelCompiler(object):
         # Transform named_ranges in artificial ranges
         for n in self.named_ranges:
             self.cells[n] = Cell(n, None, None, self.named_ranges[n], True )
-        
+
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
@@ -784,7 +787,8 @@ class ExcelCompiler(object):
                         sheet_name = cursheet
                         ref = dep
                     try:
-                        cells = [self.cells[sheet_name +"!"+ ref]]
+                        temp = self.cells[ref] if ref in self.named_ranges else self.cells[sheet_name +"!"+ ref]
+                        cells = [temp]
                         target = cellmap[c1.address()]
                     except:
                         cells = []
@@ -816,7 +820,7 @@ class ExcelCompiler(object):
             
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-        sp = Spreadsheet(G,cellmap)
+        sp = Spreadsheet(G,cellmap, self.named_ranges)
         
         return sp
 
