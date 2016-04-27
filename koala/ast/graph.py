@@ -132,6 +132,7 @@ class Spreadsheet(object):
                 self.evaluate(c,is_addr=False)
                 
     def evaluate_range(self,rng,is_addr=True):
+
         if is_addr:
             rng = self.cellmap[rng]
 
@@ -157,7 +158,7 @@ class Spreadsheet(object):
             except:
                 # print 'Empty cell at '+ cell
                 return None
-            
+
         # no formula, fixed value
         if not cell.formula or cell.value != None:
             #print "returning constant or cached value for ", cell.address()
@@ -364,13 +365,16 @@ class RangeNode(OperandNode):
         parent = self.parent(ast)
         # for OFFSET, it will also depends on the position in the formula (1st position required)
         if (parent is not None and
-            (parent.tvalue == ':' or 
+            (parent.tvalue == ':' or
             (parent.tvalue == 'OFFSET' and 
              parent.children(ast)[0] == self))):
             to_eval = False
                         
         if to_eval == False:
             return str
+        elif (parent is not None and parent.tvalue == 'INDEX' and
+             parent.children(ast)[0] == self):
+            return 'resolve_range(self.named_ranges[' + str + '])'
         elif is_a_range:
             return 'eval_range(' + str + ')'
         else:
@@ -427,6 +431,8 @@ class FunctionNode(ASTNode):
             str = "all([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "or":
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
+        elif fun == "index":
+            str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)

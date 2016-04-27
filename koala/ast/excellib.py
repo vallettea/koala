@@ -93,8 +93,9 @@ def xmin(*args): # Excel reference: https://support.office.com/en-us/article/MIN
 
 def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM-function-043e1c7d-7726-4e80-8f32-07b23e057f89
     # ignore non numeric cells and boolean cells
+
     values = extract_numeric_values(*args)
-    
+
     # however, if no non numeric cells, return zero (is what excel does)
     if len(values) < 1:
         return 0
@@ -144,9 +145,13 @@ def right(text,n):
         return str(int(text))[-n:]
         
 
-def index(range, row, col = None, ref = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
-    if type(range) != Range:
-        raise TypeError('%s must be a Range' % str(range))
+def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
+
+    cells, nr, nc = my_range
+    cells = list(flatten(cells))
+
+    if type(cells) != list:
+        raise TypeError('%s must be a list' % str(cells))
 
     if not is_number(row):
         raise TypeError('%s must be a number' % str(row))
@@ -154,31 +159,41 @@ def index(range, row, col = None, ref = None): # Excel reference: https://suppor
     if row == 0 and col == 0:
         raise ValueError('No index asked for Range')
 
-    if row > range.nb_rows:
+    if row > nr:
         raise Exception('Index %i out of range' % row)
 
-    # 1-dim case
-    if range.nb_cols == 1 or range.nb_rows == 1:
-        if col is not None:
-            raise ValueError('Range is one dimensional, can not reach index %i, %i' % (row, col))
+    if nr == 1:
+        return cells[col - 1]
+
+    if nc == 1:
+        return cells[row - 1]
+        
+    else: # could be optimised
+        if col is None:
+            raise ValueError('Range is 2 dimensional, can not reach value with col = None')
+
+        if not is_number(col):
+            raise TypeError('%s must be a number' % str(col))
+
+        if col > nc:
+            raise Exception('Index %i out of range' % col)
+
+        indices = range(len(cells))
+
+        if row == 0: # get column
+            filtered_indices = filter(lambda x: x % nc == col - 1, indices)
+            filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+            return filtered_cells
+
+        elif col == 0: # get row
+            filtered_indices = filter(lambda x: int(x / nc) == row - 1, indices)
+            filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+            return filtered_cells
+
         else:
-            return range.get(row)
-
-    # 2-dim case
-    if col is None:
-        raise ValueError('Range is 2 dimensional, can not reach value with col = None')
-
-    if not is_number(col):
-        raise TypeError('%s must be a number' % str(col))
-
-    if col > range.nb_cols:
-        raise Exception('Index %i out of range' % col)
-
-    if row == 0 or col == 0:
-        return get_values(ref, range.get(row, col))[0]
-
-    else:
-        return range.get(row, col)
+            return cells[(row - 1)* nc + (col - 1)]    
 
 
 def lookup(value, lookup_range, result_range = None): # Excel reference: https://support.office.com/en-us/article/LOOKUP-function-446d94af-663b-451d-8251-369d5e3864cb
@@ -199,8 +214,6 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
                 lastnum = i
 
     output_range = result_range.values() if result_range is not None else lookup_range.values()
-
-    print 'OUTPUT', output_range
 
     if lastnum < 0:
         raise Exception("No numeric data found in the lookup range")
@@ -568,7 +581,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.multiply_all(x, y), range_list).values())
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
     if value is Exception:

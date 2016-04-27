@@ -8,6 +8,8 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
+from koala.ast.excelutils import resolve_range
+
 from koala.ast.excellib import ( 
     xmax,
     xmin,
@@ -123,75 +125,54 @@ class Test_Index(unittest.TestCase):
     def setup(self):
         pass
 
-    def test_index_not_range(self):
-        with self.assertRaises(TypeError):
-            index([0, 0.2, 0.15], 2, 4)
+    # def test_index_not_range(self):
+    #     with self.assertRaises(TypeError):
+    #         index([0, 0.2, 0.15], 2, 4)
 
     def test_index_row_not_number(self):
-        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
-
         with self.assertRaises(TypeError):
-            index(range, 'e', 1)
+            index(resolve_range('A1:A3'), 'e', 1)
 
     def test_index_col_not_number(self):
-        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
-
         with self.assertRaises(TypeError):
-            index(range, 1, 'e')
+            index(resolve_range('A1:D3'), 1, 'e')
 
     def test_index_dim_zero(self):
-        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
-
         with self.assertRaises(ValueError):
-            index(range, 0, 0)
+            index(resolve_range('A1:D3'), 0, 0)
 
     def test_index_1_dim_2_coords(self):
-        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
-
-        with self.assertRaises(ValueError):
-            index(range, 2, 1)
+        self.assertEqual(index(resolve_range('A1:A3'), 3, 1), 'A3')
 
     def test_index_1_dim_out_of_range(self):
-        range = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         with self.assertRaises(Exception):
-            index(range, 4)
+            index(resolve_range('A1:A3'), 4)
 
     def test_index_1_dim(self):
-        range = Range(['A1', 'A2', 'A3', 'A4'], [1, 10, 3, 3])
-        self.assertEqual(index(range, 3), 3)
+        self.assertEqual(index(resolve_range('A1:A3'), 3), 'A3')
 
     def test_index_2_dim_1_coord(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-
         with self.assertRaises(ValueError):
-            index(range, 2)
+            index(resolve_range('D1:F2'), 2)
 
     def test_index_2_dim_out_of_range(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-
         with self.assertRaises(Exception):
-            index(range, 2, 6)
+            index(resolve_range('D1:F2'), 2, 6)
 
     def test_index_2_dim_row_0(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-
-        self.assertEqual(index(range, 0, 3, 'G2'), 6)
+        self.assertEqual(index(resolve_range('D1:F2'), 0, 3), ['F1', 'F2'])
 
     def test_index_2_dim_col_0(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
+        self.assertEqual(index(resolve_range('D1:F2'), 2, 0), ['D2', 'E2', 'F2'])
 
-        self.assertEqual(index(range, 2, 0, 'D4'), 4)
+    # def test_index_2_dim_col_0_ref_not_found(self):
+    #     # range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
 
-    def test_index_2_dim_col_0_ref_not_found(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-
-        with self.assertRaises(Exception):
-            index(range, 2, 0, 'A4')
+    #     with self.assertRaises(Exception):
+    #         index(resolve_range('D1:F2'), 2, 0)
 
     def test_index_2_dim(self):
-        range = Range(['D1', 'E1', 'F1', 'D2', 'E2', 'F2'], [1, 2, 3, 4, 5, 6])
-
-        self.assertEqual(index(range, 2, 2), 5)
+        self.assertEqual(index(resolve_range('D1:F2'), 2, 2), 'E2')
             
 
 class Test_SumProduct(unittest.TestCase):

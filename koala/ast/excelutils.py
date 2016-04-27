@@ -352,7 +352,7 @@ def resolve_range(rng, flatten=False, sheet=''):
             l = flatten(cells)
             return l,1,len(l)
         else:
-            return cells, len(cells), len(cells[0]) 
+            return cells, len(cells), len(cells[0])
 
 # e.g., convert BA -> 53
 def col2num(col):
@@ -621,9 +621,13 @@ def check_length(range1, range2):
 def extract_numeric_values(*args):
     values = []
 
+
     for arg in args:
         if type(arg) is Range:
             temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            values.append(temp)
+        elif type(arg) is tuple:
+            temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif is_number(arg):
             values.append(arg)

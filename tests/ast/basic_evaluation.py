@@ -58,6 +58,14 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!B1', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J1'), 4)
 
+    def test_J2(self):
+        self.sp.set_value('Sheet1!B2', 10)
+        self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
+
+    def test_B17(self):
+        self.sp.set_value('Sheet1!A17', 30)
+        self.assertEqual(self.sp.evaluate('Sheet1!C17'), 60)
+
 
 
 if __name__ == '__main__':
