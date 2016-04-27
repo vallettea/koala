@@ -462,7 +462,7 @@ def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-
     try:
         float(s)
         return True
-    except ValueError:
+    except:
         return False
 
 def is_leap_year(year):

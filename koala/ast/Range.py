@@ -1,14 +1,13 @@
 
 import re
 from collections import OrderedDict
-from koala.excel.excelutil import col2num, num2col, flatten
+from koala.excel.excelutil import col2num, num2col, flatten, is_number
 import string
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 def get_values(ref, first = None, second = None):
-    first_value = None
-    second_value = None
+    valid = False
 
     try:
         found = re.search(CELL_REF_RE, ref)
@@ -23,21 +22,25 @@ def get_values(ref, first = None, second = None):
             r, c = key
             if r == row or c == col:
                 first_value = value
+                valid = True
                 break
 
-        if first_value is None:
+        if not valid:
             raise Exception('First argument of Range operation is not valid')
     else:
         first_value = first
+
+    valid = False
 
     if type(second) == Range:
         for key, value in second.items():
             r, c = key
             if r == row or c == col:
                 second_value = value
+                valid = True
                 break
 
-        if second_value is None:
+        if not valid:
             raise Exception('Second argument of Range operation is not valid')
     else:
         second_value = second
@@ -45,12 +48,17 @@ def get_values(ref, first = None, second = None):
     return (first_value, second_value)
 
 def check_value(a):
-    return a if a != [] else 0
+    try: # This is to avoid None or Exception returned by Range operations
+        if float(a):
+            return a
+        else:
+            return 0
+    except:
+        return 0
 
 class Range(OrderedDict):
 
     def __init__(self, cells, values):
-        print 'starting Range'
         if len(cells) != len(values):
             raise ValueError("cells and values in a Range must have the same size")
 
@@ -61,7 +69,6 @@ class Range(OrderedDict):
         values = list(flatten(values))
 
         for index, cell in enumerate(cells):
-            print 'cell', cell, index
             found = re.search(CELL_REF_RE, cell)
             col = found.group(1)
             row = found.group(2)
@@ -72,11 +79,10 @@ class Range(OrderedDict):
                 cleaned_cell = cell
 
             cleaned_cells.append(cleaned_cell)
-            try:
+            try: # Might not be needed
                 result.append(((row, col), values[index]))
             except:
-                result.append(((row, col), []))
-            print 'end of loop'
+                result.append(((row, col), None))
 
         # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
         cells = cleaned_cells
@@ -100,7 +106,6 @@ class Range(OrderedDict):
         self.nb_rows = int(last_row) - int(first_row) + 1
 
         OrderedDict.__init__(self, result)
-        print 'ending Range'
 
     def is_associated(self, other):
         if self.length != other.length:

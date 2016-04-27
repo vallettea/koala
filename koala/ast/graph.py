@@ -115,7 +115,7 @@ class Spreadsheet(object):
         # print "resetting", cell.address(), 
         if cell.value is None and cell.address() not in self.named_ranges: return
         cell.value = None
-        
+
         map(self.reset,self.G.successors_iter(cell))
 
     def print_value_tree(self,addr,indent):
@@ -143,7 +143,6 @@ class Spreadsheet(object):
 
         # if nrows == 1 or ncols == 1:
         data = Range(cells, [ self.evaluate(c) for c in cells ])
-        
         rng.value = data
         
         return data
@@ -156,8 +155,8 @@ class Spreadsheet(object):
                 cell = self.cellmap[cell]
 
             except:
-                print 'Empty cell at '+ cell
-                return []
+                # print 'Empty cell at '+ cell
+                return None
             
         # no formula, fixed value
         if not cell.formula or cell.value != None:
@@ -179,15 +178,14 @@ class Spreadsheet(object):
                     sheet = None
                 if '!' in rng2:
                     rng2 = rng2.split('!')[1]
-                # return eval_range('%s:%s' % (rng, rng2))
                 return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
 
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
 
-            if vv is None:
-                print "WARNING %s is None" % (cell.address())
+            # if vv is None:
+            #     print "WARNING %s is None" % (cell.address())
             # elif isinstance(vv, (List, list)):
             #     print 'Output is list => converting', cell.index
             #     vv = vv[cell.index]
@@ -263,7 +261,7 @@ class OperatorNode(ASTNode):
             "+": "add",
             "-": "substract",
             "==": "is_equal",
-            "<>": "is_different",
+            "<>": "is_not_equal",
             ">": "is_strictly_superior",
             "<": "is_strictly_inferior",
             ">=": "is_superior_or_equal",
@@ -287,12 +285,13 @@ class OperatorNode(ASTNode):
             return "-" + args[0].emit(ast,context=context)
 
         if op in ["+", "-", "*", "/", "=", "<>", ">", "<", ">=", "<="]:
-            function = self.op_range_translator.get(op) + ('_all' if self.find_special_function(ast) else '_one')
+            call = 'apply' + ('_all' if self.find_special_function(ast) else '_one')
+            function = self.op_range_translator.get(op)
 
             arg1 = args[0]
             arg2 = args[1]
 
-            return "Range." + function + "(%s)" % ','.join([str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
+            return "Range." + call + "(%s)" % ','.join(["'"+function+"'", str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), "'"+self.ref+"'"])
 
         parent = self.parent(ast)
 
