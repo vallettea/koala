@@ -229,10 +229,14 @@ class ASTNode(object):
         found = False
         current = self
 
+        special_functions = ['sumproduct', 'match']
+
         while current is not None:
             # print 'VERIF', current.tvalue.lower()
 
-            if current.tvalue.lower() == 'sumproduct':
+            if current.tvalue.lower() in special_functions:
+                if current.tvalue.lower() == 'match':
+                    print 'MATCH'
                 found = True
                 break
             else:
@@ -286,7 +290,7 @@ class OperatorNode(ASTNode):
         if self.ttype == "operator-prefix":
             return "-" + args[0].emit(ast,context=context)
 
-        if op in ["+", "-", "*", "/", "=", "<>", ">", "<", ">=", "<="]:
+        if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             call = 'apply' + ('_all' if self.find_special_function(ast) else '_one')
             function = self.op_range_translator.get(op)
 
