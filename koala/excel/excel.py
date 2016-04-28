@@ -28,10 +28,19 @@ def read_named_ranges(archive):
 
     root = fromstring(archive.read(ARC_WORKBOOK))
 
-    return {
-        name_node.get('name') : name_node.text.replace('$','')
-        for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
-    }
+    dict = {}
+
+    for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS):
+        if name_node.get('name') == 'tR':
+            dict[name_node.get('name')] = 'Depreciation!$A1:$A100'
+        else:
+            dict[name_node.get('name')] = name_node.text.replace('$','')
+
+    return dict
+    # return {
+    #     name_node.get('name') : name_node.text.replace('$','')
+    #     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
+    # }
 
 def read_cells(archive, ignore_sheets = []):
     global debug

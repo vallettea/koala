@@ -235,8 +235,6 @@ class ASTNode(object):
             # print 'VERIF', current.tvalue.lower()
 
             if current.tvalue.lower() in special_functions:
-                if current.tvalue.lower() == 'match':
-                    print 'MATCH'
                 found = True
                 break
             else:
@@ -383,6 +381,12 @@ class RangeNode(OperandNode):
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
             return 'resolve_range(self.named_ranges[' + str + '])'
+        elif (parent is not None and parent.tvalue == 'INDEX' and
+             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+        elif (parent is not None and parent.tvalue == 'INDEX' and
+             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
         elif is_a_range:
             return 'eval_range(' + str + ')'
         else:
