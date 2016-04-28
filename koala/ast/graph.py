@@ -288,7 +288,7 @@ class OperatorNode(ASTNode):
 
          
         if self.ttype == "operator-prefix":
-            return "-" + args[0].emit(ast,context=context)
+            return "Range.apply_one('minus', %s, None, %s)" % (args[0].emit(ast,context=context), "'"+self.ref+"'")
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             call = 'apply' + ('_all' if self.find_special_function(ast) else '_one')

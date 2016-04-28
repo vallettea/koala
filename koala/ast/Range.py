@@ -204,6 +204,14 @@ class Range(OrderedDict):
             return e
 
     @staticmethod
+    def minus(a, b = None):
+        # b is not used, but needed in the signature. Maybe could be better
+        try:
+            return -check_value(a)
+        except Exception as e:
+            return e
+
+    @staticmethod
     def multiply(a, b):
         try:
             return check_value(a) * check_value(b)
@@ -265,6 +273,7 @@ func_dict = {
     "divide": Range.divide,
     "add": Range.add,
     "substract": Range.substract,
+    "minus": Range.minus,
     "is_equal": Range.is_equal,
     "is_not_equal": Range.is_not_equal,
     "is_strictly_superior": Range.is_strictly_superior,
