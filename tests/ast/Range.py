@@ -6,7 +6,7 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
-from koala.ast.Range import Range, get_values
+from koala.ast.Range import Range, find_associated_values
 
 class Test_Excel(unittest.TestCase):
     
@@ -42,13 +42,13 @@ class Test_Excel(unittest.TestCase):
     def test_get_values_scalar(self):
         range = Range(['A3'], [1])
 
-        self.assertEqual(get_values('C3', range), (1, None))
+        self.assertEqual(find_associated_values('C3', range), (1, None))
 
     def test_get_values(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])
         range2 = Range(['B1', 'B2', 'B3'], [1, 2, 3])
 
-    	self.assertEqual(get_values('C1', range1, range2), (1, 1))
+    	self.assertEqual(find_associated_values('C1', range1, range2), (1, 1))
 
     def test_get_values_raises_error(self):
         range1 = Range(['A1', 'A2', 'A3'], [1, 2, 3])

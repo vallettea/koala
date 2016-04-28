@@ -6,7 +6,7 @@ import string
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
-def get_values(ref, first = None, second = None):
+def find_associated_values(ref, first = None, second = None):
     valid = False
 
     try:
@@ -175,7 +175,7 @@ class Range(OrderedDict):
     def apply_one(func, self, other, ref):
         function = func_dict[func]
 
-        first, second = get_values(ref, self, other)
+        first, second = find_associated_values(ref, self, other)
 
         return function(first, second)
 

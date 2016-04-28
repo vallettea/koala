@@ -25,7 +25,7 @@ from excelutils import (
     extract_numeric_values
 )
 
-from ..ast.Range import Range, get_values
+from ..ast.Range import Range 
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should

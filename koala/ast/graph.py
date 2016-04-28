@@ -19,7 +19,7 @@ import cPickle
 import logging
 from itertools import chain
 
-from Range import Range
+from Range import Range, find_associated_values
 
 import json
 import gzip
@@ -142,8 +142,9 @@ class Spreadsheet(object):
 
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
-        # if nrows == 1 or ncols == 1:
-        data = Range(cells, [ self.evaluate(c) for c in cells ])
+        values = [ self.evaluate(c) for c in cells ]
+
+        data = Range(cells, values)
         rng.value = data
         
         return data
@@ -330,8 +331,9 @@ class OperandNode(ASTNode):
 
 class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
-    def __init__(self,*args):
-        super(RangeNode,self).__init__(*args)
+    def __init__(self,args, ref):
+        super(RangeNode,self).__init__(args)
+        self.ref = ref
     
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
@@ -359,7 +361,6 @@ class RangeNode(OperandNode):
             else:
                 str = '"' + sheet + rng + '"'
 
-
         to_eval = True
         # exception for formulas which use the address and not it content as ":" or "OFFSET"
         parent = self.parent(ast)
@@ -369,6 +370,9 @@ class RangeNode(OperandNode):
             (parent.tvalue == 'OFFSET' and 
              parent.children(ast)[0] == self))):
             to_eval = False
+
+        if parent is None and self.tsubtype == "named_range": # When a named range is referenced in a cell without any prior operation
+            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
                         
         if to_eval == False:
             return str
@@ -379,7 +383,7 @@ class RangeNode(OperandNode):
             return 'eval_range(' + str + ')'
         else:
             return 'eval_cell(' + str + ')'
-        
+
         return str
     
 class FunctionNode(ASTNode):
@@ -444,7 +448,7 @@ def create_node(t, ref):
     """Simple factory function"""
     if t.ttype == "operand":
         if t.tsubtype == "range" or t.tsubtype == "named_range":
-            return RangeNode(t)
+            return RangeNode(t, ref)
         else:
             return OperandNode(t)
     elif t.ttype == "function":

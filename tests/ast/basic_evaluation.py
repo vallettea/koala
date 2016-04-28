@@ -10,7 +10,7 @@ from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.graph import ExcelCompiler
 
-from koala.ast.Range import Range, get_values
+from koala.ast.Range import Range
 
 
 class Test_Excel(unittest.TestCase):
@@ -65,6 +65,10 @@ class Test_Excel(unittest.TestCase):
     def test_B17(self):
         self.sp.set_value('Sheet1!A17', 30)
         self.assertEqual(self.sp.evaluate('Sheet1!C17'), 60)
+
+    def test_L1(self):
+        self.sp.set_value('Sheet1!B1', 12)
+        self.assertEqual(self.sp.evaluate('Sheet1!L1'), 12)
 
 
 
