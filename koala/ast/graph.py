@@ -475,10 +475,11 @@ class FunctionNode(ASTNode):
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
-        elif fun == "offset" and self.parent(ast) is None:
-            str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
-        elif fun == "offset" and self.parent(ast) == ':':
-            str = 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
+        elif fun == "offset":
+            if self.parent(ast) == ':':
+                str = 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
+            else:
+                str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)

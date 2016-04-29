@@ -71,7 +71,6 @@ class Test_Excel(unittest.TestCase):
 
     def test_F26(self):
         self.sp.set_value('Sheet1!A23', 10)
-        
         self.assertEqual(self.sp.evaluate('Sheet1!F26'), 21)
 
 
