@@ -167,20 +167,19 @@ class Spreadsheet(object):
         
         # recalculate formula
         # the compiled expression calls this function
-        def eval_cell(address):
-            return self.evaluate(address)
-        
-        def eval_range(rng, rng2=None):
-            if rng2 is None:
-                return self.evaluate_range(rng)
+        def eval_ref(ref1, ref2 = None):
+            if not is_range(ref1) and ref2 is None:
+                return self.evaluate(ref1)
+            elif ref2 is None:
+                return self.evaluate_range(ref1)
             else:
-                if '!' in rng:
-                    sheet = rng.split('!')[0]
+                if '!' in ref1:
+                    sheet = ref1.split('!')[0]
                 else:
                     sheet = None
-                if '!' in rng2:
-                    rng2 = rng2.split('!')[1]
-                return self.evaluate_range(CellRange('%s:%s' % (rng, rng2),sheet), False)
+                if '!' in ref2:
+                    ref2 = ref2.split('!')[1]
+                return self.evaluate_range(CellRange('%s:%s' % (ref1, ref2),sheet), False)
 
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
@@ -282,7 +281,7 @@ class OperatorNode(ASTNode):
         
         # convert ":" operator to a range function
         if op == ":":
-            return "eval_range(%s)" % ','.join([a.emit(ast,context=context) for a in args])
+            return "eval_ref(%s)" % ','.join([a.emit(ast,context=context) for a in args])
 
          
         if self.ttype == "operator-prefix":
@@ -374,7 +373,7 @@ class RangeNode(OperandNode):
             to_eval = False
 
         if parent is None and self.tsubtype == "named_range": # When a named range is referenced in a cell without any prior operation
-            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+            return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
                         
         if to_eval == False:
             return str
@@ -382,10 +381,10 @@ class RangeNode(OperandNode):
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+            return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+            return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -393,14 +392,14 @@ class RangeNode(OperandNode):
             return 'resolve_range(self.named_ranges[' + str + '])'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+            return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
-        elif is_a_range:
-            return 'eval_range(' + str + ')'
+            return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
+        # elif is_a_range:
+        #     return 'eval_range(' + str + ')'
         else:
-            return 'eval_cell(' + str + ')'
+            return 'eval_ref(' + str + ')'
 
         return str
     
