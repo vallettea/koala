@@ -378,6 +378,16 @@ class RangeNode(OperandNode):
                         
         if to_eval == False:
             return str
+
+        # OFFSET HANDLER
+        elif (parent is not None and parent.tvalue == 'OFFSET' and
+             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+        elif (parent is not None and parent.tvalue == 'OFFSET' and
+             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+            return 'find_associated_values("' + self.ref + '", eval_cell(' + str + '))[0]'
+
+        # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
             return 'resolve_range(self.named_ranges[' + str + '])'
@@ -443,7 +453,7 @@ class FunctionNode(ASTNode):
             str = "all([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "or":
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
-        elif fun == "index":
+        elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
         else:
             # map to the correct name
