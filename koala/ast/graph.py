@@ -168,11 +168,18 @@ class Spreadsheet(object):
         # recalculate formula
         # the compiled expression calls this function
         def eval_ref(ref1, ref2 = None):
-            if not is_range(ref1) and ref2 is None:
+            if not is_range(ref1) and ref2 is None: # ref1 = Sheet1!A1 or A1
                 return self.evaluate(ref1)
-            elif ref2 is None:
-                return self.evaluate_range(ref1)
-            else:
+            elif ref2 is None: # ref1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
+                ref1, ref2 = ref1.split(':')
+                if '!' in ref1:
+                    sheet = ref1.split('!')[0]
+                else:
+                    sheet = None
+                if '!' in ref2:
+                    ref2 = ref2.split('!')[1]
+                return self.evaluate_range(CellRange('%s:%s' % (ref1, ref2),sheet), False)
+            else:  # ref1 = Sheet1!A1, ref2 = Sheet1!A2
                 if '!' in ref1:
                     sheet = ref1.split('!')[0]
                 else:
@@ -279,9 +286,16 @@ class OperatorNode(ASTNode):
         
         op = self.opmap.get(xop,xop)
         
+        parent = self.parent(ast)
         # convert ":" operator to a range function
         if op == ":":
-            return "eval_ref(%s)" % ','.join([a.emit(ast,context=context) for a in args])
+            # OFFSET HANDLER, when the first argument of OFFSET is a range i.e "A1:A2"
+            if (parent is not None and
+            (parent.tvalue == 'OFFSET' and 
+             parent.children(ast)[0] == self)):
+                return '"%s"' % ':'.join([a.emit(ast,context=context).replace('"', '') for a in args])
+            else:
+                return "eval_ref(%s)" % ','.join([a.emit(ast,context=context) for a in args])
 
          
         if self.ttype == "operator-prefix":
@@ -340,7 +354,6 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
-
         is_a_range = False
 
         if self.tsubtype == "named_range":
@@ -389,7 +402,7 @@ class RangeNode(OperandNode):
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
-            return 'resolve_range(self.named_ranges[' + str + '])'
+            return 'resolve_range(self.cell_map[' + str + '])'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
             return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
@@ -454,6 +467,8 @@ class FunctionNode(ASTNode):
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
+        elif fun == "offset": # might not be necessary
+            str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)
