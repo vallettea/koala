@@ -69,7 +69,7 @@ class Cell(object):
         return cls.ctr
     
 
-    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False ):
+    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False, always_eval=False ):
         super(Cell,self).__init__()
         
         if is_named_range == False:
@@ -109,6 +109,7 @@ class Cell(object):
         self.__formula = str(formula) if formula else None
         self.value = str(value) if isinstance(value,unicode) else value
         self.python_expression = None
+        self.always_eval = always_eval
         self._compiled_expression = None
         
         # every cell has a unique id

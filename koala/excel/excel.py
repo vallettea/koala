@@ -112,11 +112,12 @@ def read_cells(archive, ignore_sheets = []):
                     continue
 
             if cell['f'] is not None or cell['v'] is not None:
+                always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
+
                 if "!" in cell_address:
-                    print "! found "
-                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], always_eval=always_eval)
                 else:
-                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'])
+                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], always_eval=always_eval)
 
     return cells
 

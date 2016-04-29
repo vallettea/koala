@@ -12,7 +12,6 @@ from koala.ast.graph import ExcelCompiler
 
 from koala.ast.Range import Range
 
-
 class Test_Excel(unittest.TestCase):
     
     def setUp(self):
@@ -69,6 +68,11 @@ class Test_Excel(unittest.TestCase):
     def test_L1(self):
         self.sp.set_value('Sheet1!B1', 12)
         self.assertEqual(self.sp.evaluate('Sheet1!L1'), 12)
+
+    def test_F26(self):
+        self.sp.set_value('Sheet1!A23', 10)
+        
+        self.assertEqual(self.sp.evaluate('Sheet1!F26'), 21)
 
 
 

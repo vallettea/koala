@@ -61,7 +61,7 @@ class Test_Offset(unittest.TestCase):
         self.assertEqual(offset('A1:B2', 1, 2), 'C2')
 
     def test_offset_with_sheet(self):
-        self.assertEqual(offset('Sheet1!A1:B2', 1, 2), 'Sheet1!C2')
+        self.assertEqual(offset('Sheet1!A1:Sheet1!B2', 1, 2), 'Sheet1!C2')
 
     def test_offset_rectangular(self):
         self.assertEqual(offset('Sheet1!A1:B2', 1, 2, 2, 3), 'Sheet1!C2:E3')

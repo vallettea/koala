@@ -65,11 +65,13 @@ class Spreadsheet(object):
             outfile.write(json.dumps(data))
 
     @staticmethod
-    def load(fname):
+    def load(fname): # is this ever used ???
         with gzip.GzipFile(fname, 'r') as infile:
             data = json.loads(infile.read())
         def cell_from_dict(d):
-            return {"id": Cell(d["address"], None, value=d["value"], formula=d["formula"], is_named_range=d["is_named_range"])}
+            formula = d["formula"]
+            always_eval = 'OFFSET' in formula
+            return {"id": Cell(d["address"], None, value=d["value"], formula=formula, is_named_range=d["is_named_range"], always_eval=always_eval)}
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
@@ -160,8 +162,11 @@ class Spreadsheet(object):
                 # print 'Empty cell at '+ cell
                 return None
 
+        if cell.always_eval:
+            print 'ALWAYS EVAL'
+
         # no formula, fixed value
-        if not cell.formula or cell.value != None:
+        if not cell.formula or not cell.always_eval and cell.value != None:
             #print "returning constant or cached value for ", cell.address()
             return cell.value
         
@@ -467,7 +472,7 @@ class FunctionNode(ASTNode):
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
-        elif fun == "offset": # might not be necessary
+        elif fun == "offset":
             str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         else:
             # map to the correct name
