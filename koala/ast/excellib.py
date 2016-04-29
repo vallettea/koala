@@ -296,7 +296,10 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
 
     elif match_type == 0:
         # No string wildcard
-        return [type_convert(x) for x in range_values].index(lookup_value) + 1
+        try:
+            return [type_convert(x) for x in range_values].index(lookup_value) + 1
+        except:
+            return Exception("%s not found" % lookup_value)
 
     elif match_type == -1:
         # Verify descending sort
