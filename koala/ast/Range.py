@@ -185,8 +185,10 @@ class Range(OrderedDict):
 
         if type(other) == Range:
             return Range(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
-        else:
+        elif type(self) == Range:
             return Range(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())))
+        else:
+            return function(self, other)
 
 
     @staticmethod
