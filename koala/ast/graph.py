@@ -476,7 +476,7 @@ class FunctionNode(ASTNode):
         elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
         elif fun == "offset":
-            if self.parent(ast) == ':':
+            if self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 str = 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
                 str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"

@@ -73,6 +73,10 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A23', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!F26'), 21)
 
+    def test_G26(self):
+        self.sp.set_value('Sheet1!B22', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!G26'), 10)
+
 
 
 if __name__ == '__main__':
