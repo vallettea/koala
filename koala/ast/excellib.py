@@ -14,18 +14,23 @@ from excelutils import (
     flatten, 
     split_address, 
     col2num, 
+    num2col,
     index2addres,
     is_number,
+    is_range,
     date_from_int,
     normalize_year,
     is_leap_year,
     get_max_days_in_month,
     find_corresponding_index,
     check_length,
-    extract_numeric_values
+    extract_numeric_values,
+    resolve_range
 )
 
 from ..ast.Range import Range 
+
+CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
@@ -575,6 +580,61 @@ def isNa(value):
         return False
     except:
         return True
+
+def isblank(value):
+    return value is None
+
+def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
+    # This function accepts a list of addresses
+    # Maybe think of passing a Range as first argument
+
+    # get first cell address of reference
+    if is_range(reference):
+        ref = list(flatten(resolve_range(reference)[0]))[0]
+    else:
+        ref = reference
+    ref_sheet = ''
+    end_address = ''
+
+    if '!' in ref:
+        ref_sheet = ref.split('!')[0] + '!'
+        ref_cell = ref.split('!')[1]
+    else:
+        ref_cell = ref
+
+    found = re.search(CELL_REF_RE, ref)
+    new_col = col2num(found.group(1)) + cols
+    new_row = int(found.group(2)) + rows
+
+    if new_row <= 0 or new_col <= 0:
+        raise Exception('Offset is out of bounds')
+
+    start_address = str(num2col(new_col)) + str(new_row)
+
+    if (height is not None and width is not None):
+        if type(height) != int:
+            raise TypeError('%d must not be integer' % height)
+        if type(width) != int:
+            raise TypeError('%d must not be integer' % width)
+
+        if height > 0:
+            end_row = new_row + height - 1
+        else:
+            raise ValueError('%d must be strictly positive' % height)
+        if width > 0:
+            end_col = new_col + width - 1
+        else:
+            raise ValueError('%d must be strictly positive' % width)
+
+        end_address = ':' + str(num2col(end_col)) + str(end_row)
+    elif height and not width or not height and width:
+        raise Exception('Height and width must be passed together')
+
+    return ref_sheet + start_address + end_address
+
+
+
+    
 
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)

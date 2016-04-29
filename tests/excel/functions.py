@@ -16,6 +16,7 @@ from koala.ast.excellib import (
     xsum,
     average,
     lookup,
+    offset,
     # linest,
     # npv,
     match,
@@ -35,6 +36,35 @@ from koala.ast.excellib import (
 )
 
 from koala.ast.Range import Range
+
+class Test_Offset(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_offset_height_not_integer(self):
+        with self.assertRaises(TypeError):
+            offset('Sheet1!A1', 'e', 2)
+
+    def test_offset_height_is_zero(self):
+        with self.assertRaises(ValueError):
+            offset('Sheet1!A1', 1, 2, 0, 1)
+
+    def test_offset_only_height(self):
+        with self.assertRaises(Exception):
+            offset('Sheet1!A1', 1)
+
+    def test_offset_out_of_bounds(self):
+        with self.assertRaises(Exception):
+            offset('Sheet1!A1', 1, -2)
+
+    def test_offset_regular(self):
+        self.assertEqual(offset('A1:B2', 1, 2), 'C2')
+
+    def test_offset_with_sheet(self):
+        self.assertEqual(offset('Sheet1!A1:B2', 1, 2), 'Sheet1!C2')
+
+    def test_offset_rectangular(self):
+        self.assertEqual(offset('Sheet1!A1:B2', 1, 2, 2, 3), 'Sheet1!C2:E3')
 
 
 class Test_Lookup(unittest.TestCase):
@@ -110,15 +140,15 @@ class Test_Sum(unittest.TestCase):
         self.assertEqual(xsum(range, value), 26)
 
 
-class Test_Iferror(unittest.TestCase):
-    def setup(self):
-        pass
+# class Test_Iferror(unittest.TestCase): # Need rewriting
+#     def setup(self):
+#         pass
 
-    def test_when_error(self):
-        self.assertEqual(iferror('3 / 0', 4), 4)
+#     def test_when_error(self):
+#         self.assertEqual(iferror('3 / 0', 4), 4)
 
-    def test_when_no_error(self):
-        self.assertEqual(iferror('3 * 10', 4), 30)
+#     def test_when_no_error(self):
+#         self.assertEqual(iferror('3 * 10', 4), 30)
     
 
 class Test_Index(unittest.TestCase):
