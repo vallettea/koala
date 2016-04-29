@@ -14,6 +14,8 @@ from networkx.readwrite.gexf import write_gexf
 from networkx.readwrite import json_graph
 import networkx as nx
 
+from astutils import find_node, subgraph
+
 from tokenizer import ExcelParser, f_token, shunting_yard
 import cPickle
 import logging
@@ -161,9 +163,6 @@ class Spreadsheet(object):
             except:
                 # print 'Empty cell at '+ cell
                 return None
-
-        if cell.always_eval:
-            print 'ALWAYS EVAL'
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -360,8 +359,9 @@ class RangeNode(OperandNode):
     
     def emit(self,ast,context=None):
         is_a_range = False
+        is_a_named_range = self.tsubtype == "named_range"
 
-        if self.tsubtype == "named_range":
+        if is_a_named_range:
             str = "'"+self.tvalue+"'" 
         else:
             # resolve the range into cells
@@ -407,7 +407,10 @@ class RangeNode(OperandNode):
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
-            return 'resolve_range(self.cell_map[' + str + '])'
+            if is_a_named_range:
+                return 'resolve_range(self.named_ranges[' + str + '])'
+            else:
+                return 'resolve_range(' + str + ')'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
             return 'find_associated_values("' + self.ref + '", eval_ref(' + str + '))[0]'
@@ -472,8 +475,10 @@ class FunctionNode(ASTNode):
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index": # might not be necessary
             str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
-        elif fun == "offset":
+        elif fun == "offset" and self.parent(ast) is None:
             str = 'eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
+        elif fun == "offset" and self.parent(ast) == ':':
+            str = 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)
