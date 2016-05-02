@@ -1,8 +1,54 @@
 
 import re
-from collections import OrderedDict
-from koala.excel.excelutil import col2num, num2col, flatten, is_number
+from collections import OrderedDict, Iterable
+# from koala.ast.excelutils import col2num, num2col, flatten, is_number
 import string
+
+
+# this is due to a circular reference, need to be addressed
+def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
+    try:
+        float(s)
+        return True
+    except:
+        return False
+
+def flatten(l):
+    for el in l:
+        if isinstance(el, Iterable) and not isinstance(el, basestring):
+            for sub in flatten(el):
+                yield sub
+        else:
+            yield el
+
+# e.g., convert BA -> 53
+def col2num(col):
+    
+    if not col:
+        raise Exception("Column may not be empty")
+    
+    tot = 0
+    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
+        if c == '$': continue
+        tot += (ord(c)-64) * 26 ** i
+    return tot
+
+# convert back
+def num2col(num):
+    
+    if num < 1:
+        raise Exception("Number must be larger than 0: %s" % num)
+    
+    s = ''
+    q = num
+    while q > 0:
+        (q,r) = divmod(q,26)
+        if r == 0:
+            q = q - 1
+            r = 26
+        s = string.ascii_uppercase[r-1] + s
+    return s
+
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
