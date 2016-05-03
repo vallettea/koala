@@ -103,6 +103,8 @@ class Spreadsheet(object):
             # for s in self.cellmap:
             #     print 'c', self.cellmap[s].address(), self.cellmap[s].value
             cell = self.cellmap[address]
+        else:
+            address = cell.address()
 
         if cell.is_named_range:
             # Take care of the case where named_range is not directly a cell address (type offset ...)
@@ -114,13 +116,16 @@ class Spreadsheet(object):
             self.reset(cell)
             # set the value
             cell.value = val
+            # update depending named_ranges
+            for i in self.G.successors_iter(cell):
+                if i.address() in self.named_ranges:
+                    ref = parse_cell_address(address)
+                    self.named_ranges[i.address()][ref] = val
+                    
 
     def reset(self, cell):
-        # print "resetting", cell.address(), 
-        print 'Resettin', cell.address()
         if cell.value is None and cell.address() not in self.named_ranges: return
         cell.value = None
-
         map(self.reset,self.G.successors_iter(cell))
 
     def print_value_tree(self,addr,indent):
@@ -199,6 +204,7 @@ class Spreadsheet(object):
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
+            # print 'vv', eval_ref('Liste2', ('1', 'G'))
 
             # if vv is None:
             #     print "WARNING %s is None" % (cell.address())
@@ -396,7 +402,7 @@ class RangeNode(OperandNode):
             to_eval = False
 
         if parent is None and self.tsubtype == "named_range": # When a named range is referenced in a cell without any prior operation
-            return 'find_associated_values("' + str(self.ref) + '", eval_ref(' + my_str + '))[0]'
+            return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
                         
         if to_eval == False:
             return my_str
@@ -747,7 +753,7 @@ class ExcelCompiler(object):
 
             my_range = Range(range_cells, range_values)
             self.ranges[n] = my_range
-            self.cells[n] = Cell(n, None, None, n, True )
+            self.cells[n] = Cell(n, None, my_range, n, True )
 
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
