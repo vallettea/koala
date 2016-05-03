@@ -52,17 +52,22 @@ def num2col(num):
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
-def find_associated_values(ref, first = None, second = None):
-    valid = False
-
+def parse_cell_address(ref):
     try:
         found = re.search(CELL_REF_RE, ref)
         col = found.group(1)
         row = found.group(2)
 
+        return (row, col)
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
+
+def find_associated_values(ref, first = None, second = None):
+    valid = False
+
+    row, col = ref
+
     if type(first) == Range:
         for key, value in first.items():
             r, c = key
@@ -129,10 +134,10 @@ class Range(OrderedDict):
                 result.append(((row, col), values[index]))
             except:
                 result.append(((row, col), None))
-
+        self.cells = cells
         # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
         cells = cleaned_cells
-        self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
+        self.cleaned_cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
         
         # get last cell
