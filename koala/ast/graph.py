@@ -757,9 +757,12 @@ class ExcelCompiler(object):
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
             
-    def gen_graph(self):
+    def gen_graph(self, ouputs=None):
         
-        seeds = list(flatten(self.cells.values()))
+        if ouputs is None:
+            seeds = list(flatten(self.cells.values()))
+        else:
+            seeds = [self.cells[o] for o in ouputs]
 
         print "Seeds %s cells" % len(seeds)
         # only keep seeds with formulas or numbers
@@ -800,8 +803,11 @@ class ExcelCompiler(object):
             deps = uniqueify(deps)
 
             for dep in deps:
+                if dep in self.named_ranges:
+                    cells = [self.cells[dep]]
+                    target = cellmap[c1.address()]
                 # if the dependency is a multi-cell range, create a range object
-                if is_range(dep):
+                elif is_range(dep):
                     # this will make sure we always have an absolute address
                     rng = CellRange(dep, sheet=cursheet)
                     
