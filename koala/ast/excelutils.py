@@ -17,6 +17,7 @@ class CellRange(object):
 
         self.__address = address.replace('$','')
         
+        print 'CELL RANGE splitting', address
         sh,start,end = split_range(address)
         if not sh and not sheet:
             raise Exception("Must pass in a sheet")
@@ -220,6 +221,7 @@ class Cell(object):
 
         if is_range(range):
             # use the sheet specified in the range, else the passed sheet
+            print 'MAKE CELLS splitting', range
             sh,start,end = split_range(range)
             if sh: sheet = sh
 
@@ -303,6 +305,7 @@ def split_address(address):
 
 def resolve_range(rng, flatten=False, sheet=''):
     
+    print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
     
     if sh and sheet:

@@ -744,16 +744,30 @@ class ExcelCompiler(object):
         # Transform named_ranges in artificial ranges
         for n in self.named_ranges:
             reference = self.named_ranges[n]
-            range_cells, nrow, ncol = resolve_range(reference)
-            range_cells = list(flatten(range_cells))
-            range_values = []
+            if is_range(reference):
+                if 'OFFSET' not in reference:
+                    range_cells, nrow, ncol = resolve_range(reference)
 
-            for cell in range_cells:
-                range_values.append(self.cells[cell].value)
+                    range_cells = list(flatten(range_cells))
+                    range_values = []
 
-            my_range = Range(range_cells, range_values)
-            self.ranges[n] = my_range
-            self.cells[n] = Cell(n, None, my_range, n, True )
+                    for cell in range_cells:
+                        if cell in self.cells: # this is to avoid Depreciation!A5 and other empty cells due to tR named range
+                            range_values.append(self.cells[cell].value)
+                        else:
+                            range_values.append(None)
+
+                    my_range = Range(range_cells, range_values)
+                    self.ranges[n] = my_range
+                    self.cells[n] = Cell(n, None, my_range, n, True )
+                else:
+                    self.cells[n] = Cell(n, None, None, self.named_ranges[n], True )
+            else:
+                if reference in self.cells:
+                    self.cells[n] = Cell(reference, None, self.cells[reference], reference, True )
+                else:
+                    self.cells[n] = Cell(reference, None, None, reference, True )
+            
 
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
