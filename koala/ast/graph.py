@@ -827,7 +827,7 @@ class ExcelCompiler(object):
             # print "============= Handling ", c1.address()
             cursheet = c1.sheet
             
-            if c1.address() in self.named_ranges:
+            if c1.address() in self.ranges:
                 deps = []
                 for c in self.ranges[c1.address()].cells:
                     deps.append(c)
