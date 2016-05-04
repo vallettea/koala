@@ -14,18 +14,23 @@ from excelutils import (
     flatten, 
     split_address, 
     col2num, 
+    num2col,
     index2addres,
     is_number,
+    is_range,
     date_from_int,
     normalize_year,
     is_leap_year,
     get_max_days_in_month,
     find_corresponding_index,
     check_length,
-    extract_numeric_values
+    extract_numeric_values,
+    resolve_range
 )
 
-from ..ast.Range import Range, get_values
+from ..ast.Range import Range 
+
+CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
@@ -93,8 +98,9 @@ def xmin(*args): # Excel reference: https://support.office.com/en-us/article/MIN
 
 def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM-function-043e1c7d-7726-4e80-8f32-07b23e057f89
     # ignore non numeric cells and boolean cells
+
     values = extract_numeric_values(*args)
-    
+
     # however, if no non numeric cells, return zero (is what excel does)
     if len(values) < 1:
         return 0
@@ -144,9 +150,13 @@ def right(text,n):
         return str(int(text))[-n:]
         
 
-def index(range, row, col = None, ref = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
-    if type(range) != Range:
-        raise TypeError('%s must be a Range' % str(range))
+def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
+
+    cells, nr, nc = my_range
+    cells = list(flatten(cells))
+
+    if type(cells) != list:
+        raise TypeError('%s must be a list' % str(cells))
 
     if not is_number(row):
         raise TypeError('%s must be a number' % str(row))
@@ -154,31 +164,41 @@ def index(range, row, col = None, ref = None): # Excel reference: https://suppor
     if row == 0 and col == 0:
         raise ValueError('No index asked for Range')
 
-    if row > range.nb_rows:
+    if row > nr:
         raise Exception('Index %i out of range' % row)
 
-    # 1-dim case
-    if range.nb_cols == 1 or range.nb_rows == 1:
-        if col is not None:
-            raise ValueError('Range is one dimensional, can not reach index %i, %i' % (row, col))
+    if nr == 1:
+        return cells[col - 1]
+
+    if nc == 1:
+        return cells[row - 1]
+        
+    else: # could be optimised
+        if col is None:
+            raise ValueError('Range is 2 dimensional, can not reach value with col = None')
+
+        if not is_number(col):
+            raise TypeError('%s must be a number' % str(col))
+
+        if col > nc:
+            raise Exception('Index %i out of range' % col)
+
+        indices = range(len(cells))
+
+        if row == 0: # get column
+            filtered_indices = filter(lambda x: x % nc == col - 1, indices)
+            filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+            return filtered_cells
+
+        elif col == 0: # get row
+            filtered_indices = filter(lambda x: int(x / nc) == row - 1, indices)
+            filtered_cells = map(lambda i: cells[i], filtered_indices)
+
+            return filtered_cells
+
         else:
-            return range.get(row)
-
-    # 2-dim case
-    if col is None:
-        raise ValueError('Range is 2 dimensional, can not reach value with col = None')
-
-    if not is_number(col):
-        raise TypeError('%s must be a number' % str(col))
-
-    if col > range.nb_cols:
-        raise Exception('Index %i out of range' % col)
-
-    if row == 0 or col == 0:
-        return get_values(ref, range.get(row, col))[0]
-
-    else:
-        return range.get(row, col)
+            return cells[(row - 1)* nc + (col - 1)]    
 
 
 def lookup(value, lookup_range, result_range = None): # Excel reference: https://support.office.com/en-us/article/LOOKUP-function-446d94af-663b-451d-8251-369d5e3864cb
@@ -199,8 +219,6 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
                 lastnum = i
 
     output_range = result_range.values() if result_range is not None else lookup_range.values()
-
-    print 'OUTPUT', output_range
 
     if lastnum < 0:
         raise Exception("No numeric data found in the lookup range")
@@ -278,7 +296,10 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
 
     elif match_type == 0:
         # No string wildcard
-        return [type_convert(x) for x in range_values].index(lookup_value) + 1
+        try:
+            return [type_convert(x) for x in range_values].index(lookup_value) + 1
+        except:
+            return Exception("%s not found" % lookup_value)
 
     elif match_type == -1:
         # Verify descending sort
@@ -557,25 +578,84 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
 
 def isNa(value):
     # This function might need more solid testing
-
     try:
         eval(value)
         return False
     except:
         return True
 
+def isblank(value):
+    return value is None
+
+def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
+    # This function accepts a list of addresses
+    # Maybe think of passing a Range as first argument
+
+    # get first cell address of reference
+    if is_range(reference):
+        ref = list(flatten(resolve_range(reference)[0]))[0]
+    else:
+        ref = reference
+    ref_sheet = ''
+    end_address = ''
+
+    if '!' in ref:
+        ref_sheet = ref.split('!')[0] + '!'
+        ref_cell = ref.split('!')[1]
+    else:
+        ref_cell = ref
+
+    found = re.search(CELL_REF_RE, ref)
+    new_col = col2num(found.group(1)) + cols
+    new_row = int(found.group(2)) + rows
+
+    if new_row <= 0 or new_col <= 0:
+        raise Exception('Offset is out of bounds')
+
+    start_address = str(num2col(new_col)) + str(new_row)
+
+    if (height is not None and width is not None):
+        if type(height) != int:
+            raise TypeError('%d must not be integer' % height)
+        if type(width) != int:
+            raise TypeError('%d must not be integer' % width)
+
+        if height > 0:
+            end_row = new_row + height - 1
+        else:
+            raise ValueError('%d must be strictly positive' % height)
+        if width > 0:
+            end_col = new_col + width - 1
+        else:
+            raise ValueError('%d must be strictly positive' % width)
+
+        end_address = ':' + str(num2col(end_col)) + str(end_row)
+    elif height and not width or not height and width:
+        raise Exception('Height and width must be passed together')
+
+    return ref_sheet + start_address + end_address
+
+
+
+    
+
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.multiply_all(x, y), range_list).values())
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
-    try:
-        return(eval(value))
-    except:
+    if value is Exception:
         return value_if_error
+    else:
+        return value
+
+    # try:
+    #     return(eval(value))
+    # except:
+    #     return value_if_error
 
 if __name__ == '__main__':
     pass

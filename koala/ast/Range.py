@@ -1,8 +1,27 @@
 
 import re
-from collections import OrderedDict
-# from excelutils import col2num
+from collections import OrderedDict, Iterable
+# from koala.ast.excelutils import col2num, num2col, flatten, is_number
 import string
+
+
+# this is due to a circular reference, need to be addressed
+def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
+    try:
+        float(s)
+        return True
+    except:
+        return False
+
+def flatten(l):
+    for el in l:
+        if isinstance(el, Iterable) and not isinstance(el, basestring):
+            for sub in flatten(el):
+                yield sub
+        else:
+            yield el
+
+# e.g., convert BA -> 53
 def col2num(col):
     
     if not col:
@@ -14,6 +33,7 @@ def col2num(col):
         tot += (ord(c)-64) * 26 ** i
     return tot
 
+# convert back
 def num2col(num):
     
     if num < 1:
@@ -29,44 +49,63 @@ def num2col(num):
         s = string.ascii_uppercase[r-1] + s
     return s
 
+
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
-def get_values(ref, first = None, second = None):
-    first_value = None
-    second_value = None
-
+def parse_cell_address(ref):
     try:
-        col = re.search(CELL_REF_RE, ref).group(1)
-        row = re.search(CELL_REF_RE, ref).group(2)
+        found = re.search(CELL_REF_RE, ref)
+        col = found.group(1)
+        row = found.group(2)
 
+        return (row, col)
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
+
+def find_associated_values(ref, first = None, second = None):
+    valid = False
+
+    row, col = ref
+
     if type(first) == Range:
         for key, value in first.items():
             r, c = key
             if r == row or c == col:
                 first_value = value
+                valid = True
                 break
 
-        if first_value is None:
+        if not valid:
             raise Exception('First argument of Range operation is not valid')
     else:
         first_value = first
+
+    valid = False
 
     if type(second) == Range:
         for key, value in second.items():
             r, c = key
             if r == row or c == col:
                 second_value = value
+                valid = True
                 break
 
-        if second_value is None:
+        if not valid:
             raise Exception('Second argument of Range operation is not valid')
     else:
         second_value = second
     
     return (first_value, second_value)
+
+def check_value(a):
+    try: # This is to avoid None or Exception returned by Range operations
+        if float(a):
+            return a
+        else:
+            return 0
+    except:
+        return 0
 
 class Range(OrderedDict):
 
@@ -77,9 +116,13 @@ class Range(OrderedDict):
         result = []
         cleaned_cells = []
 
+        cells = list(flatten(cells))
+        values = list(flatten(values))
+
         for index, cell in enumerate(cells):
-            col = re.search(CELL_REF_RE, cell).group(1)
-            row = re.search(CELL_REF_RE, cell).group(2)
+            found = re.search(CELL_REF_RE, cell)
+            col = found.group(1)
+            row = found.group(2)
 
             if '!' in cell:
                 cleaned_cell = cell.split('!')[1]
@@ -87,19 +130,31 @@ class Range(OrderedDict):
                 cleaned_cell = cell
 
             cleaned_cells.append(cleaned_cell)
-            result.append(((row, col), values[index]))
-
+            try: # Might not be needed
+                result.append(((row, col), values[index]))
+            except:
+                result.append(((row, col), None))
+        self.cells = cells
         # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
         cells = cleaned_cells
-        self.cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
+        self.cleaned_cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
         
         # get last cell
         last = cells[self.length - 1]
         first = cells[0]
 
-        self.nb_cols = int(col2num(last[0])) - int(col2num(first[0])) + 1
-        self.nb_rows = int(last[1]) - int(first[1]) + 1
+        last_found = re.search(CELL_REF_RE, last)
+        first_found = re.search(CELL_REF_RE, first)
+
+        last_col = last_found.group(1)
+        last_row = last_found.group(2)
+
+        first_col = first_found.group(1)
+        first_row = first_found.group(2)
+
+        self.nb_cols = int(col2num(last_col)) - int(col2num(first_col)) + 1
+        self.nb_rows = int(last_row) - int(first_row) + 1
 
         OrderedDict.__init__(self, result)
 
@@ -167,134 +222,115 @@ class Range(OrderedDict):
                 return new_value
                 # return Range([new_ref], [new_value])
 
+    @staticmethod
+    def apply_one(func, self, other, ref):
+        function = func_dict[func]
+
+        first, second = find_associated_values(ref, self, other)
+
+        return function(first, second)
 
     @staticmethod
-    def add_one(self, other, ref):
-        first, second = get_values(ref, self, other)
+    def apply_all(func, self, other, ref = None):
+        function = func_dict[func]
 
-        return first + second
-
-    @staticmethod
-    def add_all(self, other, ref = None):
         if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value + other.values()[key], enumerate(self.values())))
+            return Range(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+        elif type(self) == Range:
+            return Range(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())))
         else:
-            return Range(self.cells, map(lambda (key, value): value + other, enumerate(self.values())))
+            return function(self, other)
+
 
     @staticmethod
-    def substract_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first - second
-
-    @staticmethod
-    def substract_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value - other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value - other, enumerate(self.values())))
+    def add(a, b):
+        try:
+            return check_value(a) + check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def multiply_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first * second
-
-    @staticmethod
-    def multiply_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value * other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value * other, enumerate(self.values())))
+    def substract(a, b):
+        try:
+            return check_value(a) - check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def divide_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first / second
-
-    @staticmethod
-    def divide_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value / other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value / other, enumerate(self.values())))
+    def minus(a, b = None):
+        # b is not used, but needed in the signature. Maybe could be better
+        try:
+            return -check_value(a)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_equal_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first == second
-
-    @staticmethod
-    def is_equal_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value == other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value == other, enumerate(self.values())))
+    def multiply(a, b):
+        try:
+            return check_value(a) * check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_not_equal_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first != second
-
-    @staticmethod
-    def is_not_equal_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value != other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value != other, enumerate(self.values())))
+    def divide(a, b):
+        try:
+            return check_value(a) / check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_strictly_superior_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first > second
-
-    @staticmethod
-    def is_strictly_superior_all(self, other, ref = None):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value > other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value > other, enumerate(self.values())))
+    def is_equal(a, b):
+        try:
+            return check_value(a) == check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_strictly_inferior_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first < second
-
-    @staticmethod
-    def is_strictly_inferior_all(self, other, ref):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value < other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value < other, enumerate(self.values())))
+    def is_not_equal(a, b):
+        try:
+            return check_value(a) != check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_superior_or_equal_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first >= second
-
-    @staticmethod
-    def is_superior_or_equal_all(self, other, ref):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value >= other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value >= other, enumerate(self.values())))
+    def is_strictly_superior(a, b):
+        try:
+            return check_value(a) > check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_inferior_or_equal_one(self, other, ref):
-        first, second = get_values(ref, self, other)
-
-        return first <= second
+    def is_strictly_inferior(a, b):
+        try:
+            return check_value(a) < check_value(b)
+        except Exception as e:
+            return e
 
     @staticmethod
-    def is_inferior_or_equal_all(self, other, ref):
-        if type(other) == Range:
-            return Range(self.cells, map(lambda (key, value): value <= other.values()[key], enumerate(self.values())))
-        else:
-            return Range(self.cells, map(lambda (key, value): value <= other, enumerate(self.values())))
-    
+    def is_superior_or_equal(a, b):
+        try:
+            return check_value(a) >= check_value(b)
+        except Exception as e:
+            return e
+
+    @staticmethod
+    def is_inferior_or_equal(a, b):
+        try:
+            return check_value(a) <= check_value(b)
+        except Exception as e:
+            return e
+
+
+func_dict = {
+    "multiply": Range.multiply,
+    "divide": Range.divide,
+    "add": Range.add,
+    "substract": Range.substract,
+    "minus": Range.minus,
+    "is_equal": Range.is_equal,
+    "is_not_equal": Range.is_not_equal,
+    "is_strictly_superior": Range.is_strictly_superior,
+    "is_strictly_inferior": Range.is_strictly_inferior,
+    "is_superior_or_equal": Range.is_superior_or_equal,
+    "is_inferior_or_equal": Range.is_inferior_or_equal,
+}
