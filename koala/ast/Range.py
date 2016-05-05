@@ -299,42 +299,42 @@ class Range(OrderedDict):
     @staticmethod
     def is_equal(a, b):
         try:
-            return check_value(a) == check_value(b)
+            return round(check_value(a), 10) == round(check_value(b), 10)
         except Exception as e:
             return e
 
     @staticmethod
     def is_not_equal(a, b):
         try:
-            return check_value(a) != check_value(b)
+            return round(check_value(a), 10) != round(check_value(b), 10)
         except Exception as e:
             return e
 
     @staticmethod
     def is_strictly_superior(a, b):
         try:
-            return check_value(a) > check_value(b)
+            return round(check_value(a), 10) > round(check_value(b), 10)
         except Exception as e:
             return e
 
     @staticmethod
     def is_strictly_inferior(a, b):
         try:
-            return check_value(a) < check_value(b)
+            return round(check_value(a), 10) < round(check_value(b), 10)
         except Exception as e:
             return e
 
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
-            return check_value(a) >= check_value(b)
+            return round(check_value(a), 10) >= round(check_value(b), 10)
         except Exception as e:
             return e
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
-            return check_value(a) <= check_value(b)
+            return round(check_value(a), 10) <= round(check_value(b), 10)
         except Exception as e:
             return e
 
