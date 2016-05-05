@@ -232,7 +232,8 @@ class Spreadsheet(object):
                     self.count += 1
                     self.history[cell.address()]['formula'] = str(cell.formula)
                     self.history[cell.address()]['priority'] = self.count
-
+                    self.history[cell.address()]['python'] = str(cell.python_expression)
+                    
                 self.history[cell.address()]['new'] = str(cell.value)
             else:
                 self.history[cell.address()] = {'new': str(cell.value)}
@@ -275,11 +276,29 @@ class ASTNode(object):
         current = self
 
         special_functions = ['sumproduct', 'match']
+        break_functions = ['index']
 
         while current is not None:
             # print 'VERIF', current.tvalue.lower()
 
             if current.tvalue.lower() in special_functions:
+                found = True
+                break
+            elif current.tvalue.lower() in break_functions:
+                break
+            else:
+                current = current.parent(ast)
+
+        return found
+
+    def has_operator_or_func_parent(self, ast):
+        found = False
+        current = self
+
+        while current is not None:
+            # print 'VERIF', current.tvalue.lower(), current.ttype
+
+            if (current.ttype[:8] == 'operator' or current.ttype == 'function') and current.tvalue.lower() != 'if':
                 found = True
                 break
             else:
@@ -397,6 +416,8 @@ class RangeNode(OperandNode):
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
+        has_operator_or_func_parent = self.has_operator_or_func_parent(ast)
+
         if is_a_named_range:
             # print 'RANGE', str(self)
             my_str = "'" + str(self) + "'" 
@@ -427,7 +448,7 @@ class RangeNode(OperandNode):
              parent.children(ast)[0] == self))):
             to_eval = False
 
-        if parent is None and self.tsubtype == "named_range": # When a named range is referenced in a cell without any prior operation
+        if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
             return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
                         
         if to_eval == False:
@@ -457,7 +478,10 @@ class RangeNode(OperandNode):
         # elif is_a_range:
         #     return 'eval_range(' + str + ')'
         else:
-            return 'eval_ref(' + my_str + ')'
+            if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
+                return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
+            else:
+                return 'eval_ref(' + my_str + ')'
 
         return my_str
     

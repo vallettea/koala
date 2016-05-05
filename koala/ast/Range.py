@@ -108,9 +108,7 @@ def find_associated_values(ref, first = None, second = None):
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
-        if type(a) == str:
-            return a
-        elif float(a):
+        if float(a):
             return round(a, 10) if type(a) == float else a
         else:
             return 0
@@ -254,10 +252,16 @@ class Range(OrderedDict):
     def apply_all(func, self, other, ref = None):
         function = func_dict[func]
 
-        if type(other) == Range:
+        # Here, the first arg of Range() has little importance: TBC
+
+        if type(self) == Range and type(other) == Range:
+            if self.length != other.length:
+                raise Exception('apply_all must have 2 Ranges of identical length')
             return Range(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
         elif type(self) == Range:
             return Range(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())))
+        elif type(other) == Range:
+            return Range(other.cells, map(lambda (key, value): function(value, other), enumerate(other.values())))
         else:
             return function(self, other)
 
@@ -301,16 +305,25 @@ class Range(OrderedDict):
     @staticmethod
     def is_equal(a, b):
         try:
+            if type(a) != str:
+                a = check_value(a)
+            if type(b) != str:
+                b = check_value(b)
             # if a == 'David':
             #     print 'Check value', check_value(a)
-            return check_value(a) == check_value(b)
+            return a == b
         except Exception as e:
             return e
 
     @staticmethod
     def is_not_equal(a, b):
         try:
-            return check_value(a) != check_value(b)
+            if type(a) != str:
+                a = check_value(a)
+            if type(b) != str:
+                b = check_value(b)
+
+            return a != b
         except Exception as e:
             return e
 
