@@ -108,8 +108,10 @@ def find_associated_values(ref, first = None, second = None):
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
-        if float(a) or type(a) == str:
+        if type(a) == str:
             return a
+        elif float(a):
+            return round(a, 10) if type(a) == float else a
         else:
             return 0
     except:
@@ -299,42 +301,44 @@ class Range(OrderedDict):
     @staticmethod
     def is_equal(a, b):
         try:
-            return round(check_value(a), 10) == round(check_value(b), 10)
+            # if a == 'David':
+            #     print 'Check value', check_value(a)
+            return check_value(a) == check_value(b)
         except Exception as e:
             return e
 
     @staticmethod
     def is_not_equal(a, b):
         try:
-            return round(check_value(a), 10) != round(check_value(b), 10)
+            return check_value(a) != check_value(b)
         except Exception as e:
             return e
 
     @staticmethod
     def is_strictly_superior(a, b):
         try:
-            return round(check_value(a), 10) > round(check_value(b), 10)
+            return check_value(a) > check_value(b)
         except Exception as e:
             return e
 
     @staticmethod
     def is_strictly_inferior(a, b):
         try:
-            return round(check_value(a), 10) < round(check_value(b), 10)
+            return check_value(a) < check_value(b)
         except Exception as e:
             return e
 
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
-            return round(check_value(a), 10) >= round(check_value(b), 10)
+            return check_value(a) >= check_value(b)
         except Exception as e:
             return e
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
-            return round(check_value(a), 10) <= round(check_value(b), 10)
+            return check_value(a) <= check_value(b)
         except Exception as e:
             return e
 
