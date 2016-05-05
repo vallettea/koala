@@ -239,12 +239,10 @@ class Spreadsheet(object):
             else:
                 self.history[cell.address()] = {'new': str(cell.value)}
 
-            # print 'VERIF', cell.address(), cell.value
         except Exception as e:
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # (Range.apply_one('multiply',Range.apply_one('substract',xsum(eval_ref(index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],1),index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('CA_Periods'))[0]))),0,('55', 'L')),eval_ref('Deprec_UOPRates'),('55', 'L')) if Range.apply_one('is_equal',eval_ref('Deprec_MethodFinal'),"UOP",('55', 'L')) else sumproduct(eval_ref(index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],1),index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('CA_Periods'))[0])),eval_ref(index(resolve_range(self.named_ranges['Deprec_RatesRev']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],Range.apply_all('add',Range.apply_all('substract',eval_ref('year_cntTotal'),eval_ref('CA_Periods'),('55', 'L')),1,('55', 'L'))),index(resolve_range(self.named_ranges['Deprec_RatesRev']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('year_cntTotal'))[0]))))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
