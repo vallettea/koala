@@ -219,8 +219,6 @@ class Spreadsheet(object):
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
-            # print 'vv', eval_ref('Liste2', ('1', 'G'))
-
             # if vv is None:
             #     print "WARNING %s is None" % (cell.address())
             # elif isinstance(vv, (List, list)):
@@ -569,9 +567,6 @@ def shunting_yard(expression, named_ranges, ref = ''):
     #remove leading =
     if expression.startswith('='):
         expression = expression[1:]
-
-    #remove %
-    expression = expression.replace("%", "")
         
     p = ExcelParser();
     p.parse(expression)
