@@ -21,7 +21,7 @@ import cPickle
 import logging
 from itertools import chain
 
-from Range import Range, find_associated_values, parse_cell_address
+from Range import Range, find_associated_values, parse_cell_address, get_cell_address
 
 import json
 import gzip
@@ -31,12 +31,15 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
-    def __init__(self,G,cellmap, named_ranges):
+    def __init__(self,G,cellmap, named_ranges, ranges):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
+        self.ranges = ranges
         self.params = None
+        self.history = dict()
+        self.count = 0
 
     @staticmethod
     def load_from_file(fname):
@@ -71,9 +74,7 @@ class Spreadsheet(object):
         with gzip.GzipFile(fname, 'r') as infile:
             data = json.loads(infile.read())
         def cell_from_dict(d):
-            formula = d["formula"]
-            always_eval = 'OFFSET' in formula
-            return {"id": Cell(d["address"], None, value=d["value"], formula=formula, is_named_range=d["is_named_range"], always_eval=always_eval)}
+            return {"id": Cell(d["address"], None, value=d["value"], formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])}
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
@@ -103,8 +104,6 @@ class Spreadsheet(object):
             # for s in self.cellmap:
             #     print 'c', self.cellmap[s].address(), self.cellmap[s].value
             cell = self.cellmap[address]
-        else:
-            address = cell.address()
 
         if cell.is_named_range:
             # Take care of the case where named_range is not directly a cell address (type offset ...)
@@ -116,15 +115,15 @@ class Spreadsheet(object):
             self.reset(cell)
             # set the value
             cell.value = val
-            # update depending named_ranges
-            for i in self.G.successors_iter(cell):
-                if i.address() in self.named_ranges:
-                    ref = parse_cell_address(address)
-                    self.named_ranges[i.address()][ref] = val
-                    
 
     def reset(self, cell):
-        if cell.value is None and cell.address() not in self.named_ranges: return
+        addr = cell.address()
+        if cell.value is None and addr not in self.named_ranges: return
+
+        # update depending ranges
+        if addr in self.ranges:
+            self.ranges[addr].reset()
+
         cell.value = None
         map(self.reset,self.G.successors_iter(cell))
 
@@ -175,31 +174,47 @@ class Spreadsheet(object):
             #print "returning constant or cached value for ", cell.address()
             return cell.value
         
+        def update_range(range):
+            # print 'update range', range
+            for key, value in range.items():
+                if value is None:
+                    addr = get_cell_address(range.sheet, key)
+                    range[key] = self.evaluate(addr)
+
+            # print 'updated range', range
+            return range
         # recalculate formula
         # the compiled expression calls this function
-        def eval_ref(ref1, ref2 = None):
-            if ref1 in self.named_ranges and ref2 is None:
-                # print 'NAME RANGE', ref1
-                return self.named_ranges[ref1]
-            elif not is_range(ref1) and ref2 is None: # ref1 = Sheet1!A1 or A1
-                return self.evaluate(ref1)
-            elif ref2 is None: # ref1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
-                ref1, ref2 = ref1.split(':')
-                if '!' in ref1:
-                    sheet = ref1.split('!')[0]
+        def eval_ref(addr1, addr2 = None):
+            if addr2 == None:
+                if addr1 in self.ranges:
+                    range1 = self.ranges[addr1]
+                    return update_range(range1)
+
+                elif addr1 in self.named_ranges:
+                    return self.evaluate(addr1)
+                elif not is_range(addr1): # addr1 = Sheet1!A1 or A1, maybe this may never happen
+                    # print 'REF1 is not a range'
+                    return self.evaluate(addr1)
+                else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
+                    addr1, addr2 = addr1.split(':')
+                    if '!' in addr1:
+                        sheet = addr1.split('!')[0]
+                    else:
+                        sheet = None
+                    if '!' in addr2:
+                        addr2 = addr2.split('!')[1]
+                    # print 'REF1 is a range'
+                    return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
+            else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
+                # print 'REF2 is not none'
+                if '!' in addr1:
+                    sheet = addr1.split('!')[0]
                 else:
                     sheet = None
-                if '!' in ref2:
-                    ref2 = ref2.split('!')[1]
-                return self.evaluate_range(CellRange('%s:%s' % (ref1, ref2),sheet), False)
-            else:  # ref1 = Sheet1!A1, ref2 = Sheet1!A2
-                if '!' in ref1:
-                    sheet = ref1.split('!')[0]
-                else:
-                    sheet = None
-                if '!' in ref2:
-                    ref2 = ref2.split('!')[1]
-                return self.evaluate_range(CellRange('%s:%s' % (ref1, ref2),sheet), False)
+                if '!' in addr2:
+                    addr2 = addr2.split('!')[1]
+                return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
@@ -212,10 +227,24 @@ class Spreadsheet(object):
             #     print 'Output is list => converting', cell.index
             #     vv = vv[cell.index]
             cell.value = vv
+
+            # DEBUG: saving differences
+            if cell.address() in self.history:
+                if self.history[cell.address()]['original'] != str(cell.value):
+                    self.count += 1
+                    self.history[cell.address()]['formula'] = str(cell.formula)
+                    self.history[cell.address()]['priority'] = self.count
+
+                self.history[cell.address()]['new'] = str(cell.value)
+            else:
+                self.history[cell.address()] = {'new': str(cell.value)}
+
+            # print 'VERIF', cell.address(), cell.value
         except Exception as e:
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
+                # (Range.apply_one('multiply',Range.apply_one('substract',xsum(eval_ref(index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],1),index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('CA_Periods'))[0]))),0,('55', 'L')),eval_ref('Deprec_UOPRates'),('55', 'L')) if Range.apply_one('is_equal',eval_ref('Deprec_MethodFinal'),"UOP",('55', 'L')) else sumproduct(eval_ref(index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],1),index(resolve_range(self.named_ranges['Deprec_Capital']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('CA_Periods'))[0])),eval_ref(index(resolve_range(self.named_ranges['Deprec_RatesRev']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],Range.apply_all('add',Range.apply_all('substract',eval_ref('year_cntTotal'),eval_ref('CA_Periods'),('55', 'L')),1,('55', 'L'))),index(resolve_range(self.named_ranges['Deprec_RatesRev']),find_associated_values("('55', 'L')", eval_ref('tR'))[0],find_associated_values("('55', 'L')", eval_ref('year_cntTotal'))[0]))))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -316,7 +345,8 @@ class OperatorNode(ASTNode):
             return "Range.apply_one('minus', %s, None, %s)" % (args[0].emit(ast,context=context), str(self.ref))
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
-            call = 'apply' + ('_all' if self.find_special_function(ast) else '_one')
+            is_special = self.find_special_function(ast)
+            call = 'apply' + ('_all' if is_special else '_one')
             function = self.op_range_translator.get(op)
 
             arg1 = args[0]
@@ -410,10 +440,10 @@ class RangeNode(OperandNode):
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + str(self.ref) + '", eval_ref(' + my_str + '))[0]'
+            return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + str(self.ref) + '", eval_ref(' + my_str + '))[0]'
+            return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -424,10 +454,10 @@ class RangeNode(OperandNode):
                 return 'resolve_range(' + my_str + ')'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + str(self.ref) + '", eval_ref(' + my_str + '))[0]'
+            return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values("' + str(self.ref) + '", eval_ref(' + my_str + '))[0]'
+            return 'find_associated_values(' + str(self.ref) + ', eval_ref(' + my_str + '))[0]'
         # elif is_a_range:
         #     return 'eval_range(' + str + ')'
         else:
@@ -764,10 +794,9 @@ class ExcelCompiler(object):
                     self.cells[n] = Cell(n, None, None, self.named_ranges[n], True )
             else:
                 if reference in self.cells:
-                    self.cells[n] = Cell(reference, None, self.cells[reference], reference, True )
+                    self.cells[n] = Cell(n, None, self.cells[reference].value, reference, True )
                 else:
-                    self.cells[n] = Cell(reference, None, None, reference, True )
-            
+                    self.cells[n] = Cell(n, None, None, reference, True )
 
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
@@ -814,7 +843,7 @@ class ExcelCompiler(object):
 
         # map of all cells
         cellmap = dict([(x.address(),x) for x in seeds])
-        
+    
         # directed graph
         G = nx.DiGraph()
 
@@ -919,7 +948,7 @@ class ExcelCompiler(object):
             
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-        sp = Spreadsheet(G,cellmap, self.ranges)
+        sp = Spreadsheet(G,cellmap, self.named_ranges, self.ranges)
         
         return sp
 

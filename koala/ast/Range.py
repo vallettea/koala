@@ -62,6 +62,14 @@ def parse_cell_address(ref):
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
+def get_cell_address(sheet, tuple):
+    row = tuple[0]
+    col = tuple[1]
+
+    if sheet is not None:
+        return sheet + '!' + col + row
+    else:
+        return col + row
 
 def find_associated_values(ref, first = None, second = None):
     valid = False
@@ -119,6 +127,11 @@ class Range(OrderedDict):
         cells = list(flatten(cells))
         values = list(flatten(values))
 
+        try:
+            sheet = cells[0].split('!')[0]
+        except:
+            sheet = None
+
         for index, cell in enumerate(cells):
             found = re.search(CELL_REF_RE, cell)
             col = found.group(1)
@@ -135,6 +148,7 @@ class Range(OrderedDict):
             except:
                 result.append(((row, col), None))
         self.cells = cells
+        self.sheet = sheet
         # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
         cells = cleaned_cells
         self.cleaned_cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
@@ -157,6 +171,10 @@ class Range(OrderedDict):
         self.nb_rows = int(last_row) - int(first_row) + 1
 
         OrderedDict.__init__(self, result)
+
+    def reset(self):
+        for key in self.keys():
+            self[key] = None
 
     def is_associated(self, other):
         if self.length != other.length:
