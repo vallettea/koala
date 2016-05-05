@@ -108,7 +108,7 @@ def find_associated_values(ref, first = None, second = None):
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
-        if float(a):
+        if float(a) or type(a) == str:
             return a
         else:
             return 0
