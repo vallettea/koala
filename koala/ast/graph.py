@@ -23,6 +23,7 @@ import logging
 from itertools import chain
 
 from Range import Range, find_associated_values, parse_cell_address, get_cell_address
+from OffsetParser import OffsetParser
 
 import json
 import gzip
@@ -786,7 +787,7 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, file, ignore_sheets = []):
+    def __init__(self, file, ignore_sheets = [], parse_offsets = False):
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -795,8 +796,20 @@ class ExcelCompiler(object):
         self.cells = read_cells(archive, ignore_sheets)
         # Parse named_range
         self.named_ranges = read_named_ranges(archive)
-        self.ranges = {}
+        # Remove offsets
+        if parse_offsets:
+            parser = OffsetParser(self.cells, self.named_ranges)
+
+            for k,v in self.named_ranges.items():
+                if 'OFFSET' in v:
+                    self.named_ranges[k] = parser.parseOffsets(v)
+            for cell in self.cells.values():
+                if cell.formula and 'OFFSET' in cell.formula:
+                    f = parser.parseOffsets(cell.formula)
+                    cell.__formula = f          
+        
         # Transform named_ranges in artificial ranges
+        self.ranges = {}
         for n in self.named_ranges:
             reference = self.named_ranges[n]
             if is_range(reference):
@@ -848,7 +861,7 @@ class ExcelCompiler(object):
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
             
-    def gen_graph(self, ouputs=None):
+    def gen_graph(self, ouputs = None, inputs = None):
         
         if ouputs is None:
             seeds = list(flatten(self.cells.values()))
