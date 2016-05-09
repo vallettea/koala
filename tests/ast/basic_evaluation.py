@@ -106,5 +106,9 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A1', 2)
         self.assertEqual(self.sp.evaluate('Sheet1!P1'), 10)
 
+    def test_Sheet2_B2(self):
+        self.sp.set_value('Sheet1!B2',1000)
+        self.assertEqual(self.sp.evaluate('Sheet2!B2'), 1000)
+
 if __name__ == '__main__':
     unittest.main()

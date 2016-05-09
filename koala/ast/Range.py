@@ -79,11 +79,14 @@ def find_associated_values(ref, first = None, second = None):
     if type(first) == Range:
         for key, value in first.items():
             r, c = key
-            if r == row or c == col:
+            if r == row and c == col:
                 first_value = value
                 valid = True
                 break
-
+            if r == row or c == col:
+                first_value = value
+                valid = True
+            
         if not valid:
             raise Exception('First argument of Range operation is not valid')
     else:
@@ -94,10 +97,13 @@ def find_associated_values(ref, first = None, second = None):
     if type(second) == Range:
         for key, value in second.items():
             r, c = key
-            if r == row or c == col:
+            if r == row and c == col:
                 second_value = value
                 valid = True
                 break
+            elif r == row or c == col:
+                second_value = value
+                valid = True
 
         if not valid:
             raise Exception('Second argument of Range operation is not valid')
