@@ -159,6 +159,8 @@ class Spreadsheet(object):
 
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
+        cells = list(flatten(cells))
+
         values = [ self.evaluate(c) for c in cells ]
 
         data = Range(cells, values)
@@ -236,12 +238,13 @@ class Spreadsheet(object):
 
             # DEBUG: saving differences
             if cell.address() in self.history:
-                if self.history[cell.address()]['original'] != str(cell.value):
+                ori_value = self.history[cell.address()]['original']
+                if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
                     self.count += 1
                     self.history[cell.address()]['formula'] = str(cell.formula)
                     self.history[cell.address()]['priority'] = self.count
                     self.history[cell.address()]['python'] = str(cell.python_expression)
-                    
+
                 self.history[cell.address()]['new'] = str(cell.value)
             else:
                 self.history[cell.address()] = {'new': str(cell.value)}
@@ -473,6 +476,8 @@ class RangeNode(OperandNode):
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
+
+
             if is_a_named_range:
                 return 'resolve_range(self.named_ranges[' + my_str + '])'
             else:
@@ -543,7 +548,10 @@ class FunctionNode(ASTNode):
         elif fun == "or":
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index": # might not be necessary
-            str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
+            if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
+                str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
+            else:
+                str = 'eval_ref(index(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         elif fun == "offset":
             if self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 str = 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
@@ -924,6 +932,8 @@ class ExcelCompiler(object):
                         # get the values so we can set the range value
                         rng.value = [c.value for c in cells]
                         
+                        # my_range = Range(cells, rng.value)
+                        # self.ranges[dep] = my_range
 
                         # save the range
                         cellmap[rng.address()] = rng

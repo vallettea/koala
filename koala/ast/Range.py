@@ -79,11 +79,14 @@ def find_associated_values(ref, first = None, second = None):
     if type(first) == Range:
         for key, value in first.items():
             r, c = key
-            if r == row or c == col:
+            if r == row and c == col:
                 first_value = value
                 valid = True
                 break
-
+            if r == row or c == col:
+                first_value = value
+                valid = True
+            
         if not valid:
             raise Exception('First argument of Range operation is not valid')
     else:
@@ -94,10 +97,13 @@ def find_associated_values(ref, first = None, second = None):
     if type(second) == Range:
         for key, value in second.items():
             r, c = key
-            if r == row or c == col:
+            if r == row and c == col:
                 second_value = value
                 valid = True
                 break
+            elif r == row or c == col:
+                second_value = value
+                valid = True
 
         if not valid:
             raise Exception('Second argument of Range operation is not valid')
@@ -109,7 +115,10 @@ def find_associated_values(ref, first = None, second = None):
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
         if float(a):
-            return round(a, 10) if type(a) == float else a
+            if type(a) == float:
+                return round(a, 10)
+            else:
+                return a
         else:
             return 0
     except:
@@ -298,7 +307,7 @@ class Range(OrderedDict):
     @staticmethod
     def divide(a, b):
         try:
-            return check_value(a) / check_value(b)
+            return float(check_value(a)) / float(check_value(b))
         except Exception as e:
             return e
 

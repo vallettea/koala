@@ -17,7 +17,7 @@ class CellRange(object):
 
         self.__address = address.replace('$','')
         
-        print 'CELL RANGE splitting', address
+        # print 'CELL RANGE splitting', address
         sh,start,end = split_range(address)
         if not sh and not sheet:
             raise Exception("Must pass in a sheet")
@@ -305,7 +305,7 @@ def split_address(address):
 
 def resolve_range(rng, flatten=False, sheet=''):
     
-    print 'RESOLVE RANGE splitting', rng
+    # print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
     
     if sh and sheet:
