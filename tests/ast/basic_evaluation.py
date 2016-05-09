@@ -63,8 +63,12 @@ class Test_Excel(unittest.TestCase):
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
 
     def test_B17(self):
-        self.sp.set_value('Sheet1!A17', 30)
-        self.assertEqual(self.sp.evaluate('Sheet1!C17'), 60)
+        self.sp.set_value('Sheet1!A17', 40)
+        self.assertEqual(self.sp.evaluate('Sheet1!C17'), 80)
+
+    def test_I17(self):
+        self.sp.set_value('Sheet1!A2', 4)
+        self.assertEqual(self.sp.evaluate('Sheet1!I17'), 4)
 
     def test_L1(self):
         self.sp.set_value('Sheet1!B1', 13)
@@ -101,6 +105,10 @@ class Test_Excel(unittest.TestCase):
     def test_P1(self):
         self.sp.set_value('Sheet1!A1', 2)
         self.assertEqual(self.sp.evaluate('Sheet1!P1'), 10)
+
+    def test_Sheet2_B2(self):
+        self.sp.set_value('Sheet1!B2',1000)
+        self.assertEqual(self.sp.evaluate('Sheet2!B2'), 1000)
 
 if __name__ == '__main__':
     unittest.main()
