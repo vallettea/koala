@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+import json
 
 dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
@@ -66,8 +67,8 @@ class Test_Excel(unittest.TestCase):
         self.assertEqual(self.sp.evaluate('Sheet1!C17'), 60)
 
     def test_L1(self):
-        self.sp.set_value('Sheet1!B1', 12)
-        self.assertEqual(self.sp.evaluate('Sheet1!L1'), 12)
+        self.sp.set_value('Sheet1!B1', 13)
+        self.assertEqual(self.sp.evaluate('Sheet1!L1'), 13)
 
     def test_F26(self):
         self.sp.set_value('Sheet1!A23', 10)
@@ -77,7 +78,29 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!B22', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!G26'), 10)
 
+    def test_N1(self):
+        self.sp.set_value('Sheet1!A1', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!N1'), 3)
 
+    def test_E32(self):
+        self.sp.set_value('Sheet1!A31', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!E32'), 19)
+
+    def test_A37(self):
+        self.sp.set_value('Sheet1!A36', 0.5)
+        self.assertEqual(self.sp.evaluate('Sheet1!A37'), 0.52)
+
+    def test_C37(self):
+        self.sp.set_value('Sheet1!C36', 'David')
+        self.assertEqual(self.sp.evaluate('Sheet1!C37'), 1)
+
+    def test_G9(self):
+        self.sp.set_value('Sheet1!A1', 2)
+        self.assertEqual(self.sp.evaluate('Sheet1!G9'), 67)
+
+    def test_P1(self):
+        self.sp.set_value('Sheet1!A1', 2)
+        self.assertEqual(self.sp.evaluate('Sheet1!P1'), 10)
 
 if __name__ == '__main__':
     unittest.main()
