@@ -25,11 +25,11 @@ def calculate_graph(file):
     startTime = datetime.now()
 
     try:
-        c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = False)
+        c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = True)
         print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
         
         startTime = datetime.now()
-        sp = c.gen_graph(outputs = ["CA_Years"])
+        sp = c.gen_graph(outputs = ["outNPV_Proj"], inputs = ["IA_PriceExportCond"])
         print "Gen graph in %s" % str(datetime.now() - startTime)
 
         startTime = datetime.now()

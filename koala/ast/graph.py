@@ -803,14 +803,18 @@ class ExcelCompiler(object):
         # Remove offsets
         if parse_offsets:
             parser = OffsetParser(self.cells, self.named_ranges)
-
+            nb = 0
             for k,v in self.named_ranges.items():
                 if 'OFFSET' in v:
                     self.named_ranges[k] = parser.parseOffsets(v)
-            for cell in self.cells.values():
+                    nb +=1
+            for k,cell in self.cells.items():
                 if cell.formula and 'OFFSET' in cell.formula:
                     f = parser.parseOffsets(cell.formula)
-                    cell.__formula = f          
+                    c = Cell(cell.address(), cell.sheet, cell.value, f, cell.is_named_range, cell.always_eval)
+                    self.cells[k] = c
+                    nb +=1
+            print "%s offsets removed" % str(nb)
         
         # Transform named_ranges in artificial ranges
         self.ranges = {}
@@ -864,6 +868,33 @@ class ExcelCompiler(object):
         else:
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
+
+    def get_all_dependencies(self, cell_addresses):
+        viewed_cells = set()
+        todo =  cell_addresses
+        while len(todo) > 0:
+            address = todo.pop()
+            try:
+                cell = self.cells[address]
+                viewed_cells.add(address)
+                if cell.address() in self.ranges:
+                    deps = []
+                    for c in self.ranges[cell.address()].cells:
+                        deps.append(c)
+                elif cell.formula:
+                    # parse the formula into code
+                    pystr, ast = self.cell2code(cell, cell.sheet)                    
+                    # get all the cells/ranges this formula refers to
+                    deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
+                    # remove dupes
+                    deps = uniqueify(deps)
+
+                for dep in deps:
+                    if dep not in viewed_cells:
+                        todo.append(dep)
+            except Exception as e:
+                print "Error in get_all_dependencies %s" % str(e)
+        return viewed_cells
             
     def gen_graph(self, outputs = None, inputs = None):
         
@@ -871,6 +902,11 @@ class ExcelCompiler(object):
             seeds = list(flatten(self.cells.values()))
         else:
             seeds = [self.cells[o] for o in outputs]
+
+        if inputs != None:
+            # get all the cells impacted by inputs
+            dependencies = self.get_all_dependencies(inputs)
+            print "%s cells depending on the inputs" % len(dependencies)
 
         print "Seeds %s cells" % len(seeds)
         # only keep seeds with formulas or numbers
@@ -969,9 +1005,13 @@ class ExcelCompiler(object):
                     # if we havent treated this cell allready
                     if c2.address() not in cellmap:
                         if c2.formula:
-                            # cell with a formula, needs to be added to the todo list
-                            todo.append(c2)
-                            #print "appended ", c2.address()
+                            if c2.address() not in dependencies:
+                                # cell with a formula, needs to be added to the todo list
+                                todo.append(c2)
+                            else:
+                                pystr,ast = self.cell2code(c2, cursheet)
+                                c2.python_expression = pystr
+                                c2.compile()
                         else:
                             # constant cell, no need for further processing, just remember to set the code
                             pystr,ast = self.cell2code(c2, cursheet)
