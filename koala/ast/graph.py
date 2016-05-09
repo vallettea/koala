@@ -151,6 +151,8 @@ class Spreadsheet(object):
 
         cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
+        cells = list(flatten(cells))
+
         values = [ self.evaluate(c) for c in cells ]
 
         data = Range(cells, values)
@@ -243,7 +245,6 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print 'PB 1', index(resolve_range(self.named_ranges['IA_RoyaltyRate']),match(eval_ref('gen_depthWater'),eval_ref('IA_Royalty_WaterDepth'),1),match(eval_ref('year_modelStart'),eval_ref('IA_Royalty_Year'),1)),
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
