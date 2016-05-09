@@ -24,25 +24,25 @@ def calculate_graph(file):
     
     startTime = datetime.now()
 
-    # try:
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = False)
-    print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    
-    startTime = datetime.now()
-    sp = c.gen_graph()
-    print "Gen graph in %s" % str(datetime.now() - startTime)
+    try:
+        c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = False)
+        print "%s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+        
+        startTime = datetime.now()
+        sp = c.gen_graph(outputs = ["CA_Years"])
+        print "Gen graph in %s" % str(datetime.now() - startTime)
 
-        # startTime = datetime.now()
-        # print "Serializing to disk...", file
-        # sp.dump(file_name.replace("xlsx", "gzip"))
-        # print "Serialized in %s" % str(datetime.now() - startTime)
+        startTime = datetime.now()
+        print "Serializing to disk...", file
+        sp.dump(file_name.replace("xlsx", "gzip"))
+        print "Serialized in %s" % str(datetime.now() - startTime)
 
-        # startTime = datetime.now()
-        # print "Reading from disk...", file
-        # sp = Spreadsheet.load(file_name.replace("xlsx", "gzip"))
-        # print "Red in %s" % str(datetime.now() - startTime)
-    # except:
-    #     print "Error in file " + file
+        startTime = datetime.now()
+        print "Reading from disk...", file
+        sp = Spreadsheet.load(file_name.replace("xlsx", "gzip"))
+        print "Red in %s" % str(datetime.now() - startTime)
+    except:
+        print "Error in file " + file
 
 if __name__ == '__main__':
 

@@ -8,11 +8,15 @@ from koala.ast.excellib import *
 from koala.ast.excelutils import *
 from math import *
 from collections import OrderedDict
+
+import networkx
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 from networkx.readwrite.gexf import write_gexf
 from networkx.readwrite import json_graph
+from networkx.algorithms import number_connected_components
+
 import networkx as nx
 
 from astutils import find_node, subgraph
@@ -861,12 +865,12 @@ class ExcelCompiler(object):
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
             
-    def gen_graph(self, ouputs = None, inputs = None):
+    def gen_graph(self, outputs = None, inputs = None):
         
-        if ouputs is None:
+        if outputs is None:
             seeds = list(flatten(self.cells.values()))
         else:
-            seeds = [self.cells[o] for o in ouputs]
+            seeds = [self.cells[o] for o in outputs]
 
         print "Seeds %s cells" % len(seeds)
         # only keep seeds with formulas or numbers
@@ -985,6 +989,8 @@ class ExcelCompiler(object):
                         G.add_edge(cellmap[c2.address()],target)
             
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+        undirected = networkx.Graph(G)
+        print "Number of connected components %s", str(number_connected_components(undirected))
 
         sp = Spreadsheet(G,cellmap, self.named_ranges, self.ranges)
         
