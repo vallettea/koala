@@ -17,6 +17,7 @@ class CellRange(object):
 
         self.__address = address.replace('$','')
         
+        print 'CELL RANGE splitting', address
         sh,start,end = split_range(address)
         if not sh and not sheet:
             raise Exception("Must pass in a sheet")
@@ -69,7 +70,7 @@ class Cell(object):
         return cls.ctr
     
 
-    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False ):
+    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False, always_eval=False ):
         super(Cell,self).__init__()
         
         if is_named_range == False:
@@ -109,6 +110,7 @@ class Cell(object):
         self.__formula = str(formula) if formula else None
         self.value = str(value) if isinstance(value,unicode) else value
         self.python_expression = None
+        self.always_eval = always_eval
         self._compiled_expression = None
         
         # every cell has a unique id
@@ -219,6 +221,7 @@ class Cell(object):
 
         if is_range(range):
             # use the sheet specified in the range, else the passed sheet
+            print 'MAKE CELLS splitting', range
             sh,start,end = split_range(range)
             if sh: sheet = sh
 
@@ -265,8 +268,10 @@ def is_range(address):
 
 def split_range(rng):
     if rng.find('!') > 0:
-        sh,r = rng.split("!")
-        start,end = r.split(':')
+        start,end = rng.split(':')
+        sh,start = start.split("!")
+        if end.find('!') > 0:
+            sh,end = end.split("!")
     else:
         sh = None
         start,end = rng.split(':')
@@ -300,6 +305,7 @@ def split_address(address):
 
 def resolve_range(rng, flatten=False, sheet=''):
     
+    print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
     
     if sh and sheet:
@@ -352,7 +358,7 @@ def resolve_range(rng, flatten=False, sheet=''):
             l = flatten(cells)
             return l,1,len(l)
         else:
-            return cells, len(cells), len(cells[0]) 
+            return cells, len(cells), len(cells[0])
 
 # e.g., convert BA -> 53
 def col2num(col):
@@ -462,7 +468,7 @@ def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-
     try:
         float(s)
         return True
-    except ValueError:
+    except:
         return False
 
 def is_leap_year(year):
@@ -621,9 +627,13 @@ def check_length(range1, range2):
 def extract_numeric_values(*args):
     values = []
 
+
     for arg in args:
         if type(arg) is Range:
             temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            values.append(temp)
+        elif type(arg) is tuple:
+            temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif is_number(arg):
             values.append(arg)

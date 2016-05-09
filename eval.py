@@ -10,6 +10,7 @@ from koala.xml.functions import fromstring, safe_iterator
 from koala.ast.tokenizer import ExcelParser
 from koala.ast.graph import ExcelCompiler
 from koala.ast.excelutils import Cell
+from koala.ast.astutils import *
 
 
 
@@ -45,9 +46,17 @@ if __name__ == '__main__':
     # print '- Eval A1', sp.evaluate('Sheet1!A1')
     # print '- Eval RESULT', sp.evaluate('RESULT')
 
+    # print 'TR', sp.named_ranges['tR']
+
+    start_node = find_node(sp.G, 'Cashflow!G187')
+    subgraph = subgraph(sp.G, start_node)
+
+    print 'SUBGRAPH length', subgraph.number_of_nodes()
+
     print 'First evaluation', sp.evaluate('Cashflow!G187')
     sp.set_value('InputData!G14', 2025)
     startTime = datetime.now()
     print 'Second evaluation', sp.evaluate('Cashflow!G187')
+    # print 'Second evaluation', sp.evaluate('Calculations!M200')
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
