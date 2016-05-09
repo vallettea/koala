@@ -1,17 +1,18 @@
 import glob
 import sys
 from datetime import datetime
-
+import json
 
 import warnings
 from io import BytesIO
 
 from koala.xml.functions import fromstring, safe_iterator
 from koala.ast.tokenizer import ExcelParser
-from koala.ast.graph import ExcelCompiler
+from koala.ast.graph import ExcelCompiler, Spreadsheet
 from koala.ast.excelutils import Cell
 from koala.ast.astutils import *
 
+import cProfile
 
 
 if __name__ == '__main__':
@@ -25,10 +26,16 @@ if __name__ == '__main__':
 
     c = ExcelCompiler(file, ignore_sheets = ['IHS'])
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-
     sp = c.gen_graph()
-
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    
+    # print "Serializing to disk...", file
+    # sp.dump(file.replace("xlsx", "gzip"))
+
+    # startTime = datetime.now()
+    # print "Reading from disk...", file
+    # sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
+    # print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
     # print '- Eval INPUT', sp.evaluate('INPUT')
@@ -37,26 +44,32 @@ if __name__ == '__main__':
     # print 'set_value INPUT <- 2025'
     # sp.set_value('INPUT', 2025)
 
-
-    # print 'First evaluation', sp.evaluate('Sheet2!E2')
-    # sp.set_value('Sheet2!A1', 10)
-    # print 'Second evaluation', sp.evaluate('Sheet2!E2')
-
-    # print '- Eval INPUT', sp.evaluate('INPUT')
-    # print '- Eval A1', sp.evaluate('Sheet1!A1')
-    # print '- Eval RESULT', sp.evaluate('RESULT')
-
-    # print 'TR', sp.named_ranges['tR']
-
-    start_node = find_node(sp.G, 'Cashflow!G187')
-    subgraph = subgraph(sp.G, start_node)
-
-    print 'SUBGRAPH length', subgraph.number_of_nodes()
+    # start_node = find_node(sp.G, 'Cashflow!G187')
+    # subgraph = subgraph(sp.G, start_node)
+    # print 'SUBGRAPH length', subgraph.number_of_nodes()
 
     print 'First evaluation', sp.evaluate('Cashflow!G187')
-    sp.set_value('InputData!G14', 2025)
+
+    for addr, cell in sp.cellmap.items():
+        sp.history[addr] = {'original': str(cell.value)}
+
+    sp.set_value('InputData!G14', 0)
+    sp.set_value('InputData!G14', 2018)
     startTime = datetime.now()
     print 'Second evaluation', sp.evaluate('Cashflow!G187')
-    # print 'Second evaluation', sp.evaluate('Calculations!M200')
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
+
+    print 'NB different', sp.count
+    with open('history.json', 'w') as outfile:
+        json.dump(sp.history, outfile)
+
+    # startTime = datetime.now()
+    # sp.set_value('InputData!G14', 2025)
+    # # cProfile.run("sp.set_value('InputData!G14', 2025)")
+    # print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
+    # startTime = datetime.now()
+    # # sp.evaluate('Cashflow!G187')
+    # # cProfile.run("sp.evaluate('Cashflow!G187')")
+    # print 'Second evaluation', sp.evaluate('Calculations!M200')
+    # print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
