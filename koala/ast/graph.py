@@ -7,6 +7,7 @@ import koala.ast.excellib as excelfun
 from koala.ast.excellib import *
 from koala.ast.excelutils import *
 from math import *
+from collections import OrderedDict
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
@@ -31,7 +32,7 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 
 class Spreadsheet(object):
-    def __init__(self,G,cellmap, named_ranges, ranges):
+    def __init__(self, G, cellmap, named_ranges, ranges):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -41,44 +42,51 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
 
-    @staticmethod
-    def load_from_file(fname):
-        f = open(fname,'rb')
-        obj = cPickle.load(f)
-        #obj = load(f)
-        return obj
-    
-    def save_to_file(self,fname):
-        f = open(fname,'wb')
-        cPickle.dump(self, f, protocol=2)
-        f.close()
 
     def dump(self, fname):
         data = json_graph.node_link_data(self.G)
+        # save nodes as simple objects
         nodes = []
         for node in data["nodes"]:
             cell = node["id"]
+            if isinstance(cell.value, OrderedDict):
+                value = zip(cell.value.keys(), cell.value.values())
+            else:
+                value = cell.value
+
             nodes += [{
                 "address": cell.address(),
                 "formula": cell.formula,
-                "value": cell.value,
+                "value": value,
                 "python_expression": cell.python_expression,
-                "is_named_range": cell.is_named_range
+                "is_named_range": cell.is_named_range,
+                "always_eval": cell.always_eval
             }]
         data["nodes"] = nodes
+        # save ranges as simple objects
+        ranges = {}
+        for k,r in self.ranges.items():
+            ranges[k] = zip(r.keys(), r.values())
+        data["ranges"] = ranges
+        data["named_ranges"] = self.named_ranges
         with gzip.GzipFile(fname, 'w') as outfile:
             outfile.write(json.dumps(data))
 
     @staticmethod
-    def load(fname): # is this ever used ???
+    def load(fname):
         with gzip.GzipFile(fname, 'r') as infile:
             data = json.loads(infile.read())
         def cell_from_dict(d):
-            return {"id": Cell(d["address"], None, value=d["value"], formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])}
+            if hasattr(d["value"], '__iter__'):
+                value = OrderedDict(map(lambda x: (tuple(x[0]), x[1]), d["value"]))
+            else:
+                value = d["value"]
+            return {"id": Cell(d["address"], None, value=value, formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])}
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
-        return Spreadsheet(G, G.nodes())
+        ranges = {k: OrderedDict(map(lambda x: (tuple(x[0]), x[1]), v)) for k,v in data["ranges"].items()}
+        return Spreadsheet(G, G.nodes(), data["named_ranges"], ranges)
 
 
     def export_to_dot(self,fname):
