@@ -887,19 +887,6 @@ class ExcelCompiler(object):
             code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
         return code,ast
 
-    def add_node_to_graph(self,G, n):
-        G.add_node(n)
-        G.node[n]['sheet'] = n.sheet
-        
-        if isinstance(n,Cell):
-            if n.is_named_range:
-                G.node[n]['label'] = n.address()
-            else:
-                G.node[n]['label'] = n.col + str(n.row)
-        else:
-            #strip the sheet
-            G.node[n]['label'] = n.address()[n.address().find('!')+1:]
-
     
             
     def gen_graph(self, outputs = None, inputs = None):
@@ -927,7 +914,7 @@ class ExcelCompiler(object):
         G = nx.DiGraph()
 
         # match the info in cellmap
-        for c in cellmap.itervalues(): self.add_node_to_graph(G, c)
+        for c in cellmap.itervalues(): G.add_node(c)
 
         while todo:
             c1 = todo.pop()
@@ -984,7 +971,7 @@ class ExcelCompiler(object):
                         # save the range
                         cellmap[rng.address()] = rng
                         # add an edge from the range to the parent
-                        self.add_node_to_graph(G, rng)
+                        G.add_node(rng)
                         G.add_edge(rng,cellmap[c1.address()])
                         # cells in the range should point to the range as their parent
                         target = rng
@@ -1019,7 +1006,7 @@ class ExcelCompiler(object):
                         # save in the cellmap
                         cellmap[c2.address()] = c2
                         # add to the graph
-                        self.add_node_to_graph(G, c2)
+                        G.add_node(c2)
                         
                     # add an edge from the cell to the parent (range or cell)
                     if(target != []):
@@ -1052,36 +1039,38 @@ class ExcelCompiler(object):
 
                 while len(todo) > 0:
                     current, pred = todo.pop()
-                    
+                    # print "==========================="
+                    # print current.address(), pred.address()
                     if current in dependencies:
                         if pred in dependencies:
-                            self.add_node_to_graph(subgraph, current)
-                            self.add_node_to_graph(subgraph, pred)
                             subgraph.add_edge(pred, current)
-                            new_cellmap[current.address()] = current
                             new_cellmap[pred.address()] = pred
+                            new_cellmap[current.address()] = current
+
                             nexts = G.predecessors(pred)
                             for n in nexts:            
                                 if n not in subgraph.nodes():
                                     todo += [(pred,n)]
                         else:
+                            if pred.address() not in new_cellmap:
+                                const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
+                                pystr,ast = self.cell2code(const_node, pred.sheet)
+                                const_node.python_expression = pystr
+                                const_node.compile()     
+                            else:
+                                const_node = new_cellmap[pred.address()]
+                            subgraph.add_edge(const_node, current)
+                            new_cellmap[const_node.address()] = const_node
+
+                    else:
+                        if pred.address() not in new_cellmap:
                             const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
                             pystr,ast = self.cell2code(const_node, pred.sheet)
                             const_node.python_expression = pystr
                             const_node.compile()     
-                    
-                            self.add_node_to_graph(subgraph, const_node)
-                            self.add_node_to_graph(subgraph, current)
-                            new_cellmap[const_node.address()] = const_node
-                            subgraph.add_edge(const_node, current)
-
-                    else:
-                        const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
-                        pystr,ast = self.cell2code(const_node, current.sheet)
-                        const_node.python_expression = pystr
-                        const_node.compile()     
-                
-                        self.add_node_to_graph(subgraph, const_node)
+                        else:
+                            const_node = new_cellmap[pred.address()]
+                        subgraph.add_node(const_node)
                         new_cellmap[const_node.address()] = const_node
     
                         
