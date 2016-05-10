@@ -1063,15 +1063,17 @@ class ExcelCompiler(object):
                             new_cellmap[const_node.address()] = const_node
 
                     else:
-                        if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
-                            pystr,ast = self.cell2code(const_node, pred.sheet)
-                            const_node.python_expression = pystr
-                            const_node.compile()     
-                        else:
-                            const_node = new_cellmap[pred.address()]
-                        subgraph.add_node(const_node)
-                        new_cellmap[const_node.address()] = const_node
+                        # if current is an output we add it as constant unlinked node
+                        if current.address() in outputs:
+                            if current.address() not in new_cellmap:
+                                const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
+                                pystr,ast = self.cell2code(const_node, current.sheet)
+                                const_node.python_expression = pystr
+                                const_node.compile()     
+                            else:
+                                const_node = new_cellmap[current.address()]
+                            subgraph.add_node(const_node)
+                            new_cellmap[const_node.address()] = const_node
     
                         
 
