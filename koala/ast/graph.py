@@ -792,7 +792,30 @@ def build_ast(expression):
 
     return G,stack.pop()
 
+def find_node(G, seed_address):
+    for i,seed in enumerate(G.nodes()):
+        if seed.address() == seed_address:
+            return seed
 
+def make_subgraph(G, seed, direction = "ascending"):
+    subgraph = networkx.DiGraph()
+    if direction == "ascending":
+        todo = map(lambda n: (seed,n), G.predecessors(seed))
+    else:
+        todo = map(lambda n: (seed,n), G.successors(seed))
+    while len(todo) > 0:
+        neighbor, current = todo.pop()
+        subgraph.add_node(current)
+        subgraph.add_edge(neighbor, current)
+        if direction == "ascending":
+            nexts = G.predecessors(current)
+        else:
+            nexts = G.successors(current)
+        for n in nexts:            
+            if n not in subgraph.nodes():
+                todo += [(current,n)]
+
+    return subgraph
 
 class ExcelCompiler(object):
     """Class responsible for taking cells and named_range and create a graph
@@ -877,32 +900,7 @@ class ExcelCompiler(object):
             #strip the sheet
             G.node[n]['label'] = n.address()[n.address().find('!')+1:]
 
-    def get_all_dependencies(self, cell_addresses):
-        viewed_cells = set()
-        todo =  cell_addresses
-        while len(todo) > 0:
-            address = todo.pop()
-            try:
-                cell = self.cells[address]
-                viewed_cells.add(address)
-                if cell.address() in self.ranges:
-                    deps = []
-                    for c in self.ranges[cell.address()].cells:
-                        deps.append(c)
-                elif cell.formula:
-                    # parse the formula into code
-                    pystr, ast = self.cell2code(cell, cell.sheet)                    
-                    # get all the cells/ranges this formula refers to
-                    deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
-                    # remove dupes
-                    deps = uniqueify(deps)
-
-                for dep in deps:
-                    if dep not in viewed_cells:
-                        todo.append(dep)
-            except Exception as e:
-                print "Error in get_all_dependencies %s" % str(e)
-        return viewed_cells
+    
             
     def gen_graph(self, outputs = None, inputs = None):
         
@@ -910,11 +908,6 @@ class ExcelCompiler(object):
             seeds = list(flatten(self.cells.values()))
         else:
             seeds = [self.cells[o] for o in outputs]
-
-        if inputs != None:
-            # get all the cells impacted by inputs
-            dependencies = self.get_all_dependencies(inputs)
-            print "%s cells depending on the inputs" % len(dependencies)
 
         print "Seeds %s cells" % len(seeds)
         # only keep seeds with formulas or numbers
@@ -1015,19 +1008,13 @@ class ExcelCompiler(object):
                     # if we havent treated this cell allready
                     if c2.address() not in cellmap:
                         if c2.formula:
-                            if c2.address() not in dependencies:
-                                # cell with a formula, needs to be added to the todo list
-                                todo.append(c2)
-                            else:
-                                pystr,ast = self.cell2code(c2, cursheet)
-                                c2.python_expression = pystr
-                                c2.compile()
+                            # cell with a formula, needs to be added to the todo list
+                            todo.append(c2)
                         else:
                             # constant cell, no need for further processing, just remember to set the code
                             pystr,ast = self.cell2code(c2, cursheet)
                             c2.python_expression = pystr
                             c2.compile()     
-                            #print "skipped ", c2.address()
                         
                         # save in the cellmap
                         cellmap[c2.address()] = c2
@@ -1037,10 +1024,74 @@ class ExcelCompiler(object):
                     # add an edge from the cell to the parent (range or cell)
                     if(target != []):
                         G.add_edge(cellmap[c2.address()],target)
-            
+
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
         print "Number of connected components %s", str(number_connected_components(undirected))
+        
+
+        if inputs != None:
+            # get all the cells impacted by inputs
+            dependencies = set()
+            for input_address in inputs:
+                seed = find_node(G, input_address)
+                if seed != None:
+                    g = make_subgraph(G, seed, "descending")
+                    dependencies = dependencies.union(g.nodes())
+                else:
+                    print "Node corresponding to %s not in graph" % input_address
+            print "%s cells depending on inputs" % str(len(dependencies))
+            # print map(lambda x: x.address(), dependencies)
+
+            # prune the graph and set all cell independent of input to const
+            subgraph = networkx.DiGraph()
+            new_cellmap = {}
+            for output_address in outputs:
+                seed = find_node(G, output_address)
+                todo = map(lambda n: (seed,n), G.predecessors(seed))
+
+                while len(todo) > 0:
+                    current, pred = todo.pop()
+                    
+                    if current in dependencies:
+                        if pred in dependencies:
+                            self.add_node_to_graph(subgraph, current)
+                            self.add_node_to_graph(subgraph, pred)
+                            subgraph.add_edge(pred, current)
+                            new_cellmap[current.address()] = current
+                            new_cellmap[pred.address()] = pred
+                            nexts = G.predecessors(pred)
+                            for n in nexts:            
+                                if n not in subgraph.nodes():
+                                    todo += [(pred,n)]
+                        else:
+                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
+                            pystr,ast = self.cell2code(const_node, pred.sheet)
+                            const_node.python_expression = pystr
+                            const_node.compile()     
+                    
+                            self.add_node_to_graph(subgraph, const_node)
+                            self.add_node_to_graph(subgraph, current)
+                            new_cellmap[const_node.address()] = const_node
+                            subgraph.add_edge(const_node, current)
+
+                    else:
+                        const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
+                        pystr,ast = self.cell2code(const_node, current.sheet)
+                        const_node.python_expression = pystr
+                        const_node.compile()     
+                
+                        self.add_node_to_graph(subgraph, const_node)
+                        new_cellmap[const_node.address()] = const_node
+    
+                        
+
+            G = subgraph
+            cellmap = new_cellmap
+            print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+            undirected = networkx.Graph(G)
+            print "Number of connected components %s", str(number_connected_components(undirected))
+            # print map(lambda x: x.address(), G.nodes())
 
         sp = Spreadsheet(G,cellmap, self.named_ranges, self.ranges)
         
