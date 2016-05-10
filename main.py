@@ -1,6 +1,6 @@
 import pyximport; pyximport.install()
 
-import glob, re
+import glob, re, sys
 from datetime import datetime
 
 
@@ -32,15 +32,29 @@ def calculate_graph(file):
     sp = c.gen_graph(outputs = ["outNPV_HostGovt"], inputs = ["gen_discountRate"])
     print "Gen graph in %s" % str(datetime.now() - startTime)
 
-    startTime = datetime.now()
-    print "Serializing to disk...", file
-    sp.dump(file_name.replace("xlsx", "gzip"))
-    print "Serialized in %s" % str(datetime.now() - startTime)
+    # startTime = datetime.now()
+    # print "Serializing to disk...", file
+    # sp.dump(file_name.replace("xlsx", "gzip"))
+    # print "Serialized in %s" % str(datetime.now() - startTime)
+
+    # startTime = datetime.now()
+    # print "Reading from disk...", file
+    # sp = Spreadsheet.load(file_name.replace("xlsx", "gzip"))
+    # print "Red in %s" % str(datetime.now() - startTime)
+
+    print 'First evaluation', sp.evaluate('outNPV_HostGovt')
+
+    # for addr, cell in sp.cellmap.items():
+    #     sp.history[addr] = {'original': str(cell.value)}
+    prev = sp.evaluate('gen_discountRate')
+    print "prev,", prev
+    sp.set_value('gen_discountRate', 0)
+    sp.set_value('gen_discountRate', prev)
 
     startTime = datetime.now()
-    print "Reading from disk...", file
-    sp = Spreadsheet.load(file_name.replace("xlsx", "gzip"))
-    print "Red in %s" % str(datetime.now() - startTime)
+    print 'Second evaluation', sp.evaluate('outNPV_HostGovt')
+    print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
+
     # except:
     #     print "Error in file " + file
 

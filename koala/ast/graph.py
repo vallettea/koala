@@ -1,6 +1,3 @@
-
-
-
 import os.path
 import textwrap
 import koala.ast.excellib as excelfun
@@ -54,8 +51,8 @@ class Spreadsheet(object):
         nodes = []
         for node in data["nodes"]:
             cell = node["id"]
-            if isinstance(cell.value, OrderedDict):
-                value = zip(cell.value.keys(), cell.value.values())
+            if type(cell.value) == Range:
+                value = [cell.value.cells, cell.value.values()]
             else:
                 value = cell.value
 
@@ -69,9 +66,8 @@ class Spreadsheet(object):
             }]
         data["nodes"] = nodes
         # save ranges as simple objects
-        ranges = {}
-        for k,r in self.ranges.items():
-            ranges[k] = zip(r.keys(), r.values())
+        ranges = {k: [r.cells, r.values()] for k,r in self.ranges.items()}
+
         data["ranges"] = ranges
         data["named_ranges"] = self.named_ranges
         with gzip.GzipFile(fname, 'w') as outfile:
@@ -83,15 +79,16 @@ class Spreadsheet(object):
             data = json.loads(infile.read())
         def cell_from_dict(d):
             if hasattr(d["value"], '__iter__'):
-                value = OrderedDict(map(lambda x: (tuple(x[0]), x[1]), d["value"]))
+                value = Range(d["value"][0], d["value"][1])
             else:
                 value = d["value"]
             return {"id": Cell(d["address"], None, value=value, formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])}
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
-        ranges = {k: OrderedDict(map(lambda x: (tuple(x[0]), x[1]), v)) for k,v in data["ranges"].items()}
-        return Spreadsheet(G, G.nodes(), data["named_ranges"], ranges)
+        ranges = {k: Range(v[0], v[1]) for k,v in data["ranges"].items()}
+        cellmap = {n.address():n for n in G.nodes()}
+        return Spreadsheet(G, cellmap, data["named_ranges"], ranges)
 
 
     def export_to_dot(self,fname):
@@ -258,6 +255,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
+                print "zzzzz", eval_ref("Cashflow!L136","Cashflow!DG136")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -875,6 +873,12 @@ class ExcelCompiler(object):
                 else:
                     self.cells[n] = Cell(n, None, None, reference, True )
 
+        # create a map address => range
+        self.reverse_range = {}
+        for k,v in self.ranges.items():
+            for c in v.cells:
+                self.reverse_range[c] = k
+
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
@@ -922,12 +926,14 @@ class ExcelCompiler(object):
             # print "============= Handling ", c1.address()
             cursheet = c1.sheet
             
+            # looking for all the dependencies of this cell
             if c1.address() in self.ranges:
+                # in case a range, get all underlying cells
                 deps = []
                 for c in self.ranges[c1.address()].cells:
                     deps.append(c)
             else:
-                # parse the formula into code
+                # in case a formula, get all cells that are arguments
                 pystr, ast = self.cell2code(c1, cursheet)
                 # set the code & compile it (will flag problems sooner rather than later)
                 c1.python_expression = pystr
@@ -938,7 +944,29 @@ class ExcelCompiler(object):
                 # remove dupes
                 deps = uniqueify(deps)
 
+            # print "--- deps ", deps
             for dep in deps:
+                # in case the dep is part of ranges, connect to the label in the graph
+                if dep not in self.named_ranges:
+                    if "!" not in dep and cursheet != None:
+                        dep = cursheet + "!" + dep
+                    if dep in self.reverse_range:
+                        name_parent_range = self.reverse_range[dep]
+                        # create a node
+                        if dep in self.cells:
+                            rng = self.cells[name_parent_range]
+                            cellmap[rng.address()] = rng
+                            cellmap[dep] = self.cells[dep]
+                            # print "Adding edge %s --> %s" % (rng.address(), dep)
+                            G.add_edge(cellmap[rng.address()], cellmap[dep])
+                            # if we add the father we need all childs
+                            for c in rng.value.cells:
+                                if c in self.cells:
+                                    # print "Adding edge %s --> %s" % (rng.address(), c)
+                                    cellmap[c] = self.cells[c]
+                                    G.add_edge(cellmap[rng.address()], cellmap[c])
+
+
                 if dep in self.named_ranges:
                     cells = [self.cells[dep]]
                     target = cellmap[c1.address()]
@@ -946,11 +974,12 @@ class ExcelCompiler(object):
                 elif is_range(dep):
                     # this will make sure we always have an absolute address
                     rng = CellRange(dep, sheet=cursheet)
-                    
+
                     if rng.address() in cellmap:
                         # already dealt with this range
                         # add an edge from the range to the parent
-                        G.add_edge(cellmap[rng.address()],cellmap[c1.address()])
+                        # print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                        G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
                         continue
                     else:
                         # turn into cell objects
@@ -972,6 +1001,7 @@ class ExcelCompiler(object):
                         cellmap[rng.address()] = rng
                         # add an edge from the range to the parent
                         G.add_node(rng)
+                        # print "Adding edge %s --> %s" % (rng.address(), c1.address())
                         G.add_edge(rng,cellmap[c1.address()])
                         # cells in the range should point to the range as their parent
                         target = rng
@@ -1010,25 +1040,26 @@ class ExcelCompiler(object):
                         
                     # add an edge from the cell to the parent (range or cell)
                     if(target != []):
+                        # print "Adding edge %s --> %s" % (c2.address(), target.address())
                         G.add_edge(cellmap[c2.address()],target)
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
         print "Number of connected components %s", str(number_connected_components(undirected))
-        
 
         if inputs != None:
             # get all the cells impacted by inputs
             dependencies = set()
             for input_address in inputs:
-                seed = find_node(G, input_address)
-                if seed != None:
-                    g = make_subgraph(G, seed, "descending")
+                    child = find_node(G, input_address)
+                    if child == None:
+                        print "Not found ", input_address
+                        continue
+                    g = make_subgraph(G, child, "descending")
                     dependencies = dependencies.union(g.nodes())
-                else:
-                    print "Node corresponding to %s not in graph" % input_address
+                    
+
             print "%s cells depending on inputs" % str(len(dependencies))
-            # print map(lambda x: x.address(), dependencies)
 
             # prune the graph and set all cell independent of input to const
             subgraph = networkx.DiGraph()
@@ -1079,7 +1110,7 @@ class ExcelCompiler(object):
 
             G = subgraph
             cellmap = new_cellmap
-            print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+            print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
             undirected = networkx.Graph(G)
             print "Number of connected components %s", str(number_connected_components(undirected))
             # print map(lambda x: x.address(), G.nodes())
