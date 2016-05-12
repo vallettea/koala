@@ -56,6 +56,19 @@ class ExcelParserTokens:
     TOK_SUBTYPE_INTERSECT   = "intersect";
     TOK_SUBTYPE_UNION       = "union";
 
+
+def reverse_rpn(node, ast):
+    t = node.token
+    if   t.ttype == ExcelParserTokens.TOK_TYPE_FUNCTION: return t.tvalue + "(" + ",".join([reverse_rpn(x, ast) for x in node.children(ast)]) + ")"
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_SUBEXPR: return "("
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_SUBEXPR: return ")"
+    # TODO: add in RE substitution of " with "" for strings
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_OPERAND: return  t.tvalue 
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_OP_IN: return reverse_rpn(node.children(ast)[0], ast) + t.tvalue + reverse_rpn(node.children(ast)[1], ast)               
+    else: raise Exception("Strange reverse_rpn parsing.")
+
+            
+
 #========================================================================
 #       Class: f_token 
 # Description: Encapsulate a formula token

@@ -461,6 +461,14 @@ def flatten(l):
         else:
             yield el
 
+def flatten_lists(l):
+    for el in l:
+        if isinstance(el, list) and not isinstance(el, basestring):
+            for sub in flatten_lists(el):
+                yield sub
+        else:
+            yield el
+
 def uniqueify(seq):
     seen = set()
     seen_add = seen.add

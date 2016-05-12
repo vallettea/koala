@@ -18,7 +18,7 @@ import networkx as nx
 
 from astutils import find_node, subgraph
 
-from tokenizer import ExcelParser, f_token, shunting_yard
+from tokenizer import ExcelParser, f_token, shunting_yard, reverse_rpn
 import cPickle
 import logging
 from itertools import chain
@@ -35,6 +35,8 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 from ExcelError import ExcelError
 
+
+
 class Spreadsheet(object):
     def __init__(self, G, cellmap, named_ranges, ranges):
         super(Spreadsheet,self).__init__()
@@ -49,29 +51,42 @@ class Spreadsheet(object):
 
 
         allindex = []
-        # for k,v in self.named_ranges.items():
-        #     if 'INDEX' in v:
-        #         allindex.append(v)
+        for k,v in self.named_ranges.items():
+            if 'INDEX' in v:
+                allindex.append({"formula":v, "address": k, "sheet": None})
         for k,cell in self.cellmap.items():
             if cell.formula and 'INDEX' in cell.formula:
-                allindex.append(cell)
+                allindex.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
+
 
 
         print "%s index to parse" % str(len(allindex))
 
 
         for cell in allindex:
-            print cell.address(), cell.formula
-            e = shunting_yard(cell.formula, self.named_ranges, parse_cell_address(cell.address()))
+            print cell["address"], cell["formula"]
+            if cell["sheet"]:
+                parsed = parse_cell_address(cell["address"])
+            else:
+                parsed = ""
+            e = shunting_yard(cell["formula"], self.named_ranges, parsed)
             ast,root = build_ast(e)
             # code = root.emit(ast)
             # print code
             # print print_value_ast(ast, root, 1)
-            self.eval_fucking_index(ast, root, cell.sheet)
+            replacements = self.eval_fucking_index(ast, root, cell["sheet"])
+            new_formula = cell["formula"]
+            if type(replacements) == list:
+                for repl in replacements:
+                    if repl["expression_type"] == "value":
+                        new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
+                    else:
+                        new_formula = new_formula.replace(repl["formula"], repl["value"])
+            else:
+                new_formula = None
+            print new_formula
             print "========================"
             print
-            # print "result", eval(root.emit(ast))
-
 
     def print_value_ast(self, ast,node,indent):
         print "%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype))
@@ -79,13 +94,24 @@ class Spreadsheet(object):
             self.print_value_ast(ast, c, indent+1)
 
     def eval_fucking_index(self, ast, node, context):
+        results = []
         if "INDEX" in node.token.tvalue:
             # print self.print_value_ast(ast, node, 1)
-            print node.emit(ast, context=context)
-            eval(node.emit(ast, context=context))      
+            index_string = reverse_rpn(node, ast)
+            expression = node.emit(ast, context=context)
+            # todo: it is not efficient to eval these since they already have a value
+            # we should just remove their formula
+            if expression.startswith("self.eval_ref"):
+                expression_type = "value"
+            else:
+                expression_type = "formula"
+            index_value = eval(expression)
+            return {"formula":index_string, "value": index_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
-                self.eval_fucking_index(ast, c, context)
+                results.append(self.eval_fucking_index(ast, c, context))
+        return list(flatten_lists(results))
+
 
     def dump(self, fname):
         data = json_graph.node_link_data(self.G)
