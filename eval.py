@@ -24,7 +24,7 @@ if __name__ == '__main__':
     print file        
     startTime = datetime.now()
 
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = True)
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
     sp = c.gen_graph()
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
@@ -48,15 +48,16 @@ if __name__ == '__main__':
     # subgraph = subgraph(sp.G, start_node)
     # print 'SUBGRAPH length', subgraph.number_of_nodes()
 
-    print 'First evaluation', sp.evaluate('Cashflow!G187')
+    print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     for addr, cell in sp.cellmap.items():
         sp.history[addr] = {'original': str(cell.value)}
 
-    sp.set_value('InputData!G14', 0)
-    sp.set_value('InputData!G14', 2018)
+    sp.set_value('IA_PriceExportGas', 0)
+    print "-------------"
+    sp.set_value('IA_PriceExportGas', 30)
     startTime = datetime.now()
-    print 'Second evaluation', sp.evaluate('Cashflow!G187')
+    print 'Second evaluation %s ' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
     print 'NB different', sp.count

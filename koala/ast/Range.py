@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict, Iterable
 # from koala.ast.excelutils import col2num, num2col, flatten, is_number
 import string
-
+from ExcelError import ExcelError
 
 # this is due to a circular reference, need to be addressed
 def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
@@ -217,7 +217,7 @@ class Range(OrderedDict):
 
         if nr == 1 or nc == 1: # 1-dim range
             if col is not None:
-                raise ValueError('Trying to access 1-dim range value with 2 coordinates')
+                raise Exception('Trying to access 1-dim range value with 2 coordinates')
             else:
                 return self.values()[row - 1]
             
@@ -265,7 +265,7 @@ class Range(OrderedDict):
 
         if type(self) == Range and type(other) == Range:
             if self.length != other.length:
-                raise Exception('apply_all must have 2 Ranges of identical length')
+                return ExcelError('apply_all must have 2 Ranges of identical length')
             return Range(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
         elif type(self) == Range:
             return Range(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())))
@@ -279,14 +279,14 @@ class Range(OrderedDict):
     def add(a, b):
         try:
             return check_value(a) + check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def substract(a, b):
         try:
             return check_value(a) - check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
@@ -294,21 +294,21 @@ class Range(OrderedDict):
         # b is not used, but needed in the signature. Maybe could be better
         try:
             return -check_value(a)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def multiply(a, b):
         try:
             return check_value(a) * check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def divide(a, b):
         try:
             return float(check_value(a)) / float(check_value(b))
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
@@ -321,7 +321,7 @@ class Range(OrderedDict):
             # if a == 'David':
             #     print 'Check value', check_value(a)
             return a == b
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
@@ -333,35 +333,35 @@ class Range(OrderedDict):
                 b = check_value(b)
 
             return a != b
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def is_strictly_superior(a, b):
         try:
             return check_value(a) > check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def is_strictly_inferior(a, b):
         try:
             return check_value(a) < check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
             return check_value(a) >= check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
             return check_value(a) <= check_value(b)
-        except Exception as e:
+        except ExcelError as e:
             return e
 
 

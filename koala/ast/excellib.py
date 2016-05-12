@@ -29,6 +29,7 @@ from excelutils import (
 )
 
 from ..ast.Range import Range 
+from ExcelError import ExcelError
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
@@ -114,7 +115,7 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     # - doesn't really follow 2nd remark about sum_range length
 
     if type(range) != Range:
-        raise TypeError('%s must be a Range' % str(range))
+        return TypeError('%s must be a Range' % str(range))
 
     if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
         return 0
@@ -123,7 +124,7 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
 
     if sum_range:
         if type(sum_range) != Range:
-            raise TypeError('%s must be a Range' % str(sum_range))
+            return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
             return sum_range.values()[x] if x < sum_range.length else 0
@@ -152,20 +153,25 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
-    cells, nr, nc = my_range
-    cells = list(flatten(cells))
-
+    if type(my_range) is Range:
+        cells = my_range.cells
+        nr = my_range.nb_rows
+        nc = my_range.nb_cols
+    else:
+        cells, nr, nc = my_range
+        cells = list(flatten(cells))
+    
     if type(cells) != list:
-        raise TypeError('%s must be a list' % str(cells))
+        return ExcelError('%s must be a list' % str(cells))
 
     if not is_number(row):
-        raise TypeError('%s must be a number' % str(row))
+        return ExcelError('%s must be a number' % str(row))
 
     if row == 0 and col == 0:
-        raise ValueError('No index asked for Range')
+        return ExcelError('No index asked for Range')
 
     if row > nr:
-        raise Exception('Index %i out of range' % row)
+        return ExcelError('Index %i out of range' % row)
 
     if nr == 1:
         return cells[col - 1]
@@ -175,13 +181,13 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         
     else: # could be optimised
         if col is None:
-            raise ValueError('Range is 2 dimensional, can not reach value with col = None')
+            return ExcelError('Range is 2 dimensional, can not reach value with col = None')
 
         if not is_number(col):
-            raise TypeError('%s must be a number' % str(col))
+            return ExcelError('%s must be a number' % str(col))
 
         if col > nc:
-            raise Exception('Index %i out of range' % col)
+            return ExcelError('Index %i out of range' % col)
 
         indices = range(len(cells))
 
@@ -205,7 +211,7 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
     
     # TODO
     if not isinstance(value,(int,float)):
-        raise Exception("Non numeric lookups (%s) not supported" % value)
+        return Exception("Non numeric lookups (%s) not supported" % value)
     
     # TODO: note, may return the last equal value
     
@@ -221,10 +227,10 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
     output_range = result_range.values() if result_range is not None else lookup_range.values()
 
     if lastnum < 0:
-        raise Exception("No numeric data found in the lookup range")
+        return ExcelError("No numeric data found in the lookup range")
     else:
         if i == 0:
-            raise Exception("All values in the lookup range are bigger than %s" % value)
+            return ExcelError("All values in the lookup range are bigger than %s" % value)
         else:
             if i >= len(lookup_range)-1:
                 # return the biggest number smaller than value
@@ -287,11 +293,11 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                raise Exception('for match_type 0, lookup_range must be sorted ascending')
+                return ExcelError('for match_type 0, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            raise ('no result in lookup_range for match_type 0')
+            return ('no result in lookup_range for match_type 0')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
@@ -299,7 +305,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         try:
             return [type_convert(x) for x in range_values].index(lookup_value) + 1
         except:
-            return Exception("%s not found" % lookup_value)
+            return ExcelError("%s not found" % lookup_value)
 
     elif match_type == -1:
         # Verify descending sort
@@ -308,19 +314,19 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
-               raise ('for match_type 0, lookup_range must be sorted descending')
+               return ('for match_type 0, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
-            raise Exception('no result in lookup_range for match_type 0')
+            return ExcelError('no result in lookup_range for match_type 0')
         return posMin +1 #Excel starts at 1
 
 
 def mod(nb, q): # Excel Reference: https://support.office.com/en-us/article/MOD-function-9b6cd169-b6ee-406a-a97b-edf2a9dc24f3
     if not isinstance(nb, (int, long)):
-        raise TypeError("%s is not an integer" % str(nb))
+        return ExcelError("%s is not an integer" % str(nb))
     elif not isinstance(q, (int, long)):
-        raise TypeError("%s is not an integer" % str(q))
+        return ExcelError("%s is not an integer" % str(q))
     else:
         return nb % q
 
@@ -356,7 +362,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
     l = len(arg_list)
 
     if l % 2 != 0:
-        raise Exception('excellib.countifs() must have a pair number of arguments, here %d' % l)
+        return ExcelError('excellib.countifs() must have a pair number of arguments, here %d' % l)
 
 
     if l >= 2:
@@ -384,7 +390,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
         # print 'ASSO', association_type
 
         # if association_type is None:
-        #     raise ValueError('All items must be Ranges and associated')
+        #     return ValueError('All items must be Ranges and associated')
 
         filtered_remaining_ranges = []
 
@@ -414,9 +420,9 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
 def xround(number, num_digits = 0): # Excel reference: https://support.office.com/en-us/article/ROUND-function-c018c5d8-40fb-4053-90b1-b3e7f61a213c
 
     if not is_number(number):
-        raise TypeError("%s is not a number" % str(number))
+        return ExcelError("%s is not a number" % str(number))
     if not is_number(num_digits):
-        raise TypeError("%s is not a number" % str(num_digits))
+        return ExcelError("%s is not a number" % str(num_digits))
 
     if num_digits >= 0: # round to the right side of the point
         return float(Decimal(repr(number)).quantize(Decimal(repr(pow(10, -num_digits))), rounding=ROUND_HALF_UP))
@@ -432,14 +438,14 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
     text = str(text)
 
     if type(start_num) != int:
-        raise TypeError("%s is not an integer" % str(start_num))
+        return ExcelError("%s is not an integer" % str(start_num))
     if type(num_chars) != int:
-        raise TypeError("%s is not an integer" % str(num_chars))
+        return ExcelError("%s is not an integer" % str(num_chars))
 
     if start_num < 1:
-        raise ValueError("%s is < 1" % str(start_num))
+        return ExcelError("%s is < 1" % str(start_num))
     if num_chars < 0:
-        raise ValueError("%s is < 0" % str(num_chars))
+        return ExcelError("%s is < 0" % str(num_chars))
 
     return text[start_num:num_chars]
 
@@ -447,16 +453,16 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
 def date(year, month, day): # Excel reference: https://support.office.com/en-us/article/DATE-function-e36c0c8c-4104-49da-ab83-82328b832349
 
     if type(year) != int:
-        raise TypeError("%s is not an integer" % str(year))
+        return ExcelError("%s is not an integer" % str(year))
 
     if type(month) != int:
-        raise TypeError("%s is not an integer" % str(month))
+        return ExcelError("%s is not an integer" % str(month))
 
     if type(day) != int:
-        raise TypeError("%s is not an integer" % str(day))
+        return ExcelError("%s is not an integer" % str(day))
 
     if year < 0 or year > 9999:
-        raise ValueError("Year must be between 1 and 9999, instead %s" % str(year))
+        return ExcelError("Year must be between 1 and 9999, instead %s" % str(year))
 
     if year < 1900:
         year = 1900 + year
@@ -469,7 +475,7 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
     result = (datetime(year, month, day) - date_0).days + 2
 
     if result <= 0:
-        raise ArithmeticError("Date result is negative")
+        return ExcelError("Date result is negative")
     else:
         return result
 
@@ -530,13 +536,13 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
         return delta / denom
 
     if not is_number(start_date):
-        raise TypeError("start_date %s must be a number" % str(start_date))
+        return ExcelError("start_date %s must be a number" % str(start_date))
     if not is_number(end_date):
-        raise TypeError("end_date %s must be number" % str(end_date))
+        return ExcelError("end_date %s must be number" % str(end_date))
     if start_date < 0:
-        raise ValueError("start_date %s must be positive" % str(start_date))
+        return ExcelError("start_date %s must be positive" % str(start_date))
     if end_date < 0:
-        raise ValueError("end_date %s must be positive" % str(end_date))
+        return ExcelError("end_date %s must be positive" % str(end_date))
 
     if start_date > end_date: # switch dates if start_date > end_date
         temp = end_date
@@ -570,7 +576,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
         result = count / 360
 
     else:
-        raise ValueError("%d must be 0, 1, 2, 3 or 4" % basis)
+        return ExcelError("%d must be 0, 1, 2, 3 or 4" % basis)
 
 
     return result
@@ -610,28 +616,28 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
     new_row = int(found.group(2)) + rows
 
     if new_row <= 0 or new_col <= 0:
-        raise Exception('Offset is out of bounds')
+        return ExcelError('Offset is out of bounds')
 
     start_address = str(num2col(new_col)) + str(new_row)
 
     if (height is not None and width is not None):
         if type(height) != int:
-            raise TypeError('%d must not be integer' % height)
+            return ExcelError('%d must not be integer' % height)
         if type(width) != int:
-            raise TypeError('%d must not be integer' % width)
+            return ExcelError('%d must not be integer' % width)
 
         if height > 0:
             end_row = new_row + height - 1
         else:
-            raise ValueError('%d must be strictly positive' % height)
+            return ExcelError('%d must be strictly positive' % height)
         if width > 0:
             end_col = new_col + width - 1
         else:
-            raise ValueError('%d must be strictly positive' % width)
+            return ExcelError('%d must be strictly positive' % width)
 
         end_address = ':' + str(num2col(end_col)) + str(end_row)
     elif height and not width or not height and width:
-        raise Exception('Height and width must be passed together')
+        return ExcelError('Height and width must be passed together')
 
     return ref_sheet + start_address + end_address
 
@@ -647,7 +653,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
-    if value is Exception:
+    if isinstance(value, Exception):
         return value_if_error
     else:
         return value

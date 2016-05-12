@@ -264,6 +264,8 @@ class Cell(object):
         return (cells,numrows,numcols)
     
 def is_range(address):
+    if isinstance(address, Exception):
+        return address
     return address.find(':') > 0
 
 def split_range(rng):
