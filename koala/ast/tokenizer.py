@@ -203,9 +203,9 @@ class ExcelParser(ExcelParserTokens):
     def __init__(self, tokenize_range = False):
 
         if tokenize_range:
-            self.OPERATORS = "+-*/^&=><"
-        else:
             self.OPERATORS = "+-*/^&=><:"
+        else:
+            self.OPERATORS = "+-*/^&=><"
 
     def getTokens(self, formula):
     

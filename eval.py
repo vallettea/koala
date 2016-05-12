@@ -13,7 +13,7 @@ from koala.ast.excelutils import Cell
 from koala.ast.astutils import *
 
 import cProfile
-import cPickle
+
 
 if __name__ == '__main__':
 
@@ -26,14 +26,8 @@ if __name__ == '__main__':
 
     c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = True)
     c.clean_volatile()
-    # f = open("test.pickle",'wb')
-    # cPickle.dump(c, f, protocol=2)
-
-    # f = open("test.pickle",'rb')
-    # c = cPickle.load(f)
-
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph()
+    sp = c.gen_graph( outputs=['outNPV_Proj'])
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
     # print "Serializing to disk...", file
@@ -60,11 +54,11 @@ if __name__ == '__main__':
     for addr, cell in sp.cellmap.items():
         sp.history[addr] = {'original': str(cell.value)}
 
-    sp.set_value('IA_PriceExportGas', 0)
+    sp.set_value('gen_discountRate', 0)
     print "-------------"
-    sp.set_value('IA_PriceExportGas', 30)
+    sp.set_value('gen_discountRate', 0.7)
     startTime = datetime.now()
-    print 'Second evaluation %s ' % str(sp.evaluate('outNPV_Proj'))
+    print 'Second evaluation %s for %s' % (str(sp.evaluate('outNPV_Proj')),str(-3656.20567668))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
     print 'NB different', sp.count

@@ -181,20 +181,24 @@ class Spreadsheet(object):
         nx.draw_networkx_labels(self.G, pos)
         plt.show()
     
-    def set_value(self,cell,val,is_addr=True):
-        if cell in self.named_ranges:
-            addresses = resolve_range(self.named_ranges[cell])[0]
-            cell_to_set = []
-            for address in addresses:
-                if address in self.cellmap:
-                    cell_to_set += [self.cellmap[address]]
-                else:
-                    print "===", address
-
-        if is_addr and cell not in self.named_ranges:
-            address = cell.replace('$','')
+    def set_value(self,address,val,is_addr=True):
+        #
+        if address in self.named_ranges:
+            if is_range(address):
+                addresses = resolve_range(self.named_ranges[address])[0]
+                cell_to_set = []
+                for address in addresses:
+                    if address in self.cellmap:
+                        cell_to_set += [self.cellmap[address]]
+                    else:
+                        print "===", address
+            else:
+                cell_to_set = [self.cellmap[address]]
+        else:
+            address = address.replace('$','')
             cell_to_set = [self.cellmap[address]]
 
+      
         # if cell.is_named_range:
         #     # Take care of the case where named_range is not directly a cell address (type offset ...)
         #     # It will raise an exception, but we want this to prevent wrong usage
