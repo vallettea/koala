@@ -163,27 +163,13 @@ class Spreadsheet(object):
 
         values = [ self.evaluate(c) for c in cells ]
 
-        data = Range(cells, values)
+        data = Range((cells, nrows, ncols), values)
         rng.value = data
         
         return data
 
     def evaluate(self,cell,is_addr=True):
 
-        if is_addr:
-            try:
-                # print '->', cell
-                cell = self.cellmap[cell]
-
-            except:
-                # print 'Empty cell at '+ cell
-                return None
-
-        # no formula, fixed value
-        if not cell.formula or not cell.always_eval and cell.value != None:
-            #print "returning constant or cached value for ", cell.address()
-            return cell.value
-        
         def update_range(range):
             # print 'update range', range
             for key, value in range.items():
@@ -193,6 +179,7 @@ class Spreadsheet(object):
 
             # print 'updated range', range
             return range
+
         # recalculate formula
         # the compiled expression calls this function
         def eval_ref(addr1, addr2 = None):
@@ -226,6 +213,23 @@ class Spreadsheet(object):
                     addr2 = addr2.split('!')[1]
                 return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
+        if is_addr:
+            try:
+                # print '->', cell
+                if cell in self.ranges:
+                    return update_range(self.ranges[cell])
+                else:
+                    cell = self.cellmap[cell]
+
+            except:
+                # print 'Empty cell at '+ cell
+                return None
+
+        # no formula, fixed value
+        if not cell.formula or not cell.always_eval and cell.value != None:
+            #print "returning constant or cached value for ", cell.address()
+            return cell.value
+        
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
@@ -547,7 +551,7 @@ class FunctionNode(ASTNode):
             str = "all([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "or":
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
-        elif fun == "index": # might not be necessary
+        elif fun == "index":
             if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
@@ -820,7 +824,7 @@ class ExcelCompiler(object):
                         else:
                             range_values.append(None)
 
-                    my_range = Range(range_cells, range_values)
+                    my_range = Range((range_cells, nrow, ncol), range_values)
                     self.ranges[n] = my_range
                     self.cells[n] = Cell(n, None, my_range, n, True )
                 else:
