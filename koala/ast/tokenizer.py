@@ -199,6 +199,14 @@ class f_tokenStack(ExcelParserTokens):
 #     Methods: f_tokens - getTokens(formula) - return a token stream (list)
 #========================================================================
 class ExcelParser(ExcelParserTokens):
+
+    def __init__(self, tokenize_range = False):
+
+        if tokenize_range:
+            self.OPERATORS = "+-*/^&=><"
+        else:
+            self.OPERATORS = "+-*/^&=><:"
+
     def getTokens(self, formula):
     
         def currentChar():
@@ -390,7 +398,7 @@ class ExcelParser(ExcelParserTokens):
                 continue
     
             # standard infix operators
-            if ("+-*/^&=><:".find(currentChar()) != -1):
+            if (self.OPERATORS.find(currentChar()) != -1):
                 if (len(token) > 0):
                     tokens.add(token, self.TOK_TYPE_OPERAND)
                     token = ""

@@ -13,7 +13,7 @@ from koala.ast.excelutils import Cell
 from koala.ast.astutils import *
 
 import cProfile
-
+import cPickle
 
 if __name__ == '__main__':
 
@@ -25,6 +25,13 @@ if __name__ == '__main__':
     startTime = datetime.now()
 
     c = ExcelCompiler(file, ignore_sheets = ['IHS'], parse_offsets = True)
+    c.clean_volatile()
+    # f = open("test.pickle",'wb')
+    # cPickle.dump(c, f, protocol=2)
+
+    # f = open("test.pickle",'rb')
+    # c = cPickle.load(f)
+
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
     sp = c.gen_graph()
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))

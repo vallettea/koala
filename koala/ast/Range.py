@@ -279,37 +279,38 @@ class Range(OrderedDict):
     def add(a, b):
         try:
             return check_value(a) + check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def substract(a, b):
         try:
             return check_value(a) - check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def minus(a, b = None):
         # b is not used, but needed in the signature. Maybe could be better
         try:
             return -check_value(a)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
+
 
     @staticmethod
     def multiply(a, b):
         try:
             return check_value(a) * check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def divide(a, b):
         try:
             return float(check_value(a)) / float(check_value(b))
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_equal(a, b):
@@ -321,8 +322,8 @@ class Range(OrderedDict):
             # if a == 'David':
             #     print 'Check value', check_value(a)
             return a == b
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_not_equal(a, b):
@@ -333,36 +334,36 @@ class Range(OrderedDict):
                 b = check_value(b)
 
             return a != b
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_strictly_superior(a, b):
         try:
             return check_value(a) > check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_strictly_inferior(a, b):
         try:
             return check_value(a) < check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
             return check_value(a) >= check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
             return check_value(a) <= check_value(b)
-        except ExcelError as e:
-            return e
+        except Exception as e:
+            return ExcelError(e)
 
 
 func_dict = {

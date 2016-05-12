@@ -48,8 +48,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
 
-
-
+    def clean_volatile(self):
         allindex = []
         for k,v in self.named_ranges.items():
             if 'INDEX' in v:
@@ -58,23 +57,24 @@ class Spreadsheet(object):
             if cell.formula and 'INDEX' in cell.formula:
                 allindex.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
 
-
-
         print "%s index to parse" % str(len(allindex))
 
+        new_named_ranges = self.named_ranges
+        new_cells = self.cellmap
 
         for cell in allindex:
-            print cell["address"], cell["formula"]
+            # print "====================================="
+            # print cell["address"], cell["formula"]
             if cell["sheet"]:
                 parsed = parse_cell_address(cell["address"])
             else:
                 parsed = ""
-            e = shunting_yard(cell["formula"], self.named_ranges, parsed)
+            e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
             ast,root = build_ast(e)
-            # code = root.emit(ast)
-            # print code
-            # print print_value_ast(ast, root, 1)
-            replacements = self.eval_fucking_index(ast, root, cell["sheet"])
+            code = root.emit(ast)
+            
+            replacements = self.eval_index_from_ast(ast, root, cell["sheet"])
+            # print replacements
             new_formula = cell["formula"]
             if type(replacements) == list:
                 for repl in replacements:
@@ -84,18 +84,23 @@ class Spreadsheet(object):
                         new_formula = new_formula.replace(repl["formula"], repl["value"])
             else:
                 new_formula = None
-            print new_formula
-            print "========================"
-            print
+
+            if cell["address"] in new_named_ranges:
+                new_named_ranges[cell["formula"]] = new_formula
+            else:
+                old_cell = new_cells[cell["address"]]
+                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
+            
+        return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
         print "%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype))
         for c in node.children(ast):
             self.print_value_ast(ast, c, indent+1)
 
-    def eval_fucking_index(self, ast, node, context):
+    def eval_index_from_ast(self, ast, node, context):
         results = []
-        if "INDEX" in node.token.tvalue:
+        if "INDEX" in node.token.tvalue and node.parent(ast) is not None and node.parent(ast).tvalue == ':':
             # print self.print_value_ast(ast, node, 1)
             index_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
@@ -109,7 +114,7 @@ class Spreadsheet(object):
             return {"formula":index_string, "value": index_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
-                results.append(self.eval_fucking_index(ast, c, context))
+                results.append(self.eval_index_from_ast(ast, c, context))
         return list(flatten_lists(results))
 
 
@@ -340,7 +345,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                print "zzzzz", self.eval_ref("Cashflow!L136","Cashflow!DG136")
+                # print "zzzzz", self.eval_ref("Cashflow!L136","Cashflow!DG136")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -673,7 +678,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges, ref = ''):
+def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -696,7 +701,7 @@ def shunting_yard(expression, named_ranges, ref = ''):
     if expression.startswith('='):
         expression = expression[1:]
         
-    p = ExcelParser();
+    p = ExcelParser(tokenize_range = tokenize_range);
     p.parse(expression)
 
     # insert tokens for '(' and ')', to make things clearer below
@@ -965,11 +970,18 @@ class ExcelCompiler(object):
             for c in v.cells:
                 self.reverse_range[c] = k
 
+    def clean_volatile(self):
+        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, self.ranges)
+        cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
+        self.cells = cleaned_cells
+        self.named_ranges = cleaned_ranged_names
+
+
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
             ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges, ref)
+            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges, ref=ref)
             ast,root = build_ast(e)
             code = root.emit(ast, context=sheet)
         else:
@@ -981,227 +993,227 @@ class ExcelCompiler(object):
             
     def gen_graph(self, outputs = None, inputs = None):
         
-        # if outputs is None:
-        #     seeds = list(flatten(self.cells.values()))
-        # else:
-        #     seeds = [self.cells[o] for o in outputs]
+        if outputs is None:
+            seeds = list(flatten(self.cells.values()))
+        else:
+            seeds = [self.cells[o] for o in outputs]
 
-        # print "Seeds %s cells" % len(seeds)
-        # # only keep seeds with formulas or numbers
-        # seeds = [s for s in seeds if s.formula or isinstance(s.value,(int, float, str))]
+        print "Seeds %s cells" % len(seeds)
+        # only keep seeds with formulas or numbers
+        seeds = [s for s in seeds if s.formula or isinstance(s.value,(int, float, str))]
 
-        # print "%s filtered seeds " % len(seeds)
+        print "%s filtered seeds " % len(seeds)
         
-        # # cells to analyze: only formulas
-        # todo = [s for s in seeds if s.formula]
+        # cells to analyze: only formulas
+        todo = [s for s in seeds if s.formula]
 
-        # print "%s cells on the todo list" % len(todo)
+        print "%s cells on the todo list" % len(todo)
 
-        # # map of all cells
-        # cellmap = dict([(x.address(),x) for x in seeds])
+        # map of all cells
+        cellmap = dict([(x.address(),x) for x in seeds])
     
-        # # directed graph
-        # G = nx.DiGraph()
+        # directed graph
+        G = nx.DiGraph()
 
-        # # match the info in cellmap
-        # for c in cellmap.itervalues(): G.add_node(c)
+        # match the info in cellmap
+        for c in cellmap.itervalues(): G.add_node(c)
 
-        # while todo:
-        #     c1 = todo.pop()
+        while todo:
+            c1 = todo.pop()
             
-        #     # print "============= Handling ", c1.address()
-        #     cursheet = c1.sheet
+            # print "============= Handling ", c1.address(), c1.formula
+            cursheet = c1.sheet
             
-        #     # looking for all the dependencies of this cell
-        #     if c1.address() in self.ranges:
-        #         # in case a range, get all underlying cells
-        #         deps = []
-        #         for c in self.ranges[c1.address()].cells:
-        #             deps.append(c)
-        #     else:
-        #         # in case a formula, get all cells that are arguments
-        #         pystr, ast = self.cell2code(c1, cursheet)
-        #         # set the code & compile it (will flag problems sooner rather than later)
-        #         c1.python_expression = pystr
-        #         c1.compile()    
+            # looking for all the dependencies of this cell
+            if c1.address() in self.ranges:
+                # in case a range, get all underlying cells
+                deps = []
+                for c in self.ranges[c1.address()].cells:
+                    deps.append(c)
+            else:
+                # in case a formula, get all cells that are arguments
+                pystr, ast = self.cell2code(c1, cursheet)
+                # set the code & compile it (will flag problems sooner rather than later)
+                c1.python_expression = pystr
+                c1.compile()    
                 
-        #         # get all the cells/ranges this formula refers to
-        #         deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
-        #         # remove dupes
-        #         deps = uniqueify(deps)
+                # get all the cells/ranges this formula refers to
+                deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
+                # remove dupes
+                deps = uniqueify(deps)
 
-        #     # print "--- deps ", deps
-        #     for dep in deps:
-        #         # in case the dep is part of ranges, connect to the label in the graph
-        #         if dep not in self.named_ranges:
-        #             if "!" not in dep and cursheet != None:
-        #                 dep = cursheet + "!" + dep
-        #             if dep in self.reverse_range:
-        #                 name_parent_range = self.reverse_range[dep]
-        #                 # create a node
-        #                 if dep in self.cells:
-        #                     rng = self.cells[name_parent_range]
-        #                     cellmap[rng.address()] = rng
-        #                     cellmap[dep] = self.cells[dep]
-        #                     # print "Adding edge %s --> %s" % (rng.address(), dep)
-        #                     G.add_edge(cellmap[rng.address()], cellmap[dep])
-        #                     # if we add the father we need all childs
-        #                     for c in rng.value.cells:
-        #                         if c in self.cells:
-        #                             # print "Adding edge %s --> %s" % (rng.address(), c)
-        #                             cellmap[c] = self.cells[c]
-        #                             G.add_edge(cellmap[rng.address()], cellmap[c])
+            # print "--- deps ", deps
+            for dep in deps:
+                # in case the dep is part of ranges, connect to the label in the graph
+                if dep not in self.named_ranges:
+                    if "!" not in dep and cursheet != None:
+                        dep = cursheet + "!" + dep
+                    if dep in self.reverse_range:
+                        name_parent_range = self.reverse_range[dep]
+                        # create a node
+                        if dep in self.cells:
+                            rng = self.cells[name_parent_range]
+                            cellmap[rng.address()] = rng
+                            cellmap[dep] = self.cells[dep]
+                            # print "Adding edge %s --> %s" % (rng.address(), dep)
+                            G.add_edge(cellmap[rng.address()], cellmap[dep])
+                            # if we add the father we need all childs
+                            for c in rng.value.cells:
+                                if c in self.cells:
+                                    # print "Adding edge %s --> %s" % (rng.address(), c)
+                                    cellmap[c] = self.cells[c]
+                                    G.add_edge(cellmap[rng.address()], cellmap[c])
 
 
-        #         if dep in self.named_ranges:
-        #             cells = [self.cells[dep]]
-        #             target = cellmap[c1.address()]
-        #         # if the dependency is a multi-cell range, create a range object
-        #         elif is_range(dep):
-        #             # this will make sure we always have an absolute address
-        #             rng = CellRange(dep, sheet=cursheet)
+                if dep in self.named_ranges:
+                    cells = [self.cells[dep]]
+                    target = cellmap[c1.address()]
+                # if the dependency is a multi-cell range, create a range object
+                elif is_range(dep):
+                    # this will make sure we always have an absolute address
+                    rng = CellRange(dep, sheet=cursheet)
 
-        #             if rng.address() in cellmap:
-        #                 # already dealt with this range
-        #                 # add an edge from the range to the parent
-        #                 # print "Adding edge %s --> %s" % (rng.address(), c1.address())
-        #                 G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
-        #                 continue
-        #             else:
-        #                 # turn into cell objects
-        #                 if "!" in dep:
-        #                     sheet_name, ref = dep.split("!")
-        #                 else:
-        #                     sheet_name = cursheet
-        #                     ref = dep
-        #                 cells_refs = list(rows_from_range(ref))                       
-        #                 cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
+                    if rng.address() in cellmap:
+                        # already dealt with this range
+                        # add an edge from the range to the parent
+                        # print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                        G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
+                        continue
+                    else:
+                        # turn into cell objects
+                        if "!" in dep:
+                            sheet_name, ref = dep.split("!")
+                        else:
+                            sheet_name = cursheet
+                            ref = dep
+                        cells_refs = list(rows_from_range(ref))                       
+                        cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
 
-        #                 # get the values so we can set the range value
-        #                 rng.value = [c.value for c in cells]
+                        # get the values so we can set the range value
+                        rng.value = [c.value for c in cells]
                         
-        #                 # my_range = Range(cells, rng.value)
-        #                 # self.ranges[dep] = my_range
+                        # my_range = Range(cells, rng.value)
+                        # self.ranges[dep] = my_range
 
-        #                 # save the range
-        #                 cellmap[rng.address()] = rng
-        #                 # add an edge from the range to the parent
-        #                 G.add_node(rng)
-        #                 # print "Adding edge %s --> %s" % (rng.address(), c1.address())
-        #                 G.add_edge(rng,cellmap[c1.address()])
-        #                 # cells in the range should point to the range as their parent
-        #                 target = rng
-        #         else:
-        #             # not a range, create the cell object
-        #             if "!" in dep:
-        #                 sheet_name, ref = dep.split("!")
-        #             else:
-        #                 sheet_name = cursheet
-        #                 ref = dep
-        #             try:
-        #                 temp = self.cells[ref] if ref in self.named_ranges else self.cells[sheet_name +"!"+ ref]
-        #                 cells = [temp]
-        #                 target = cellmap[c1.address()]
-        #             except:
-        #                 cells = []
-        #                 target = []
+                        # save the range
+                        cellmap[rng.address()] = rng
+                        # add an edge from the range to the parent
+                        G.add_node(rng)
+                        # print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                        G.add_edge(rng,cellmap[c1.address()])
+                        # cells in the range should point to the range as their parent
+                        target = rng
+                else:
+                    # not a range, create the cell object
+                    if "!" in dep:
+                        sheet_name, ref = dep.split("!")
+                    else:
+                        sheet_name = cursheet
+                        ref = dep
+                    try:
+                        temp = self.cells[ref] if ref in self.named_ranges else self.cells[sheet_name +"!"+ ref]
+                        cells = [temp]
+                        target = cellmap[c1.address()]
+                    except:
+                        cells = []
+                        target = []
 
-        #         # process each cell                    
-        #         for c2 in flatten(cells):
-        #             # if we havent treated this cell allready
-        #             if c2.address() not in cellmap:
-        #                 if c2.formula:
-        #                     # cell with a formula, needs to be added to the todo list
-        #                     todo.append(c2)
-        #                 else:
-        #                     # constant cell, no need for further processing, just remember to set the code
-        #                     pystr,ast = self.cell2code(c2, cursheet)
-        #                     c2.python_expression = pystr
-        #                     c2.compile()     
+                # process each cell                    
+                for c2 in flatten(cells):
+                    # if we havent treated this cell allready
+                    if c2.address() not in cellmap:
+                        if c2.formula:
+                            # cell with a formula, needs to be added to the todo list
+                            todo.append(c2)
+                        else:
+                            # constant cell, no need for further processing, just remember to set the code
+                            pystr,ast = self.cell2code(c2, cursheet)
+                            c2.python_expression = pystr
+                            c2.compile()     
                         
-        #                 # save in the cellmap
-        #                 cellmap[c2.address()] = c2
-        #                 # add to the graph
-        #                 G.add_node(c2)
+                        # save in the cellmap
+                        cellmap[c2.address()] = c2
+                        # add to the graph
+                        G.add_node(c2)
                         
-        #             # add an edge from the cell to the parent (range or cell)
-        #             if(target != []):
-        #                 # print "Adding edge %s --> %s" % (c2.address(), target.address())
-        #                 G.add_edge(cellmap[c2.address()],target)
+                    # add an edge from the cell to the parent (range or cell)
+                    if(target != []):
+                        # print "Adding edge %s --> %s" % (c2.address(), target.address())
+                        G.add_edge(cellmap[c2.address()],target)
 
-        # print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-        # undirected = networkx.Graph(G)
-        # print "Number of connected components %s", str(number_connected_components(undirected))
+        print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+        undirected = networkx.Graph(G)
+        print "Number of connected components %s", str(number_connected_components(undirected))
 
-        # if inputs != None:
-        #     # get all the cells impacted by inputs
-        #     dependencies = set()
-        #     for input_address in inputs:
-        #             child = find_node(G, input_address)
-        #             if child == None:
-        #                 print "Not found ", input_address
-        #                 continue
-        #             g = make_subgraph(G, child, "descending")
-        #             dependencies = dependencies.union(g.nodes())
+        if inputs != None:
+            # get all the cells impacted by inputs
+            dependencies = set()
+            for input_address in inputs:
+                    child = find_node(G, input_address)
+                    if child == None:
+                        print "Not found ", input_address
+                        continue
+                    g = make_subgraph(G, child, "descending")
+                    dependencies = dependencies.union(g.nodes())
                     
 
-        #     print "%s cells depending on inputs" % str(len(dependencies))
+            print "%s cells depending on inputs" % str(len(dependencies))
 
-        #     # prune the graph and set all cell independent of input to const
-        #     subgraph = networkx.DiGraph()
-        #     new_cellmap = {}
-        #     for output_address in outputs:
-        #         seed = find_node(G, output_address)
-        #         todo = map(lambda n: (seed,n), G.predecessors(seed))
+            # prune the graph and set all cell independent of input to const
+            subgraph = networkx.DiGraph()
+            new_cellmap = {}
+            for output_address in outputs:
+                seed = find_node(G, output_address)
+                todo = map(lambda n: (seed,n), G.predecessors(seed))
 
-        #         while len(todo) > 0:
-        #             current, pred = todo.pop()
-        #             # print "==========================="
-        #             # print current.address(), pred.address()
-        #             if current in dependencies:
-        #                 if pred in dependencies:
-        #                     subgraph.add_edge(pred, current)
-        #                     new_cellmap[pred.address()] = pred
-        #                     new_cellmap[current.address()] = current
+                while len(todo) > 0:
+                    current, pred = todo.pop()
+                    # print "==========================="
+                    # print current.address(), pred.address()
+                    if current in dependencies:
+                        if pred in dependencies:
+                            subgraph.add_edge(pred, current)
+                            new_cellmap[pred.address()] = pred
+                            new_cellmap[current.address()] = current
 
-        #                     nexts = G.predecessors(pred)
-        #                     for n in nexts:            
-        #                         if n not in subgraph.nodes():
-        #                             todo += [(pred,n)]
-        #                 else:
-        #                     if pred.address() not in new_cellmap:
-        #                         const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
-        #                         pystr,ast = self.cell2code(const_node, pred.sheet)
-        #                         const_node.python_expression = pystr
-        #                         const_node.compile()     
-        #                     else:
-        #                         const_node = new_cellmap[pred.address()]
-        #                     subgraph.add_edge(const_node, current)
-        #                     new_cellmap[const_node.address()] = const_node
+                            nexts = G.predecessors(pred)
+                            for n in nexts:            
+                                if n not in subgraph.nodes():
+                                    todo += [(pred,n)]
+                        else:
+                            if pred.address() not in new_cellmap:
+                                const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
+                                pystr,ast = self.cell2code(const_node, pred.sheet)
+                                const_node.python_expression = pystr
+                                const_node.compile()     
+                            else:
+                                const_node = new_cellmap[pred.address()]
+                            subgraph.add_edge(const_node, current)
+                            new_cellmap[const_node.address()] = const_node
 
-        #             else:
-        #                 # if current is an output we add it as constant unlinked node
-        #                 if current.address() in outputs:
-        #                     if current.address() not in new_cellmap:
-        #                         const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
-        #                         pystr,ast = self.cell2code(const_node, current.sheet)
-        #                         const_node.python_expression = pystr
-        #                         const_node.compile()     
-        #                     else:
-        #                         const_node = new_cellmap[current.address()]
-        #                     subgraph.add_node(const_node)
-        #                     new_cellmap[const_node.address()] = const_node
+                    else:
+                        # if current is an output we add it as constant unlinked node
+                        if current.address() in outputs:
+                            if current.address() not in new_cellmap:
+                                const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
+                                pystr,ast = self.cell2code(const_node, current.sheet)
+                                const_node.python_expression = pystr
+                                const_node.compile()     
+                            else:
+                                const_node = new_cellmap[current.address()]
+                            subgraph.add_node(const_node)
+                            new_cellmap[const_node.address()] = const_node
     
                         
 
-        #     G = subgraph
-        #     cellmap = new_cellmap
-        #     print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-        #     undirected = networkx.Graph(G)
-        #     print "Number of connected components %s", str(number_connected_components(undirected))
-        #     # print map(lambda x: x.address(), G.nodes())
+            G = subgraph
+            cellmap = new_cellmap
+            print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+            undirected = networkx.Graph(G)
+            print "Number of connected components %s", str(number_connected_components(undirected))
+            # print map(lambda x: x.address(), G.nodes())
 
-        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, self.ranges)
+        sp = Spreadsheet(G, cellmap, self.named_ranges, self.ranges)
         
         return sp
 
