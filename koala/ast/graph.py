@@ -68,12 +68,6 @@ class Spreadsheet(object):
         new_cells = self.cellmap
 
         for cell in all_volatiles:
-            # print "====================================="
-            # print cell["address"], cell["formula"]
-
-            if "IA_PriceExportGas" in cell["formula"]:
-                raise Exception("Input in volatiles")
-                print "!!!!======", cell["address"], cell["formula"]
 
             if cell["formula"] in cache:
                 new_formula = cache[cell["formula"]]
@@ -101,6 +95,10 @@ class Spreadsheet(object):
                 else:
                     new_formula = None
                 cache[cell["formula"]] = new_formula
+                # print "====================================="
+                # print cell["address"], cell["formula"].replace(" ","")
+                # print "-------------------------------------"
+                # print new_formula
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["formula"]] = new_formula
@@ -205,7 +203,7 @@ class Spreadsheet(object):
     
     def set_value(self,address,val,is_addr=True):
         #
-        if address in self.named_ranges:
+        if address in self.ranges:
             # if is_range(address):
             #     addresses = resolve_range(self.named_ranges[address])[0]
             #     cell_to_set = []
@@ -220,6 +218,8 @@ class Spreadsheet(object):
             address = address.replace('$','')
             cell_to_set = [self.cellmap[address]]
       
+        if len(cell_to_set) == 0:
+            print "WARNING: No cells where reseted!"
         # if cell.is_named_range:
         #     # Take care of the case where named_range is not directly a cell address (type offset ...)
         #     # It will raise an exception, but we want this to prevent wrong usage
@@ -1251,6 +1251,5 @@ class ExcelCompiler(object):
             # print map(lambda x: x.address(), G.nodes())
 
         sp = Spreadsheet(G, cellmap, self.named_ranges, self.ranges)
-        print cellmap["gen_discountRate"]
         return sp
 
