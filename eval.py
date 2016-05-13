@@ -30,13 +30,13 @@ if __name__ == '__main__':
     sp = c.gen_graph( outputs=['outNPV_Proj'])
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # print "Serializing to disk...", file
-    # sp.dump(file.replace("xlsx", "gzip"))
+    print "Serializing to disk...", file
+    sp.dump(file.replace("xlsx", "gzip"))
 
-    # startTime = datetime.now()
-    # print "Reading from disk...", file
-    # sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
-    # print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
+    startTime = datetime.now()
+    print "Reading from disk...", file
+    sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
+    print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
     # print '- Eval INPUT', sp.evaluate('INPUT')

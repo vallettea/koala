@@ -161,7 +161,10 @@ class Spreadsheet(object):
                 value = Range(d["value"][0], d["value"][1])
             else:
                 value = d["value"]
-            return {"id": Cell(d["address"], None, value=value, formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])}
+            new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])
+            new_cell.python_expression = d["python_expression"]
+            new_cell.compile()
+            return {"id": new_cell}
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
