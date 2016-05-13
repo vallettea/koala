@@ -91,6 +91,9 @@ class Spreadsheet(object):
                 new_formula = cell["formula"]
                 if type(replacements) == list:
                     for repl in replacements:
+                        if type(repl["value"]) == ExcelError:
+                            repl["value"] = "#N/A"
+
                         if repl["expression_type"] == "value":
                             new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
                         else:
@@ -116,21 +119,17 @@ class Spreadsheet(object):
         results = []
         if node.token.tvalue in self.volatile_to_remove and node.parent(ast) is not None and node.parent(ast).tvalue == ':':
             # print self.print_value_ast(ast, node, 1)
-            index_string = reverse_rpn(node, ast)
+            volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
             # todo: it is not efficient to eval these since they already have a value
             # we should just remove their formula
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
             else:
-                if "counta" in expression:
-                    print index_string
-                    print expression
-                    eval(expression)
-                    print "done"
                 expression_type = "formula"
-            index_value = eval(expression)
-            return {"formula":index_string, "value": index_value, "expression_type": expression_type}      
+
+            volatile_value = eval(expression)
+            return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
                 results.append(self.eval_volatiles_from_ast(ast, c, context))
@@ -144,7 +143,8 @@ class Spreadsheet(object):
         for node in data["nodes"]:
             cell = node["id"]
             if type(cell.value) == Range:
-                value = [cell.value.cells, cell.value.values()]
+                range = cell.value
+                value = [(range.cells, range.nb_rows, range.nb_cols), range.values()]
             else:
                 value = cell.value
 
@@ -158,7 +158,7 @@ class Spreadsheet(object):
             }]
         data["nodes"] = nodes
         # save ranges as simple objects
-        ranges = {k: [(r.cells, r.nr_rows, r.nr_cols), r.values()] for k,r in self.ranges.items()}
+        ranges = {k: [(r.cells, r.nb_rows, r.nb_cols), r.values()] for k,r in self.ranges.items()}
 
         data["ranges"] = ranges
         data["named_ranges"] = self.named_ranges
@@ -270,7 +270,8 @@ class Spreadsheet(object):
 
         cells = list(flatten(cells))
 
-        values = [ self.evaluate(c) for c in cells ]
+        values = [ self.evaluate(c) for c in cells if c in self.cellmap]
+        cells = [c for c in cells if c in self.cellmap]
 
         data = Range((cells, nrows, ncols), values)
         rng.value = data
@@ -956,8 +957,8 @@ class ExcelCompiler(object):
                     for cell in range_cells:
                         if cell in self.cells: # this is to avoid Depreciation!A5 and other empty cells due to tR named range
                             range_values.append(self.cells[cell].value)
-                        else:
-                            range_values.append(None)
+
+                    range_cells = [a for a in range_cells if a in self.cells]
 
                     my_range = Range((range_cells, nrow, ncol), range_values)
                     self.ranges[n] = my_range
@@ -1026,7 +1027,6 @@ class ExcelCompiler(object):
 
         while todo:
             c1 = todo.pop()
-            print "============= Handling ", c1.address(), c1.formula
             cursheet = c1.sheet
             
             # looking for all the dependencies of this cell

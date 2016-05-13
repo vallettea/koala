@@ -599,6 +599,10 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
     # This function accepts a list of addresses
     # Maybe think of passing a Range as first argument
 
+    for i in [rows, cols, height, width]:
+        if type(i) == ExcelError:
+            return i
+
     # get first cell address of reference
     if is_range(reference):
         ref = list(flatten(resolve_range(reference)[0]))[0]
@@ -652,7 +656,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
-    if isinstance(value, ExcelError):
+    if isinstance(value, ExcelError) or value == "#N/A":
         return value_if_error
     else:
         return value
