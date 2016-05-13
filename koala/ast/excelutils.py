@@ -264,6 +264,8 @@ class Cell(object):
         return (cells,numrows,numcols)
     
 def is_range(address):
+    if isinstance(address, Exception):
+        return address
     return address.find(':') > 0
 
 def split_range(rng):
@@ -455,6 +457,14 @@ def flatten(l):
     for el in l:
         if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
             for sub in flatten(el):
+                yield sub
+        else:
+            yield el
+
+def flatten_lists(l):
+    for el in l:
+        if isinstance(el, list) and not isinstance(el, basestring):
+            for sub in flatten_lists(el):
                 yield sub
         else:
             yield el

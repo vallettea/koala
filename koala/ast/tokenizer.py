@@ -56,6 +56,19 @@ class ExcelParserTokens:
     TOK_SUBTYPE_INTERSECT   = "intersect";
     TOK_SUBTYPE_UNION       = "union";
 
+
+def reverse_rpn(node, ast):
+    t = node.token
+    if   t.ttype == ExcelParserTokens.TOK_TYPE_FUNCTION: return t.tvalue + "(" + ",".join([reverse_rpn(x, ast) for x in node.children(ast)]) + ")"
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_SUBEXPR: return "("
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_SUBEXPR: return ")"
+    # TODO: add in RE substitution of " with "" for strings
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_OPERAND: return  t.tvalue 
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_OP_IN: return reverse_rpn(node.children(ast)[0], ast) + t.tvalue + reverse_rpn(node.children(ast)[1], ast)               
+    else: raise Exception("Strange reverse_rpn parsing.")
+
+            
+
 #========================================================================
 #       Class: f_token 
 # Description: Encapsulate a formula token
@@ -186,6 +199,14 @@ class f_tokenStack(ExcelParserTokens):
 #     Methods: f_tokens - getTokens(formula) - return a token stream (list)
 #========================================================================
 class ExcelParser(ExcelParserTokens):
+
+    def __init__(self, tokenize_range = False):
+
+        if tokenize_range:
+            self.OPERATORS = "+-*/^&=><:"
+        else:
+            self.OPERATORS = "+-*/^&=><"
+
     def getTokens(self, formula):
     
         def currentChar():
@@ -377,7 +398,7 @@ class ExcelParser(ExcelParserTokens):
                 continue
     
             # standard infix operators
-            if ("+-*/^&=><:".find(currentChar()) != -1):
+            if (self.OPERATORS.find(currentChar()) != -1):
                 if (len(token) > 0):
                     tokens.add(token, self.TOK_TYPE_OPERAND)
                     token = ""
