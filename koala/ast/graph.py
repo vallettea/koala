@@ -1124,7 +1124,7 @@ class ExcelCompiler(object):
                         my_cells = [a for a in my_cells if a in self.cells]
                         if len(values) != 0:
                             # TODO what happens in this case ?
-                            my_range = Range((my_cells, nrows, ncols, values)
+                            my_range = Range((my_cells, nrows, ncols), values)
 
                             self.ranges[dep] = my_range
                             rng = Cell(dep, None, my_range, dep, True )
