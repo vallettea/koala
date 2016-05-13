@@ -228,7 +228,11 @@ class Range(OrderedDict):
     def apply_one(func, self, other, ref = None):
         function = func_dict[func]
 
-        first, second = find_associated_values(ref, self, other)
+        if ref is None:
+            first = self
+            second = other
+        else:
+            first, second = find_associated_values(ref, self, other)
 
         return function(first, second)
 
