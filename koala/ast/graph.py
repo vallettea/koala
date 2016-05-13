@@ -31,7 +31,7 @@ import gzip
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
-from ExcelError import ExcelError
+from ExcelError import ExcelError, EmptyCellError
 
 
 
@@ -80,7 +80,7 @@ class Spreadsheet(object):
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell["sheet"])
                 # print replacements
-                new_formula = cell["formula"]
+                new_formula = cell["formula"].replace(" ","")
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
@@ -93,10 +93,12 @@ class Spreadsheet(object):
                 else:
                     new_formula = None
                 cache[cell["formula"]] = new_formula
-                # print "====================================="
-                # print cell["address"], cell["formula"].replace(" ","")
-                # print "-------------------------------------"
-                # print new_formula
+                if "OFFSET" in new_formula:
+                    print "====================================="
+                    print cell["address"], cell["formula"].replace(" ","")
+                    print "-------------------------------------"
+                    print new_formula
+                    print replacements
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["formula"]] = new_formula
@@ -114,17 +116,14 @@ class Spreadsheet(object):
     def eval_volatiles_from_ast(self, ast, node, context):
         results = []
         if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
-            (node.token.tvalue == "OFFSET" and node.parent(ast) is not None):
+            (node.token.tvalue == "OFFSET"):
             # print self.print_value_ast(ast, node, 1)
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
-            # todo: it is not efficient to eval these since they already have a value
-            # we should just remove their formula
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
             else:
                 expression_type = "formula"
-            print expression
             volatile_value = eval(expression)
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
@@ -333,7 +332,7 @@ class Spreadsheet(object):
 
             except:
                 # print 'Empty cell at '+ cell
-                return None
+                return EmptyCellError
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -342,7 +341,10 @@ class Spreadsheet(object):
         
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
-            vv = eval(cell.compiled_expression)
+            if cell.compiled_expression != None:
+                vv = eval(cell.compiled_expression)
+            else:
+                vv = 0
             # if vv is None:
             #     print "WARNING %s is None" % (cell.address())
             # elif isinstance(vv, (List, list)):
@@ -1077,38 +1079,6 @@ class ExcelCompiler(object):
                 # if the dependency is a multi-cell range, create a range object
                 elif is_range(dep):
 
-                    # # OLD METHOD
-                    # # this will make sure we always have an absolute address
-                    # rng = CellRange(dep, sheet=cursheet)
-                    # if rng.address() in cellmap:
-                    #     # already dealt with this range
-                    #     # add an edge from the range to the parent
-                    #     print "Adding edge %s --> %s" % (rng.address(), c1.address())
-                    #     G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
-                    #     continue
-                    # else:
-                    #     # turn into cell objects
-                    #     if "!" in dep:
-                    #         sheet_name, ref = dep.split("!")
-                    #     else:
-                    #         sheet_name = cursheet
-                    #         ref = dep
-                    #     cells_refs = list(rows_from_range(ref))
-                    #     cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
-                    #     print map(lambda x :x.address(), cells)
-                    #     # get the values so we can set the range value
-                    #     rng.value = [c.value for c in cells]
-                    #     # save the range
-                    #     cellmap[rng.address()] = rng
-                    #     # add an edge from the range to the parent
-                    #     G.add_node(rng)
-                    #     print "Adding edge %s --> %s" % (rng.address(), c1.address())
-                    #     G.add_edge(rng,cellmap[c1.address()])
-                    #     target = rng
-                    #     print "target ", target.address()
-
-
-                    # NEW METHOD
                     if dep in cellmap:
                         # already dealt with this range
                         # add an edge from the range to the parent
