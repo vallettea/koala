@@ -126,15 +126,13 @@ def check_value(a):
 
 class Range(OrderedDict):
 
-    def __init__(self, cells, values):
-        if len(cells) != len(values):
-            raise ValueError("cells and values in a Range must have the same size")
+    def __init__(self, cells_tuple, values):
+        cells, nr, nc = cells_tuple
 
         result = []
-        cleaned_cells = []
 
-        cells = list(flatten(cells))
-        values = list(flatten(values))
+        if len(cells) != len(values):
+            raise ValueError("cells and values in a Range must have the same size")
 
         try:
             sheet = cells[0].split('!')[0]
@@ -146,38 +144,16 @@ class Range(OrderedDict):
             col = found.group(1)
             row = found.group(2)
 
-            if '!' in cell:
-                cleaned_cell = cell.split('!')[1]
-            else:
-                cleaned_cell = cell
-
-            cleaned_cells.append(cleaned_cell)
             try: # Might not be needed
                 result.append(((row, col), values[index]))
             except:
                 result.append(((row, col), None))
         self.cells = cells
         self.sheet = sheet
-        # cells ref need to be cleaned of sheet name => WARNING, sheet ref is lost !!!
-        cells = cleaned_cells
-        self.cleaned_cells = cells # this is used to be able to reconstruct Ranges from results of Range operations
         self.length = len(cells)
-        
-        # get last cell
-        last = cells[self.length - 1]
-        first = cells[0]
 
-        last_found = re.search(CELL_REF_RE, last)
-        first_found = re.search(CELL_REF_RE, first)
-
-        last_col = last_found.group(1)
-        last_row = last_found.group(2)
-
-        first_col = first_found.group(1)
-        first_row = first_found.group(2)
-
-        self.nb_cols = int(col2num(last_col)) - int(col2num(first_col)) + 1
-        self.nb_rows = int(last_row) - int(first_row) + 1
+        self.nb_cols = nc
+        self.nb_rows = nr
 
         OrderedDict.__init__(self, result)
 
@@ -230,7 +206,7 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range(filtered_cells, filtered_values)
+                return Range((filtered_cells, self.nb_rows, 1), filtered_values)
 
             elif col == 0: # get row
 
@@ -239,7 +215,7 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range(filtered_cells, filtered_values)
+                return Range((filtered_cells, 1, self.nb_cols), filtered_values)
 
             else:
                 base_col_number = col2num(cells[0][0])
@@ -247,7 +223,6 @@ class Range(OrderedDict):
                 new_value = values[(row - 1)* nc + (col - 1)]
 
                 return new_value
-                # return Range([new_ref], [new_value])
 
     @staticmethod
     def apply_one(func, self, other, ref = None):
@@ -265,12 +240,13 @@ class Range(OrderedDict):
 
         if type(self) == Range and type(other) == Range:
             if self.length != other.length:
-                return ExcelError('apply_all must have 2 Ranges of identical length')
-            return Range(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+                raise ExcelError('apply_all must have 2 Ranges of identical length')
+            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+
         elif type(self) == Range:
-            return Range(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())))
+            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other), enumerate(self.values())))
         elif type(other) == Range:
-            return Range(other.cells, map(lambda (key, value): function(value, other), enumerate(other.values())))
+            return Range((other.cells, other.nb_rows, other.nb_cols), map(lambda (key, value): function(value, other), enumerate(other.values())))
         else:
             return function(self, other)
 

@@ -158,7 +158,7 @@ class Spreadsheet(object):
             }]
         data["nodes"] = nodes
         # save ranges as simple objects
-        ranges = {k: [r.cells, r.values()] for k,r in self.ranges.items()}
+        ranges = {k: [(r.cells, r.nr_rows, r.nr_cols), r.values()] for k,r in self.ranges.items()}
 
         data["ranges"] = ranges
         data["named_ranges"] = self.named_ranges
@@ -272,7 +272,7 @@ class Spreadsheet(object):
 
         values = [ self.evaluate(c) for c in cells ]
 
-        data = Range(cells, values)
+        data = Range((cells, nrows, ncols), values)
         rng.value = data
         
         return data
@@ -323,6 +323,7 @@ class Spreadsheet(object):
 
         # print 'updated range', range
         return range
+
     def evaluate(self,cell,is_addr=True):
 
         if is_addr:
@@ -339,11 +340,6 @@ class Spreadsheet(object):
             #print "returning constant or cached value for ", cell.address()
             return cell.value
         
-
-        # recalculate formula
-        # the compiled expression calls this function
-
-
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             vv = eval(cell.compiled_expression)
@@ -666,7 +662,7 @@ class FunctionNode(ASTNode):
             str = "all([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "or":
             str = "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
-        elif fun == "index": # might not be necessary
+        elif fun == "index":
             if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 str = 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
@@ -963,7 +959,7 @@ class ExcelCompiler(object):
                         else:
                             range_values.append(None)
 
-                    my_range = Range(range_cells, range_values)
+                    my_range = Range((range_cells, nrow, ncol), range_values)
                     self.ranges[n] = my_range
                     self.cells[n] = Cell(n, None, my_range, n, True )
                 else:
@@ -1128,7 +1124,7 @@ class ExcelCompiler(object):
                         my_cells = [a for a in my_cells if a in self.cells]
                         if len(values) != 0:
                             # TODO what happens in this case ?
-                            my_range = Range(my_cells, values)
+                            my_range = Range((my_cells, nrows, ncols), values)
 
                             self.ranges[dep] = my_range
                             rng = Cell(dep, None, my_range, dep, True )

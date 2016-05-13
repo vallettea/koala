@@ -31,25 +31,34 @@ if __name__ == '__main__':
     print "Serializing to disk...", file
     sp.dump(file.replace("xlsx", "gzip"))
 
+
     startTime = datetime.now()
     print "Reading from disk...", file
     sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
-    
+
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
-    for addr, cell in sp.cellmap.items():
-        sp.history[addr] = {'original': str(cell.value)}
+
+    # for addr, cell in sp.cellmap.items():
+    #     sp.history[addr] = {'original': str(cell.value)}
 
     sp.set_value('IA_PriceExportGas', 30)
     startTime = datetime.now()
     print 'Second evaluation %s for %s' % (str(sp.evaluate('outNPV_Proj')),str(695))
+
+    # startTime = datetime.now()
+    # # # sp.set_value('InputData!G14', 0)
+    # sp.set_value('InputData!G14', 2018)
+    # print 'Second evaluation', sp.evaluate('Cashflow!G187')
+
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-    print 'NB different', sp.count
-    with open('history.json', 'w') as outfile:
-        json.dump(sp.history, outfile)
+    # print 'NB different', sp.count
+
+    # with open('history_dif.json', 'w') as outfile:
+    #     json.dump(sp.history, outfile)
 
     

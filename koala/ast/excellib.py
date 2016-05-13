@@ -160,7 +160,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     else:
         cells, nr, nc = my_range
         cells = list(flatten(cells))
-    
+
     if type(cells) != list:
         return ExcelError('%s must be a list' % str(cells))
 
@@ -643,10 +643,6 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     return ref_sheet + start_address + end_address
 
-
-
-    
-
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
     
@@ -655,15 +651,11 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
+
     if isinstance(value, ExcelError):
         return value_if_error
     else:
         return value
-
-    # try:
-    #     return(eval(value))
-    # except:
-    #     return value_if_error
 
 if __name__ == '__main__':
     pass
