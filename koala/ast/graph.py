@@ -59,31 +59,37 @@ class Spreadsheet(object):
 
         print "%s index to parse" % str(len(allindex))
 
+        cache = {} # formula => new_formula
         new_named_ranges = self.named_ranges
         new_cells = self.cellmap
 
         for cell in allindex:
             # print "====================================="
             # print cell["address"], cell["formula"]
-            if cell["sheet"]:
-                parsed = parse_cell_address(cell["address"])
+
+            if cell["formula"] in cache:
+                new_formula = cache[cell["formula"]]
             else:
-                parsed = ""
-            e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
-            ast,root = build_ast(e)
-            code = root.emit(ast)
-            
-            replacements = self.eval_index_from_ast(ast, root, cell["sheet"])
-            # print replacements
-            new_formula = cell["formula"]
-            if type(replacements) == list:
-                for repl in replacements:
-                    if repl["expression_type"] == "value":
-                        new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
-                    else:
-                        new_formula = new_formula.replace(repl["formula"], repl["value"])
-            else:
-                new_formula = None
+                if cell["sheet"]:
+                    parsed = parse_cell_address(cell["address"])
+                else:
+                    parsed = ""
+                e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
+                ast,root = build_ast(e)
+                code = root.emit(ast)
+                
+                replacements = self.eval_index_from_ast(ast, root, cell["sheet"])
+                # print replacements
+                new_formula = cell["formula"]
+                if type(replacements) == list:
+                    for repl in replacements:
+                        if repl["expression_type"] == "value":
+                            new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
+                        else:
+                            new_formula = new_formula.replace(repl["formula"], repl["value"])
+                else:
+                    new_formula = None
+                cache[cell["formula"]] = new_formula
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["formula"]] = new_formula
@@ -1074,39 +1080,71 @@ class ExcelCompiler(object):
                     target = cellmap[c1.address()]
                 # if the dependency is a multi-cell range, create a range object
                 elif is_range(dep):
-                    # this will make sure we always have an absolute address
-                    rng = CellRange(dep, sheet=cursheet)
 
-                    if rng.address() in cellmap:
+                    # # OLD METHOD
+                    # # this will make sure we always have an absolute address
+                    # rng = CellRange(dep, sheet=cursheet)
+                    # if rng.address() in cellmap:
+                    #     # already dealt with this range
+                    #     # add an edge from the range to the parent
+                    #     print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                    #     G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
+                    #     continue
+                    # else:
+                    #     # turn into cell objects
+                    #     if "!" in dep:
+                    #         sheet_name, ref = dep.split("!")
+                    #     else:
+                    #         sheet_name = cursheet
+                    #         ref = dep
+                    #     cells_refs = list(rows_from_range(ref))
+                    #     cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
+                    #     print map(lambda x :x.address(), cells)
+                    #     # get the values so we can set the range value
+                    #     rng.value = [c.value for c in cells]
+                    #     # save the range
+                    #     cellmap[rng.address()] = rng
+                    #     # add an edge from the range to the parent
+                    #     G.add_node(rng)
+                    #     print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                    #     G.add_edge(rng,cellmap[c1.address()])
+                    #     target = rng
+                    #     print "target ", target.address()
+
+
+                    # NEW METHOD
+                    if dep in cellmap:
                         # already dealt with this range
                         # add an edge from the range to the parent
                         # print "Adding edge %s --> %s" % (rng.address(), c1.address())
                         G.add_edge(cellmap[rng.address()], cellmap[c1.address()])
                         continue
                     else:
-                        # turn into cell objects
-                        if "!" in dep:
-                            sheet_name, ref = dep.split("!")
-                        else:
-                            sheet_name = cursheet
-                            ref = dep
-                        cells_refs = list(rows_from_range(ref))                       
-                        cells = [self.cells[sheet_name +"!"+ ref] for ref in list(chain(*cells_refs)) if sheet_name +"!"+ ref in self.cells]
 
-                        # get the values so we can set the range value
-                        rng.value = [c.value for c in cells]
-                        
-                        # my_range = Range(cells, rng.value)
-                        # self.ranges[dep] = my_range
+                        # TODO SHEEET
+                        my_cells, nrows, ncols = resolve_range(dep)
+                        my_cells = list(flatten(my_cells))
 
-                        # save the range
-                        cellmap[rng.address()] = rng
-                        # add an edge from the range to the parent
-                        G.add_node(rng)
-                        # print "Adding edge %s --> %s" % (rng.address(), c1.address())
-                        G.add_edge(rng,cellmap[c1.address()])
-                        # cells in the range should point to the range as their parent
-                        target = rng
+                        values = [ self.cells[c].value for c in my_cells if c in self.cells]
+                        my_cells = [a for a in my_cells if a in self.cells]
+                        if len(values) != 0:
+                            # TODO what happens in this case ?
+                            my_range = Range(my_cells, values)
+
+                            self.ranges[dep] = my_range
+                            rng = Cell(dep, None, my_range, dep, True )
+                            self.cells[dep] = rng
+                            cellmap[dep] = rng
+
+                            # print "Adding edge %s --> %s" % (rng.address(), c1.address())
+                            G.add_edge(rng, cellmap[c1.address()])
+                            # cells in the range should point to the range as their parent
+                            target = self.cells[dep]
+                            cells = []
+                            for (child, value) in zip(my_cells, values):
+                                if child not in cellmap:
+                                    cells.append(Cell(child, None, value, self.cells[child].formula, False))
+                                
                 else:
                     # not a range, create the cell object
                     if "!" in dep:
@@ -1218,6 +1256,6 @@ class ExcelCompiler(object):
             # print map(lambda x: x.address(), G.nodes())
 
         sp = Spreadsheet(G, cellmap, self.named_ranges, self.ranges)
-        
+        print cellmap["gen_discountRate"]
         return sp
 
