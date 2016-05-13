@@ -250,7 +250,7 @@ class Range(OrderedDict):
                 # return Range([new_ref], [new_value])
 
     @staticmethod
-    def apply_one(func, self, other, ref):
+    def apply_one(func, self, other, ref = None):
         function = func_dict[func]
 
         first, second = find_associated_values(ref, self, other)

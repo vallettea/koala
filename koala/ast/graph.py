@@ -47,25 +47,33 @@ class Spreadsheet(object):
         self.params = None
         self.history = dict()
         self.count = 0
+        self.volatile_to_remove = ["INDEX", "OFFSET"]
 
     def clean_volatile(self):
-        allindex = []
-        for k,v in self.named_ranges.items():
-            if 'INDEX' in v:
-                allindex.append({"formula":v, "address": k, "sheet": None})
-        for k,cell in self.cellmap.items():
-            if cell.formula and 'INDEX' in cell.formula:
-                allindex.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
+        
+        all_volatiles = []
 
-        print "%s index to parse" % str(len(allindex))
+        for volatile_name in self.volatile_to_remove:
+            for k,v in self.named_ranges.items():
+                if volatile_name in v:
+                    all_volatiles.append({"formula":v, "address": k, "sheet": None})
+            for k,cell in self.cellmap.items():
+                if cell.formula and volatile_name in cell.formula:
+                    all_volatiles.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
+
+            print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         cache = {} # formula => new_formula
         new_named_ranges = self.named_ranges
         new_cells = self.cellmap
 
-        for cell in allindex:
+        for cell in all_volatiles:
             # print "====================================="
             # print cell["address"], cell["formula"]
+
+            if "IA_PriceExportGas" in cell["formula"]:
+                raise Exception("Input in volatiles")
+                print "!!!!======", cell["address"], cell["formula"]
 
             if cell["formula"] in cache:
                 new_formula = cache[cell["formula"]]
@@ -78,7 +86,7 @@ class Spreadsheet(object):
                 ast,root = build_ast(e)
                 code = root.emit(ast)
                 
-                replacements = self.eval_index_from_ast(ast, root, cell["sheet"])
+                replacements = self.eval_volatiles_from_ast(ast, root, cell["sheet"])
                 # print replacements
                 new_formula = cell["formula"]
                 if type(replacements) == list:
@@ -104,9 +112,9 @@ class Spreadsheet(object):
         for c in node.children(ast):
             self.print_value_ast(ast, c, indent+1)
 
-    def eval_index_from_ast(self, ast, node, context):
+    def eval_volatiles_from_ast(self, ast, node, context):
         results = []
-        if "INDEX" in node.token.tvalue and node.parent(ast) is not None and node.parent(ast).tvalue == ':':
+        if node.token.tvalue in self.volatile_to_remove and node.parent(ast) is not None and node.parent(ast).tvalue == ':':
             # print self.print_value_ast(ast, node, 1)
             index_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
@@ -115,12 +123,17 @@ class Spreadsheet(object):
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
             else:
+                if "counta" in expression:
+                    print index_string
+                    print expression
+                    eval(expression)
+                    print "done"
                 expression_type = "formula"
             index_value = eval(expression)
             return {"formula":index_string, "value": index_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
-                results.append(self.eval_index_from_ast(ast, c, context))
+                results.append(self.eval_volatiles_from_ast(ast, c, context))
         return list(flatten_lists(results))
 
 
@@ -193,20 +206,19 @@ class Spreadsheet(object):
     def set_value(self,address,val,is_addr=True):
         #
         if address in self.named_ranges:
-            if is_range(address):
-                addresses = resolve_range(self.named_ranges[address])[0]
-                cell_to_set = []
-                for address in addresses:
-                    if address in self.cellmap:
-                        cell_to_set += [self.cellmap[address]]
-                    else:
-                        print "===", address
-            else:
-                cell_to_set = [self.cellmap[address]]
+            # if is_range(address):
+            #     addresses = resolve_range(self.named_ranges[address])[0]
+            #     cell_to_set = []
+            #     for address in addresses:
+            #         if address in self.cellmap:
+            #             cell_to_set += [self.cellmap[address]]
+            #         else:
+            #             print "===", address
+            if type(self.ranges[address]) == Range:
+                cell_to_set = [self.cellmap[a] for a in self.ranges[address].cells if a in self.cellmap]
         else:
             address = address.replace('$','')
             cell_to_set = [self.cellmap[address]]
-
       
         # if cell.is_named_range:
         #     # Take care of the case where named_range is not directly a cell address (type offset ...)
@@ -217,6 +229,7 @@ class Spreadsheet(object):
             if cell.value != val:
                 # reset the node + its dependencies
                 self.reset(cell)
+                print "reset", cell.address()
                 # set the value
                 cell.value = val
 
@@ -923,7 +936,7 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, file, ignore_sheets = [], parse_offsets = False):
+    def __init__(self, file, ignore_sheets = []):
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -932,22 +945,6 @@ class ExcelCompiler(object):
         self.cells = read_cells(archive, ignore_sheets)
         # Parse named_range
         self.named_ranges = read_named_ranges(archive)
-        # Remove offsets
-        if parse_offsets:
-            parser = OffsetParser(self.cells, self.named_ranges)
-            nb = 0
-            for k,v in self.named_ranges.items():
-                if 'OFFSET' in v:
-                    self.named_ranges[k] = parser.parseOffsets(v)
-                    nb +=1
-            for k,cell in self.cells.items():
-                if cell.formula and 'OFFSET' in cell.formula:
-                    f = parser.parseOffsets(cell.formula)
-                    c = Cell(cell.address(), cell.sheet, cell.value, f, cell.is_named_range, cell.always_eval)
-                    self.cells[k] = c
-                    nb +=1
-            print "%s offsets removed" % str(nb)
-
         
         # Transform named_ranges in artificial ranges
         self.ranges = {}
@@ -1033,8 +1030,7 @@ class ExcelCompiler(object):
 
         while todo:
             c1 = todo.pop()
-            
-            # print "============= Handling ", c1.address(), c1.formula
+            print "============= Handling ", c1.address(), c1.formula
             cursheet = c1.sheet
             
             # looking for all the dependencies of this cell
