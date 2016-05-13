@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict, Iterable
 # from koala.ast.excelutils import col2num, num2col, flatten, is_number
 import string
-
+from ExcelError import ExcelError
 
 # this is due to a circular reference, need to be addressed
 def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
@@ -193,7 +193,7 @@ class Range(OrderedDict):
 
         if nr == 1 or nc == 1: # 1-dim range
             if col is not None:
-                raise ValueError('Trying to access 1-dim range value with 2 coordinates')
+                raise Exception('Trying to access 1-dim range value with 2 coordinates')
             else:
                 return self.values()[row - 1]
             
@@ -225,7 +225,7 @@ class Range(OrderedDict):
                 return new_value
 
     @staticmethod
-    def apply_one(func, self, other, ref):
+    def apply_one(func, self, other, ref = None):
         function = func_dict[func]
 
         first, second = find_associated_values(ref, self, other)
@@ -240,8 +240,9 @@ class Range(OrderedDict):
 
         if type(self) == Range and type(other) == Range:
             if self.length != other.length:
-                raise Exception('apply_all must have 2 Ranges of identical length')
+                raise ExcelError('apply_all must have 2 Ranges of identical length')
             return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+
         elif type(self) == Range:
             return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other), enumerate(self.values())))
         elif type(other) == Range:
@@ -255,14 +256,14 @@ class Range(OrderedDict):
         try:
             return check_value(a) + check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def substract(a, b):
         try:
             return check_value(a) - check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def minus(a, b = None):
@@ -270,21 +271,22 @@ class Range(OrderedDict):
         try:
             return -check_value(a)
         except Exception as e:
-            return e
+            return ExcelError(e)
+
 
     @staticmethod
     def multiply(a, b):
         try:
             return check_value(a) * check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def divide(a, b):
         try:
             return float(check_value(a)) / float(check_value(b))
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_equal(a, b):
@@ -297,7 +299,7 @@ class Range(OrderedDict):
             #     print 'Check value', check_value(a)
             return a == b
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_not_equal(a, b):
@@ -309,35 +311,35 @@ class Range(OrderedDict):
 
             return a != b
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_strictly_superior(a, b):
         try:
             return check_value(a) > check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_strictly_inferior(a, b):
         try:
             return check_value(a) < check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
             return check_value(a) >= check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
             return check_value(a) <= check_value(b)
         except Exception as e:
-            return e
+            return ExcelError(e)
 
 
 func_dict = {
