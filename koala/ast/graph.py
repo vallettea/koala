@@ -62,8 +62,8 @@ class Spreadsheet(object):
             print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         cache = {} # formula => new_formula
-        new_named_ranges = self.named_ranges
-        new_cells = self.cellmap
+        new_named_ranges = self.named_ranges.copy()
+        new_cells = self.cellmap.copy()
 
         for cell in all_volatiles:
 
@@ -80,7 +80,7 @@ class Spreadsheet(object):
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell["sheet"])
                 # print replacements
-                new_formula = cell["formula"].replace(" ","")
+                new_formula = cell["formula"]
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
@@ -101,11 +101,12 @@ class Spreadsheet(object):
                     print replacements
 
             if cell["address"] in new_named_ranges:
-                new_named_ranges[cell["formula"]] = new_formula
-            else:
-                old_cell = new_cells[cell["address"]]
-                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
+                new_named_ranges[cell["address"]] = new_formula
+            old_cell = new_cells[cell["address"]]
+            new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
             
+        print 'ALLEZ', new_named_ranges["IA_EconLimitOverride_ProjectList"]
+        print new_cells["IA_EconLimitOverride_ProjectList"].formula
         return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
@@ -984,7 +985,6 @@ class ExcelCompiler(object):
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
 
-
     def cell2code(self, cell, sheet):
         """Generate python code for the given cell"""
         if cell.formula:
@@ -1030,7 +1030,6 @@ class ExcelCompiler(object):
             c1 = todo.pop()
             cursheet = c1.sheet
 
-            print "gengraph ", c1.address(), c1.formula
             
             # looking for all the dependencies of this cell
             if c1.address() in self.ranges:
@@ -1050,7 +1049,7 @@ class ExcelCompiler(object):
                 # remove dupes
                 deps = uniqueify(deps)
 
-            print "--- deps ", deps
+            # print "--- deps ", deps
             for dep in deps:
                 # in case the dep is part of ranges, connect to the label in the graph
                 if dep not in self.named_ranges:

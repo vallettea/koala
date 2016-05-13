@@ -34,7 +34,7 @@ def read_named_ranges(archive):
         if name_node.get('name') == 'tR':
             dict[name_node.get('name')] = 'Depreciation!A1:A100'
         else:
-            dict[name_node.get('name')] = name_node.text.replace('$','')
+            dict[name_node.get('name')] = name_node.text.replace('$','').replace(" ","")
 
     return dict
     # return {
@@ -110,11 +110,12 @@ def read_cells(archive, ignore_sheets = []):
 
             if cell['f'] is not None or cell['v'] is not None:
                 always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
-
+                
+                cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
                 if "!" in cell_address:
-                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], always_eval=always_eval)
+                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
                 else:
-                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cell['f'], always_eval=always_eval)
+                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
 
     return cells
 
