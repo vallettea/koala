@@ -65,6 +65,7 @@ def reverse_rpn(node, ast):
     # TODO: add in RE substitution of " with "" for strings
     elif t.ttype == ExcelParserTokens.TOK_TYPE_OPERAND: return  t.tvalue 
     elif t.ttype == ExcelParserTokens.TOK_TYPE_OP_IN: return reverse_rpn(node.children(ast)[0], ast) + t.tvalue + reverse_rpn(node.children(ast)[1], ast)               
+    elif t.ttype == ExcelParserTokens.TOK_TYPE_OP_PRE: return t.tvalue              
     else: raise Exception("Strange reverse_rpn parsing.")
 
             

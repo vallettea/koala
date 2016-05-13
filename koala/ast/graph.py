@@ -24,8 +24,6 @@ import logging
 from itertools import chain
 
 from Range import Range, find_associated_values, parse_cell_address, get_cell_address
-from OffsetParser import OffsetParser
-from IndexParser import IndexParser
 
 import json
 import gzip
@@ -115,7 +113,8 @@ class Spreadsheet(object):
 
     def eval_volatiles_from_ast(self, ast, node, context):
         results = []
-        if node.token.tvalue in self.volatile_to_remove and node.parent(ast) is not None and node.parent(ast).tvalue == ':':
+        if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
+            (node.token.tvalue == "OFFSET" and node.parent(ast) is not None):
             # print self.print_value_ast(ast, node, 1)
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
@@ -125,7 +124,7 @@ class Spreadsheet(object):
                 expression_type = "value"
             else:
                 expression_type = "formula"
-
+            print expression
             volatile_value = eval(expression)
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
@@ -1028,6 +1027,8 @@ class ExcelCompiler(object):
         while todo:
             c1 = todo.pop()
             cursheet = c1.sheet
+
+            print "gengraph ", c1.address(), c1.formula
             
             # looking for all the dependencies of this cell
             if c1.address() in self.ranges:
@@ -1047,7 +1048,7 @@ class ExcelCompiler(object):
                 # remove dupes
                 deps = uniqueify(deps)
 
-            # print "--- deps ", deps
+            print "--- deps ", deps
             for dep in deps:
                 # in case the dep is part of ranges, connect to the label in the graph
                 if dep not in self.named_ranges:
