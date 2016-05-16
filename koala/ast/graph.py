@@ -222,20 +222,23 @@ class Spreadsheet(object):
     
     def set_value(self, address, val):
 
+        # case where the address refers to a range
+
         if type(self.cellmap[address].value) == Range:
             cell_to_set = [self.cellmap[a] for a in self.cellmap[address].value.cells if a in self.cellmap]
+            if type(val) != list:
+                val = [val]*len(cell_to_set)
+            for cell, value in zip(cell_to_set, val):
+                if cell.value != value:
+                    # reset the node + its dependencies
+                    self.reset(cell)
+                    # set the value
+                    cell.value = value
+
+        # case where the address refers to a single value
         else:
             address = address.replace('$','')
-            cell_to_set = [self.cellmap[address]]
-      
-        if len(cell_to_set) == 0:
-            print "WARNING: No cells where reseted!"
-        # if cell.is_named_range:
-        #     # Take care of the case where named_range is not directly a cell address (type offset ...)
-        #     # It will raise an exception, but we want this to prevent wrong usage
-        #     return self.set_value(self.cellmap[cell.formula], val,False)
-
-        for cell in cell_to_set:
+            cell = self.cellmap[address]
             if cell.value != val:
                 # reset the node + its dependencies
                 self.reset(cell)
@@ -352,7 +355,10 @@ class Spreadsheet(object):
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
             #print "returning constant or cached value for ", cell.address()
-            return cell.value
+            if type(cell.value) == Range:
+                return cell.value.values()
+            else:
+                return cell.value
         
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
@@ -367,6 +373,7 @@ class Spreadsheet(object):
             #     vv = vv[cell.index]
             cell.value = vv
 
+            # raise Exception("ta mere")
             # DEBUG: saving differences
             if cell.address() in self.history:
                 ori_value = self.history[cell.address()]['original']
@@ -384,11 +391,14 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                print "PB"
+                # print "PB", Range.apply_one('add',self.eval_ref('IA_PriceExportGas'),self.eval_ref('IA_PriceExportDiffGas'),('91', 'L'))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
-            return cell.value
+            if type(cell.value) == Range:
+                return cell.value.values()
+            else:
+                return cell.value
         except:
             for f in missing_functions:
                 print 'MISSING', f
