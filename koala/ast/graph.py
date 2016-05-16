@@ -418,9 +418,6 @@ class Spreadsheet(object):
                 raise e
             else:
                 # print "PB 1", Range.apply_all('multiply',self.eval_ref("Calculations!P58:P68"),self.eval_ref("Calculations!P91:P101"),('124', 'P'))
-                
-                print "PB 1", Range.apply_all('is_equal',self.eval_ref("Calculations!F58:F68"),self.eval_ref("Calculations!F58"),('124', 'P'))
-                # print "PB 2", self.eval_ref("Calculations!F58:F68").get(1) == self.eval_ref("Calculations!F58")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -1183,11 +1180,6 @@ class ExcelCompiler(object):
                         else:
                             origins = [self.cells[reference]] 
                     else:
-                        print "REF NOT IN SELF.CELLS", reference
-                        # raise Exception( '%s unavailable' % reference)
-                        # if reference in cellmap:
-                        #     virtual_cell = Cell(dep, None, cellmap[reference].value, reference, True )
-                        # else:
                         virtual_cell = Cell(dep, None, None, None, True )
                         origins = [virtual_cell]
 

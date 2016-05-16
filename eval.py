@@ -50,7 +50,7 @@ if __name__ == '__main__':
     sp.set_value('IA_PriceExportGas', tmp) # =InputData!$L$99:$DG$99
 
     startTime = datetime.now()
-    print 'Second evaluation %s for %s' % (str(sp.evaluate('outNPV_Proj')),str(-1826))
+    print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 
     # startTime = datetime.now()
     # # # sp.set_value('InputData!G14', 0)
