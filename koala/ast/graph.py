@@ -218,19 +218,10 @@ class Spreadsheet(object):
         nx.draw_networkx_labels(self.G, pos)
         plt.show()
     
-    def set_value(self,address,val,is_addr=True):
-        #
-        if address in self.ranges:
-            # if is_range(address):
-            #     addresses = resolve_range(self.named_ranges[address])[0]
-            #     cell_to_set = []
-            #     for address in addresses:
-            #         if address in self.cellmap:
-            #             cell_to_set += [self.cellmap[address]]
-            #         else:
-            #             print "===", address
-            if type(self.ranges[address]) == Range:
-                cell_to_set = [self.cellmap[a] for a in self.ranges[address].cells if a in self.cellmap]
+    def set_value(self, address, val):
+
+        if type(self.cellmap[address].value) == Range:
+            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].value.cells if a in self.cellmap]
         else:
             address = address.replace('$','')
             cell_to_set = [self.cellmap[address]]
@@ -251,14 +242,13 @@ class Spreadsheet(object):
 
     def reset(self, cell):
         addr = cell.address()
-        print "reseting ", addr
         if cell.value is None and addr not in self.named_ranges: return
 
         # update depending ranges
-        if addr in self.ranges:
-            self.ranges[addr].reset()
-
-        cell.value = None
+        if type(cell.value) == Range:
+            cell.value.reset()
+        else:
+            cell.value = None
         map(self.reset,self.G.successors_iter(cell))
 
     def print_value_tree(self,addr,indent):
@@ -392,8 +382,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                print self.eval_ref('IA_PriceExportDiffGas')
-                print "zzzzz", Range.apply_one('add',self.eval_ref('IA_PriceExportGas'),self.eval_ref('IA_PriceExportDiffGas'),('91', 'L'))
+                print "zzzzz", self.eval_ref('OA_ATCF_Real'),self.eval_ref("Cashflow!L72")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -1090,40 +1079,12 @@ class ExcelCompiler(object):
                 if dep not in self.named_ranges and "!" not in dep and cursheet != None:
                     dep = cursheet + "!" + dep
 
-                    # if dep in self.reverse_range:
-                    #     name_parent_range = self.reverse_range[dep]
-                    #     # create a node
-                    #     if dep in self.cells:
-                    #         rng = self.cells[name_parent_range]
-                    #         cellmap[rng.address()] = rng
-                    #         cellmap[dep] = self.cells[dep]
-                    #         # print "Adding edge %s --> %s" % (rng.address(), dep)
-                    #         G.add_edge(cellmap[rng.address()], cellmap[dep])
-                    #         # if we add the father we need all childs
-                    #         for c in rng.value.cells:
-                    #             if c in self.cells:
-                    #                 # print "Adding edge %s --> %s" % (rng.address(), c)
-                    #                 cellmap[c] = self.cells[c]
-                    #                 G.add_edge(cellmap[rng.address()], cellmap[c])
-
-
                 # Named_ranges + ranges already parsed (previous iterations)
                 if dep in cellmap:
                     origins = [cellmap[dep]]
                     target = cellmap[c1.address()]
                 # if the dependency is a multi-cell range, create a range object
                 elif is_range(dep) or (dep in self.named_ranges and is_range(self.named_ranges[dep])):
-                    # # In opposition with previous version,
-                    # # we won't call CellRange constructor which verifies that dep is an 'absolute' address
-                    # # because 1) we don't use CellRange anymore (guess why), 2) It is verified and completed few lines before
-                    # if dep in cellmap:
-                    #     # case where dep (address) is well-formatted
-                    #     # already dealt with this range
-                    #     # add an edge from the range to the parent
-                    #     # print "Adding edge %s --> %s" % (dep, c1.address())
-                    #     G.add_edge(cellmap[dep], cellmap[c1.address()])
-                    #     continue
-                    # else:
 
                     if dep in self.named_ranges:
                         reference = self.named_ranges[dep]
@@ -1144,7 +1105,7 @@ class ExcelCompiler(object):
                             formulas_in_dep.append(None)
 
                     rng = Range((address_in_dep, nrows, ncols), values_in_dep)
-                    virtual_cell_holding_range = Cell(dep, None, rng, dep, True )
+                    virtual_cell_holding_range = Cell(dep, None, rng, reference, True )
 
                     # save the range
                     cellmap[dep] = virtual_cell_holding_range
