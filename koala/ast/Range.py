@@ -148,6 +148,9 @@ class Range(OrderedDict):
                 result.append(((row, col), values[index]))
             except:
                 result.append(((row, col), None))
+
+        # print 'References', cells
+        # print 'References', values
         self.cells = cells
         self.sheet = sheet
         self.length = len(cells)
