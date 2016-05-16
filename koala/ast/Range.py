@@ -297,13 +297,15 @@ class Range(OrderedDict):
 
     @staticmethod
     def is_equal(a, b):
-        try:
+        try:            
             if type(a) != str:
                 a = check_value(a)
             if type(b) != str:
                 b = check_value(b)
             # if a == 'David':
             #     print 'Check value', check_value(a)
+
+
             return a == b
         except Exception as e:
             return ExcelError(e)

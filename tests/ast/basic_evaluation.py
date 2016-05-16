@@ -17,10 +17,10 @@ class Test_Excel(unittest.TestCase):
     
     def setUp(self):
         # This needs to be in setup so that further tests begin from scratch
-        file_name = "./tests/ast/basic_2.xlsx"
+        file_name = "./tests/ast/basic_evaluation.xlsx"
 
         c = ExcelCompiler(file_name)
-        self.sp = c.gen_graph()
+        self.sp = c.gen_graph(outputs = ["Sheet1!H9"])
         
     # def test_D1(self):
     #     self.sp.set_value('Sheet1!A1', 10)
@@ -118,9 +118,13 @@ class Test_Excel(unittest.TestCase):
     #     self.sp.set_value('Sheet1!A3', 5)
     #     self.assertEqual(self.sp.evaluate('Sheet1!K17'), 5)
 
-    def test_Empty_Range(self):
-        self.sp.set_value('Sheet1!A12', 5)
-        self.assertEqual(self.sp.evaluate('Sheet1!A13'), 5)
+    # def test_Empty_Range(self):
+    #     self.sp.set_value('Sheet1!A12', 5)
+    #     self.assertEqual(self.sp.evaluate('Sheet1!A13'), 5)
+
+    def test_Sumproduct_with_equality_H9(self):
+        self.sp.set_value('Sheet1!A1', 5)
+        self.assertEqual(self.sp.evaluate('Sheet1!H9'), 50)
 
 if __name__ == '__main__':
     unittest.main()

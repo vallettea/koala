@@ -185,8 +185,34 @@ class Spreadsheet(object):
 
     @staticmethod
     def load(fname):
+
+        def _decode_list(data):
+            rv = []
+            for item in data:
+                if isinstance(item, unicode):
+                    item = item.encode('utf-8')
+                elif isinstance(item, list):
+                    item = _decode_list(item)
+                elif isinstance(item, dict):
+                    item = _decode_dict(item)
+                rv.append(item)
+            return rv
+
+        def _decode_dict(data):
+            rv = {}
+            for key, value in data.iteritems():
+                if isinstance(key, unicode):
+                    key = key.encode('utf-8')
+                if isinstance(value, unicode):
+                    value = value.encode('utf-8')
+                elif isinstance(value, list):
+                    value = _decode_list(value)
+                elif isinstance(value, dict):
+                    value = _decode_dict(value)
+                rv[key] = value
+            return rv
         with gzip.GzipFile(fname, 'r') as infile:
-            data = json.loads(infile.read())
+            data = json.loads(infile.read(), object_hook=_decode_dict)
         def cell_from_dict(d):
             if hasattr(d["value"], '__iter__'):
                 value = Range(d["value"][0], d["value"][1])
@@ -391,7 +417,10 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print "PB", Range.apply_one('add',self.eval_ref('IA_PriceExportGas'),self.eval_ref('IA_PriceExportDiffGas'),('91', 'L'))
+                # print "PB 1", Range.apply_all('multiply',self.eval_ref("Calculations!P58:P68"),self.eval_ref("Calculations!P91:P101"),('124', 'P'))
+                
+                print "PB 1", Range.apply_all('is_equal',self.eval_ref("Calculations!F58:F68"),self.eval_ref("Calculations!F58"),('124', 'P'))
+                # print "PB 2", self.eval_ref("Calculations!F58:F68").get(1) == self.eval_ref("Calculations!F58")
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
