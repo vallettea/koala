@@ -25,7 +25,7 @@ if __name__ == '__main__':
     c = ExcelCompiler(file, ignore_sheets = ['IHS'])
     c.clean_volatile()
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph()
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
     # print "Serializing to disk...", file
