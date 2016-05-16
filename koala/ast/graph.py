@@ -41,7 +41,6 @@ class Spreadsheet(object):
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
-        self.ranges = {}
         self.params = None
         self.history = dict()
         self.count = 0
@@ -52,6 +51,7 @@ class Spreadsheet(object):
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
 
+        ### 1) create ranges
         for n in self.named_ranges:
             reference = self.named_ranges[n]
             if is_range(reference):
@@ -77,6 +77,7 @@ class Spreadsheet(object):
                 else:
                     self.cellmap[n] = Cell(n, None, None, reference, True )
         
+        ### 2) gather all occurence of volatile functions in cells or named_range
         all_volatiles = []
 
         for volatile_name in self.volatile_to_remove:
@@ -89,6 +90,7 @@ class Spreadsheet(object):
 
             print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
+        ### 3) evaluate all volatiles
         cache = {} # formula => new_formula
 
         for cell in all_volatiles:
@@ -123,9 +125,9 @@ class Spreadsheet(object):
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["address"]] = new_formula
-
-            old_cell = self.cellmap[cell["address"]]
-            new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
+            else: 
+                old_cell = self.cellmap[cell["address"]]
+                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
             
         return new_cells, new_named_ranges
 
@@ -290,19 +292,19 @@ class Spreadsheet(object):
         return data
 
     def eval_ref(self, addr1, addr2 = None):
+        # print 'ADDR', addr1
+        cell1 = self.cellmap[addr1]
+
+        # print 'CELL', cell1
+
         if isinstance(addr1, ExcelError):
             return addr1
         if isinstance(addr2, ExcelError):
             return addr2
         if addr2 == None:
-            if addr1 in self.ranges:
-                range1 = self.ranges[addr1]
-                return self.update_range(range1)
-
-            elif addr1 in self.named_ranges:
-                return self.evaluate(addr1)
-            elif not is_range(addr1): # addr1 = Sheet1!A1 or A1, maybe this may never happen
-                # print 'REF1 is not a range'
+            if type(cell1.value) == Range:
+                return self.update_range(cell1.value)
+            elif addr1 in self.named_ranges or not is_range(addr1):
                 return self.evaluate(addr1)
             else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                 addr1, addr2 = addr1.split(':')
@@ -382,7 +384,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                print "zzzzz", self.eval_ref('OA_ATCF_Real'),self.eval_ref("Cashflow!L72")
+                print "PB"
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         try:
@@ -962,8 +964,14 @@ class ExcelCompiler(object):
 
     def clean_volatile(self):
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
+
+        if "year_firstProd" in self.cells: print 'YEAH'
+
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
+
+        if "year_firstProd" in self.cells: print 'YEAH YEAH'
+
         self.named_ranges = cleaned_ranged_names
 
     def cell2code(self, cell, sheet):
@@ -1105,16 +1113,16 @@ class ExcelCompiler(object):
                             formulas_in_dep.append(None)
 
                     rng = Range((address_in_dep, nrows, ncols), values_in_dep)
-                    virtual_cell_holding_range = Cell(dep, None, rng, reference, True )
+                    virtual_cell = Cell(dep, None, rng, reference, True )
 
                     # save the range
-                    cellmap[dep] = virtual_cell_holding_range
+                    cellmap[dep] = virtual_cell
                     # add an edge from the range to the parent
-                    G.add_node(virtual_cell_holding_range)
+                    G.add_node(virtual_cell)
                     # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
-                    G.add_edge(virtual_cell_holding_range, cellmap[c1.address()])
+                    G.add_edge(virtual_cell, cellmap[c1.address()])
                     # cells in the range should point to the range as their parent
-                    target = virtual_cell_holding_range 
+                    target = virtual_cell 
                     origins = []
                     for (child, value, formula) in zip(address_in_dep, values_in_dep, formulas_in_dep):
                         if child not in cellmap:
@@ -1122,20 +1130,30 @@ class ExcelCompiler(object):
                         else:
                             origins.append(cellmap[child])   
                 else:
-                    # not a range nor named_range, create the cell object
-
+                    # not a range 
                     if dep in self.named_ranges:
                         reference = self.named_ranges[dep]
                     else:
                         reference = dep
 
+
                     if reference in self.cells:
-                        origins = [self.cells[reference]]
-                        target = cellmap[c1.address()]
+                        if dep in self.named_ranges:
+                            virtual_cell = Cell(dep, None, self.cells[reference].value, reference, True )
+                            origins = [virtual_cell]
+                        else:
+                            origins = [self.cells[reference]] 
                     else:
+                        print "REF NOT IN SELF.CELLS", reference
                         # raise Exception( '%s unavailable' % reference)
-                        origins = []
-                        target = []
+                        # if reference in cellmap:
+                        #     virtual_cell = Cell(dep, None, cellmap[reference].value, reference, True )
+                        # else:
+                        virtual_cell = Cell(dep, None, None, None, True )
+                        origins = [virtual_cell]
+
+                    target = cellmap[c1.address()]
+
 
                 # process each cell                    
                 for c2 in flatten(origins):
