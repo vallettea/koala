@@ -22,14 +22,14 @@ if __name__ == '__main__':
     print file        
     startTime = datetime.now()
 
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=["outNPV_Proj"], inputs= ["IA_PriceExportGas"])
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=["outNPV_Proj"])
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    print "Serializing to disk...", file
-    sp.dump(file.replace("xlsx", "gzip"))
+    # print "Serializing to disk...", file
+    # sp.dump(file.replace("xlsx", "gzip"))
 
 
     startTime = datetime.now()
@@ -37,6 +37,8 @@ if __name__ == '__main__':
     sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
+
+    sp = sp.prune_graph(["IA_PriceExportGas"])
     sys.setrecursionlimit(10000)
 
     
