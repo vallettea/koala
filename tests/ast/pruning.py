@@ -28,7 +28,9 @@ class Test_without_range(unittest.TestCase):
         file_name = "./tests/ast/pruning.xlsx"
 
         c = ExcelCompiler(file_name)
-        self.sp = c.gen_graph(outputs = ["Sheet1!C6"], inputs = ["Sheet1!A1","Sheet1!B1"])
+        sp = c.gen_graph(outputs = ["Sheet1!C6"])
+        sp =sp.prune_graph(["Sheet1!A1","Sheet1!B1"])
+        self.sp = sp
         
     def test_pruning_nodes(self):
     	self.assertEqual(self.sp.G.number_of_nodes(), 9)
@@ -49,8 +51,10 @@ class Test_with_range(unittest.TestCase):
         file_name = "./tests/ast/pruning.xlsx"
 
         c = ExcelCompiler(file_name)
-        self.sp = c.gen_graph(outputs = ["Sheet1!C6"], inputs = ["Sheet1!A1","Sheet1!B1", "test"])
-        
+        sp = c.gen_graph(outputs = ["Sheet1!C6"])
+        sp = sp.prune_graph(["Sheet1!A1","Sheet1!B1", "test"])
+        self.sp = sp
+
     def test_pruning_nodes(self):
       self.assertEqual(self.sp.G.number_of_nodes(), 13)
 

@@ -60,7 +60,6 @@ class Spreadsheet(object):
                     continue
                 g = make_subgraph(G, child, "descending")
                 dependencies = dependencies.union(g.nodes())
-                
 
         print "%s cells depending on inputs" % str(len(dependencies))
 
@@ -88,7 +87,7 @@ class Spreadsheet(object):
                     else:
                         if pred.address() not in new_cellmap:
                             const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
-                            pystr,ast = self.cell2code(const_node, pred.sheet)
+                            pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                             const_node.python_expression = pystr
                             const_node.compile()     
                         else:
@@ -1023,6 +1022,18 @@ def make_subgraph(G, seed, direction = "ascending"):
 
     return subgraph
 
+def cell2code(named_ranges, cell, sheet):
+    """Generate python code for the given cell"""
+    if cell.formula:
+        ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
+        e = shunting_yard(cell.formula or str(cell.value), named_ranges, ref=ref)
+        ast,root = build_ast(e)
+        code = root.emit(ast, context=sheet)
+    else:
+        ast = None
+        code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
+    return code,ast
+
 class ExcelCompiler(object):
     """Class responsible for taking cells and named_range and create a graph
        that can be serialized to disk, and executed independently of excel.
@@ -1047,18 +1058,6 @@ class ExcelCompiler(object):
         self.cells = cleaned_cells
 
         self.named_ranges = cleaned_ranged_names
-
-    def cell2code(self, cell, sheet):
-        """Generate python code for the given cell"""
-        if cell.formula:
-            ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges, ref=ref)
-            ast,root = build_ast(e)
-            code = root.emit(ast, context=sheet)
-        else:
-            ast = None
-            code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
-        return code,ast
 
     
             
@@ -1124,7 +1123,7 @@ class ExcelCompiler(object):
             ###### 1) looking for cell c1 dependencies ####################
 
             # in case a formula, get all cells that are arguments
-            pystr, ast = self.cell2code(c1, cursheet)
+            pystr, ast = cell2code(self.named_ranges, c1, cursheet)
             # set the code & compile it (will flag problems sooner rather than later)
             c1.python_expression = pystr
             c1.compile()    
@@ -1235,7 +1234,7 @@ class ExcelCompiler(object):
                             steps.append(step+1)
                         else:
                             # constant cell, no need for further processing, just remember to set the code
-                            pystr,ast = self.cell2code(c2, cursheet)
+                            pystr,ast = cell2code(self.named_ranges, c2, cursheet)
                             c2.python_expression = pystr
                             c2.compile()     
                         
