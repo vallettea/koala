@@ -107,7 +107,7 @@ class Spreadsheet(object):
                 code = root.emit(ast)
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell["sheet"])
-                # print replacements
+
                 new_formula = cell["formula"]
                 if type(replacements) == list:
                     for repl in replacements:
@@ -248,6 +248,9 @@ class Spreadsheet(object):
     
     def set_value(self, address, val):
 
+        if address not in self.cellmap:
+            raise Exception("Address not present in graph.")
+
         # case where the address refers to a range
 
         if type(self.cellmap[address].value) == Range:
@@ -321,10 +324,7 @@ class Spreadsheet(object):
         return data
 
     def eval_ref(self, addr1, addr2 = None):
-        # print 'ADDR', addr1
         cell1 = self.cellmap[addr1]
-
-        # print 'CELL', cell1
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -343,12 +343,9 @@ class Spreadsheet(object):
                     sheet = None
                 if '!' in addr2:
                     addr2 = addr2.split('!')[1]
-                # print 'REF1 is a range'
-                # if sheet == None:
-                #     sheet = 
+
                 return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
         else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
-            # print 'REF2 is not none'
             if '!' in addr1:
                 sheet = addr1.split('!')[0]
             else:
@@ -358,20 +355,17 @@ class Spreadsheet(object):
             return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        # print 'update range', range
         for key, value in range.items():
             if value is None:
                 addr = get_cell_address(range.sheet, key)
                 range[key] = self.evaluate(addr)
 
-        # print 'updated range', range
         return range
 
     def evaluate(self,cell,is_addr=True):
 
         if is_addr:
             try:
-                # print '->', cell
                 cell = self.cellmap[cell]
 
             except:
@@ -392,26 +386,20 @@ class Spreadsheet(object):
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
-            # if vv is None:
-            #     print "WARNING %s is None" % (cell.address())
-            # elif isinstance(vv, (List, list)):
-            #     print 'Output is list => converting', cell.index
-            #     vv = vv[cell.index]
             cell.value = vv
 
-            # raise Exception("ta mere")
-            # DEBUG: saving differences
-            if cell.address() in self.history:
-                ori_value = self.history[cell.address()]['original']
-                if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
-                    self.count += 1
-                    self.history[cell.address()]['formula'] = str(cell.formula)
-                    self.history[cell.address()]['priority'] = self.count
-                    self.history[cell.address()]['python'] = str(cell.python_expression)
+            # # DEBUG: saving differences
+            # if cell.address() in self.history:
+            #     ori_value = self.history[cell.address()]['original']
+            #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
+            #         self.count += 1
+            #         self.history[cell.address()]['formula'] = str(cell.formula)
+            #         self.history[cell.address()]['priority'] = self.count
+            #         self.history[cell.address()]['python'] = str(cell.python_expression)
 
-                self.history[cell.address()]['new'] = str(cell.value)
-            else:
-                self.history[cell.address()] = {'new': str(cell.value)}
+            #     self.history[cell.address()]['new'] = str(cell.value)
+            # else:
+            #     self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if e.message.startswith("Problem evalling"):
@@ -443,7 +431,6 @@ class ASTNode(object):
     def children(self,ast):
         args = ast.predecessors(self)
         args = sorted(args,key=lambda x: ast.node[x]['pos'])
-        #args.reverse()
         return args
 
     def parent(self,ast):
@@ -598,7 +585,6 @@ class RangeNode(OperandNode):
         has_operator_or_func_parent = self.has_operator_or_func_parent(ast)
 
         if is_a_named_range:
-            # print 'RANGE', str(self)
             my_str = "'" + str(self) + "'" 
         else:
             # print 'Parsing a range into cells', self
@@ -946,8 +932,7 @@ def build_ast(expression):
             for i,a in enumerate(args):
                 G.add_node(a,{'pos':i})
                 G.add_edge(a,n)
-            #for i in range(n.num_args):
-            #    G.add_edge(stack.pop(),n)
+
         else:
             G.add_node(n,{'pos':0})
 
@@ -968,7 +953,6 @@ def make_subgraph(G, seed, direction = "ascending"):
         todo = map(lambda n: (seed,n), G.successors(seed))
     while len(todo) > 0:
         neighbor, current = todo.pop()
-        print current.address()
         subgraph.add_node(current)
         subgraph.add_edge(neighbor, current)
         if direction == "ascending":
@@ -1001,12 +985,8 @@ class ExcelCompiler(object):
     def clean_volatile(self):
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
 
-        if "year_firstProd" in self.cells: print 'YEAH'
-
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
-
-        if "year_firstProd" in self.cells: print 'YEAH YEAH'
 
         self.named_ranges = cleaned_ranged_names
 
@@ -1260,20 +1240,6 @@ class ExcelCompiler(object):
                                 const_node = new_cellmap[pred.address()]
                             subgraph.add_edge(const_node, current)
                             new_cellmap[const_node.address()] = const_node
-
-                    else:
-                        # if current is an output we add it as constant unlinked node
-                        if current.address() in outputs:
-                            if current.address() not in new_cellmap:
-                                const_node = Cell(current.address(), current.sheet, value=current.value, formula=None, is_named_range=current.is_named_range, always_eval=current.always_eval)
-                                pystr,ast = self.cell2code(const_node, current.sheet)
-                                const_node.python_expression = pystr
-                                const_node.compile()     
-                            else:
-                                const_node = new_cellmap[current.address()]
-                            subgraph.add_node(const_node)
-                            new_cellmap[const_node.address()] = const_node
-    
                         
 
             G = subgraph
