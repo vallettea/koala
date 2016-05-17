@@ -62,7 +62,6 @@ class Spreadsheet(object):
                 dependencies = dependencies.union(g.nodes())
 
         print "%s cells depending on inputs" % str(len(dependencies))
-        print map(lambda x: x.address(), dependencies)
 
         # prune the graph and set all cell independent of input to const
         subgraph = networkx.DiGraph()
@@ -77,7 +76,7 @@ class Spreadsheet(object):
                 # print "==========================="
                 # print current.address(), pred.address()
                 if current in dependencies:
-                    if pred in dependencies:
+                    if pred in dependencies or type(pred.value) == Range or pred.is_named_range:
                         subgraph.add_edge(pred, current)
                         new_cellmap[pred.address()] = pred
                         new_cellmap[current.address()] = current
@@ -89,16 +88,27 @@ class Spreadsheet(object):
                                 done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
-                            pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
-                            const_node.python_expression = pystr
-                            const_node.compile()     
-                        else:
-                            const_node = new_cellmap[pred.address()]
+                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                            # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
+                            # const_node.python_expression = pystr
+                            # const_node.compile()
+                            new_cellmap[pred.address()] = const_node
+
+                        const_node = new_cellmap[pred.address()]
                         subgraph.add_edge(const_node, current)
-                        new_cellmap[const_node.address()] = const_node
+                        
                 else:
-                    raise Exception("Output independant of input.")
+                    # case of range independant of input, we add all children as const
+                    if pred.address() not in new_cellmap:
+                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                        # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
+                        # const_node.python_expression = pystr
+                        # const_node.compile()
+                        new_cellmap[pred.address()] = const_node
+
+                    const_node = new_cellmap[pred.address()]
+                    subgraph.add_edge(const_node, current)
+
 
         print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(subgraph.nodes()),len(subgraph.edges()),len(new_cellmap))
         undirected = networkx.Graph(subgraph)
@@ -436,14 +446,14 @@ class Spreadsheet(object):
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
-            print "returning constant or cached value for ", cell.address()
+            # print "returning constant or cached value for ", cell.address()
             if type(cell.value) == Range:
                 return cell.value.values()
             else:
                 return cell.value
         
         try:
-            print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
             else:

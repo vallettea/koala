@@ -22,14 +22,14 @@ if __name__ == '__main__':
     print file        
     startTime = datetime.now()
 
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # print "Serializing to disk...", file
-    # sp.dump(file.replace("xlsx", "gzip"))
+    print "Serializing to disk...", file
+    sp.dump(file.replace("xlsx", "gzip"))
 
 
     startTime = datetime.now()
@@ -40,7 +40,6 @@ if __name__ == '__main__':
     sp = sp.prune_graph(["IA_PriceExportGas"])
     sys.setrecursionlimit(10000)
 
-    
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
@@ -48,7 +47,7 @@ if __name__ == '__main__':
         sp.history[addr] = {'original': str(cell.value)}
 
     sp.set_value('IA_PriceExportGas', 0)
-    sp.set_value('IA_PriceExportGas', 30) # =InputData!$L$99:$DG$99
+    sp.set_value('IA_PriceExportGas', tmp) # =InputData!$L$99:$DG$99
 
     startTime = datetime.now()
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
