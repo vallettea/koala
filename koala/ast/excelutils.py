@@ -453,18 +453,12 @@ def get_linest_degree(excel,cl):
     # if degree is zero -> only one linest formula -> linear regression -> degree should be one
     return (max(degree,1),coef) 
 
-def flatten(l):
-    for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
-            for sub in flatten(el):
-                yield sub
-        else:
-            yield el
+def flatten(l, only_lists = False):
+    instance = list if only_lists else collections.Iterable
 
-def flatten_lists(l):
     for el in l:
-        if isinstance(el, list) and not isinstance(el, basestring):
-            for sub in flatten_lists(el):
+        if isinstance(el, instance) and not isinstance(el, basestring):
+            for sub in flatten(el):
                 yield sub
         else:
             yield el

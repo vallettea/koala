@@ -154,7 +154,7 @@ class Spreadsheet(object):
         else:
             for c in node.children(ast):
                 results.append(self.eval_volatiles_from_ast(ast, c, context))
-        return list(flatten_lists(results))
+        return list(flatten(results, only_lists = True))
 
 
     def dump(self, fname):
