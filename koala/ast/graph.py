@@ -328,7 +328,7 @@ class Spreadsheet(object):
             cell1 = self.cellmap[addr1]
         except:
             print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
-            return '#NULL'
+            return ExcelError('#NULL', 'Cell %s is empty' % addr1)
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -374,7 +374,7 @@ class Spreadsheet(object):
 
             except:
                 # print 'Empty cell at '+ cell
-                return '#NULL'
+                return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -583,7 +583,7 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
-        if self.tvalue in ErrorCodes:
+        if isinstance(self.tvalue, ExcelError):
             print 'Excel Error Code found', self.tvalue
             return self.tvalue
 

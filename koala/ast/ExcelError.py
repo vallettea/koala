@@ -2,7 +2,9 @@
 ErrorCodes = ("#NULL!", "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A")
 
 class ExcelError(Exception):
-    pass
+	def __init__(self, value, info):
+		self.value = value
+		self.info = info
 
 class EmptyCellError(ExcelError):
     pass
