@@ -31,7 +31,7 @@ import gzip
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
-from ExcelError import ExcelError, EmptyCellError
+from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
 
 
@@ -327,8 +327,8 @@ class Spreadsheet(object):
         try:
             cell1 = self.cellmap[addr1]
         except:
-            print 'Eval_ref Warning: address %s not found in cellmap, returning EmptyCellError' % addr1
-            return EmptyCellError()
+            print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
+            return '#NULL'
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -374,7 +374,7 @@ class Spreadsheet(object):
 
             except:
                 # print 'Empty cell at '+ cell
-                return EmptyCellError()
+                return '#NULL'
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -583,6 +583,10 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
+        if self.tvalue in ErrorCodes:
+            print 'Excel Error Code found', self.tvalue
+            return self.tvalue
+
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
@@ -600,7 +604,10 @@ class RangeNode(OperandNode):
             if is_a_range:
                 sh,start,end = split_range(rng)
             else:
-                sh,col,row = split_address(rng)
+                try:
+                    sh,col,row = split_address(rng)
+                except:
+                    raise ValueError('Address %s is not a cell/range reference, nor a named range' % str(rng))
 
             if sh:
                 my_str = '"' + rng + '"'

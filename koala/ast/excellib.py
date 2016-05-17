@@ -29,7 +29,7 @@ from excelutils import (
 )
 
 from ..ast.Range import Range 
-from ExcelError import ExcelError
+from ExcelError import ExcelError, ErrorCodes
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
@@ -656,7 +656,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
-    if isinstance(value, ExcelError) or value == "#N/A":
+    if isinstance(value, ExcelError) or value in ErrorCodes:
         return value_if_error
     else:
         return value
