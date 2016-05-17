@@ -458,7 +458,7 @@ def flatten(l, only_lists = False):
 
     for el in l:
         if isinstance(el, instance) and not isinstance(el, basestring):
-            for sub in flatten(el):
+            for sub in flatten(el, only_lists = only_lists):
                 yield sub
         else:
             yield el
