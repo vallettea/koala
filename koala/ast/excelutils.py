@@ -108,7 +108,7 @@ class Cell(object):
             self.__col_idx = None
             
         self.__formula = str(formula) if formula else None
-        self.value = str(value) if isinstance(value,unicode) else value
+        self.value = value
         self.python_expression = None
         self.always_eval = always_eval
         self._compiled_expression = None
