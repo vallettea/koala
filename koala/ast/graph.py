@@ -327,8 +327,8 @@ class Spreadsheet(object):
         try:
             cell1 = self.cellmap[addr1]
         except:
-            print 'Eval_ref Warning: address %s not found in cellmap, returning 0' % addr1
-            return 0
+            print 'Eval_ref Warning: address %s not found in cellmap, returning EmptyCellError' % addr1
+            return EmptyCellError()
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -374,7 +374,7 @@ class Spreadsheet(object):
 
             except:
                 # print 'Empty cell at '+ cell
-                return EmptyCellError
+                return EmptyCellError()
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -931,7 +931,18 @@ def build_ast(expression):
                 G.add_edge(arg1, n)
                 
         elif isinstance(n,FunctionNode):
-            args = [stack.pop() for _ in range(n.num_args)]
+            args = []
+            for _ in range(n.num_args):
+                try:
+                    args.append(stack.pop())
+                except:
+                    print 'STACK', stack, n, expression
+                    raise Exception()
+            #try:
+                # args = [stack.pop() for _ in range(n.num_args)]
+            #except:
+            #        print 'STACK', stack, type(n)
+            #        raise Exception('prut')
             args.reverse()
             for i,a in enumerate(args):
                 G.add_node(a,{'pos':i})
