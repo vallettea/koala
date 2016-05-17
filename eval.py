@@ -37,7 +37,6 @@ if __name__ == '__main__':
     sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
-
     sp = sp.prune_graph(["IA_PriceExportGas"])
     sys.setrecursionlimit(10000)
 
@@ -49,7 +48,7 @@ if __name__ == '__main__':
         sp.history[addr] = {'original': str(cell.value)}
 
     sp.set_value('IA_PriceExportGas', 0)
-    sp.set_value('IA_PriceExportGas', tmp) # =InputData!$L$99:$DG$99
+    sp.set_value('IA_PriceExportGas', 30) # =InputData!$L$99:$DG$99
 
     startTime = datetime.now()
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))

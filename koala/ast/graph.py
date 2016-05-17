@@ -62,6 +62,7 @@ class Spreadsheet(object):
                 dependencies = dependencies.union(g.nodes())
 
         print "%s cells depending on inputs" % str(len(dependencies))
+        print map(lambda x: x.address(), dependencies)
 
         # prune the graph and set all cell independent of input to const
         subgraph = networkx.DiGraph()
@@ -69,6 +70,7 @@ class Spreadsheet(object):
         for output_address in self.outputs:
             seed = find_node(G, output_address)
             todo = map(lambda n: (seed,n), G.predecessors(seed))
+            done = set(todo)
 
             while len(todo) > 0:
                 current, pred = todo.pop()
@@ -82,8 +84,9 @@ class Spreadsheet(object):
 
                         nexts = G.predecessors(pred)
                         for n in nexts:            
-                            if n not in subgraph.nodes():
+                            if (pred,n) not in done:
                                 todo += [(pred,n)]
+                                done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
                             const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
@@ -94,7 +97,8 @@ class Spreadsheet(object):
                             const_node = new_cellmap[pred.address()]
                         subgraph.add_edge(const_node, current)
                         new_cellmap[const_node.address()] = const_node
-                    
+                else:
+                    raise Exception("Output independant of input.")
 
         print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(subgraph.nodes()),len(subgraph.edges()),len(new_cellmap))
         undirected = networkx.Graph(subgraph)
@@ -235,7 +239,8 @@ class Spreadsheet(object):
                 "always_eval": cell.always_eval
             }]
         data["nodes"] = nodes
-
+        data["outputs"] = self.outputs
+        data["inputs"] = self.inputs
         data["named_ranges"] = self.named_ranges
         with gzip.GzipFile(fname, 'w') as outfile:
             outfile.write(json.dumps(data))
@@ -283,7 +288,7 @@ class Spreadsheet(object):
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
         cellmap = {n.address():n for n in G.nodes()}
-        return Spreadsheet(G, cellmap, data["named_ranges"])
+        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
 
     def export_to_dot(self,fname):
@@ -431,14 +436,14 @@ class Spreadsheet(object):
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
-            #print "returning constant or cached value for ", cell.address()
+            print "returning constant or cached value for ", cell.address()
             if type(cell.value) == Range:
                 return cell.value.values()
             else:
                 return cell.value
         
         try:
-            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
             else:
@@ -1252,7 +1257,7 @@ class ExcelCompiler(object):
         undirected = networkx.Graph(G)
         print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs)
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs)
 
 
 
