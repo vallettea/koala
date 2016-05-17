@@ -324,7 +324,11 @@ class Spreadsheet(object):
         return data
 
     def eval_ref(self, addr1, addr2 = None):
-        cell1 = self.cellmap[addr1]
+        try:
+            cell1 = self.cellmap[addr1]
+        except:
+            print 'Eval_ref Warning: address %s not found in cellmap, returning 0' % addr1
+            return 0
 
         if isinstance(addr1, ExcelError):
             return addr1
