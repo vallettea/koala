@@ -160,6 +160,15 @@ class Range(OrderedDict):
 
         OrderedDict.__init__(self, result)
 
+    @property
+    def value(self):
+        return self.values()
+    
+    @value.setter
+    def value(self, new_values):
+        for index, key in enumerate(self.keys()):
+            self[key] = new_values[index]
+
     def reset(self):
         for key in self.keys():
             self[key] = None
