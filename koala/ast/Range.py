@@ -3,6 +3,7 @@ import re
 from collections import OrderedDict, Iterable
 import string
 from ExcelError import ExcelError
+from excelutils import *
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
 
@@ -30,41 +31,33 @@ def get_cell_address(sheet, tuple):
         return col + row
 
 def find_associated_values(ref, first = None, second = None):
-    valid = False
 
     row, col = ref
 
     if type(first) == Range:
-        for key, value in first.items():
-            r, c = key
-            if r == row and c == col:
-                first_value = value
-                valid = True
-                break
-            if r == row or c == col:
-                first_value = value
-                valid = True
-            
-        if not valid:
+        try:
+            if first.type == "vertical":
+                first_value = first[(str(row), first.start[1])]
+            elif first.type == "horizontal":
+                first_value = first[(first.start[0], str(col))]
+            else:
+                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
+        except:
             raise Exception('First argument of Range operation is not valid')
     else:
         first_value = first
 
-    valid = False
 
     if type(second) == Range:
-        for key, value in second.items():
-            r, c = key
-            if r == row and c == col:
-                second_value = value
-                valid = True
-                break
-            elif r == row or c == col:
-                second_value = value
-                valid = True
-
-        if not valid:
-            raise Exception('Second argument of Range operation is not valid')
+        try:
+            if second.type == "vertical":
+                second_value = second[(str(row), second.start[1])]
+            elif second.type == "horizontal":
+                second_value = second[(second.start[0], str(col))]
+            else:
+                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
+        except:
+            raise Exception('First argument of Range operation is not valid')
     else:
         second_value = second
     
@@ -86,8 +79,17 @@ def check_value(a):
 
 class Range(OrderedDict):
 
-    def __init__(self, cells_tuple, values):
-        cells, nr, nc = cells_tuple
+    def __init__(self, address, values = None):
+
+        try:
+            cells, nrows, ncols = resolve_range(address)
+        except:
+            raise ValueError('Range must not be a scalar')
+
+        cells = list(flatten(cells))
+
+        if cells[0] == cells[len(cells) - 1]:
+            raise ValueError('Range must not be a scalar')
 
         result = []
 
@@ -103,23 +105,56 @@ class Range(OrderedDict):
             found = re.search(CELL_REF_RE, cell)
             col = found.group(1)
             row = found.group(2)
-
-            try: # Might not be needed
+            
+            try:
                 result.append(((row, col), values[index]))
-            except:
+            except: # when you don't provide any values
                 result.append(((row, col), None))
 
-        # print 'References', cells
-        # print 'References', values
-        self.cells = cells
-        self.sheet = sheet
-        self.length = len(cells)
+        # dont allow messing with these params
+        self.__address = address.replace('$','')
+        self.__cells = cells
+        self.__length = len(cells)
+        self.__nrows = nrows
+        self.__ncols = ncols
+        if ncols == 1:
+            self.__type = 'vertical'
+        elif nrows == 1:
+            self.__type = 'horizontal'
+        else:
+            self.__type = 'bidimensional'
+        self.__sheet = sheet
+        self.__start = parse_cell_address(cells[0])
 
-        self.nb_cols = nc
-        self.nb_rows = nr
+        OrderedDict.__init__(self, result)       
+        
+    def __str__(self):
+        return self.__address 
 
-        OrderedDict.__init__(self, result)
-
+    @property
+    def address(self):
+        return self.__address
+    @property
+    def cells(self):
+        return self.__cells
+    @property
+    def length(self):
+        return self.__length
+    @property
+    def nrows(self):
+        return self.__nrows
+    @property
+    def ncols(self):
+        return self.__ncols
+    @property
+    def type(self):
+        return self.__type
+    @property
+    def sheet(self):
+        return self.__sheet
+    @property
+    def start(self):
+        return self.__start
     @property
     def value(self):
         return self.values()
@@ -133,32 +168,32 @@ class Range(OrderedDict):
         for key in self.keys():
             self[key] = None
 
-    def is_associated(self, other):
-        if self.length != other.length:
-            return None
+    # def is_associated(self, other):
+    #     if self.length != other.length:
+    #         return None
 
-        nb_v = 0
-        nb_c = 0
+    #     nb_v = 0
+    #     nb_c = 0
 
-        for index, key in enumerate(self.keys()):
-            r1, c1 = key
-            r2, c2 = other.keys()[index]
+    #     for index, key in enumerate(self.keys()):
+    #         r1, c1 = key
+    #         r2, c2 = other.keys()[index]
 
-            if r1 == r2:
-                nb_v += 1
-            if c1 == c2:
-                nb_c += 1
+    #         if r1 == r2:
+    #             nb_v += 1
+    #         if c1 == c2:
+    #             nb_c += 1
 
-        if nb_v == self.length:
-            return 'v'
-        elif nb_c == self.length:
-            return 'c'
-        else:
-            return None
+    #     if nb_v == self.length:
+    #         return 'v'
+    #     elif nb_c == self.length:
+    #         return 'c'
+    #     else:
+    #         return None
 
     def get(self, row, col = None):
-        nr = self.nb_rows
-        nc = self.nb_cols
+        nr = self.nrows
+        nc = self.ncols
 
         values = self.values()
         cells = self.cells
@@ -178,7 +213,9 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range((filtered_cells, self.nb_rows, 1), filtered_values)
+                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+
+                return Range(new_address, filtered_values)
 
             elif col == 0: # get row
 
@@ -187,7 +224,9 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range((filtered_cells, 1, self.nb_cols), filtered_values)
+                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+
+                return Range(new_address, filtered_values)
 
             else:
                 base_col_number = col2num(cells[0][0])
@@ -217,12 +256,12 @@ class Range(OrderedDict):
         if type(self) == Range and type(other) == Range:
             if self.length != other.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+            return Range(self.address, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
 
         elif type(self) == Range:
-            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other), enumerate(self.values())))
+            return Range(self.address, map(lambda (key, value): function(value, other), enumerate(self.values())))
         elif type(other) == Range:
-            return Range((other.cells, other.nb_rows, other.nb_cols), map(lambda (key, value): function(value, other), enumerate(other.values())))
+            return Range(other.address, map(lambda (key, value): function(value, other), enumerate(other.values())))
         else:
             return function(self, other)
 

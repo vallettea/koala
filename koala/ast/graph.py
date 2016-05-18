@@ -138,7 +138,7 @@ class Spreadsheet(object):
 
                     range_cells = [a for a in range_cells if a in self.cellmap]
 
-                    my_range = Range((range_cells, nrow, ncol), range_values)
+                    my_range = Range(range_cells, range_values)
                     self.cellmap[n] = Cell(n, None, my_range, n, True )
                 else:
                     self.cellmap[n] = Cell(n, None, None, self.named_ranges[n], True )
@@ -390,7 +390,7 @@ class Spreadsheet(object):
         values = [ self.evaluate(c) for c in cells if c in self.cellmap]
         cells = [c for c in cells if c in self.cellmap]
 
-        data = Range((cells, nrows, ncols), values)
+        data = Range(cells, values)
         rng.value = data
         
         return data
@@ -1122,7 +1122,7 @@ class ExcelCompiler(object):
                                 values_in_dep.append(None)
                                 formulas_in_dep.append(None)
 
-                        rng = Range((address_in_dep, nrows, ncols), values_in_dep)
+                        rng = Range(address_in_dep, values_in_dep)
                         virtual_cell = Cell(o, None, rng, reference, True )
                         seeds.append(virtual_cell)
                     else:
@@ -1222,7 +1222,7 @@ class ExcelCompiler(object):
                             values_in_dep.append(None)
                             formulas_in_dep.append(None)
 
-                    rng = Range((address_in_dep, nrows, ncols), values_in_dep)
+                    rng = Range(address_in_dep, values_in_dep)
                     virtual_cell = Cell(dep, None, rng, reference, True )
 
                     # save the range

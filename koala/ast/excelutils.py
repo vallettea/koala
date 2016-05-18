@@ -5,7 +5,7 @@ import functools
 import re
 import string
 
-from Range import Range
+# from Range import Range
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -646,9 +646,8 @@ def check_length(range1, range2):
 def extract_numeric_values(*args):
     values = []
 
-
     for arg in args:
-        if type(arg) is Range:
+        if isinstance(arg, collections.Iterable):
             temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif type(arg) is tuple:
