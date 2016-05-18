@@ -42,8 +42,8 @@ if __name__ == '__main__':
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
-    for addr, cell in sp.cellmap.items():
-        sp.history[addr] = {'original': str(cell.value)}
+    # for addr, cell in sp.cellmap.items():
+    #     sp.history[addr] = {'original': str(cell.value)}
 
     startTime = datetime.now()
     sp.set_value('IA_PriceExportGas', 0)
@@ -72,6 +72,9 @@ if __name__ == '__main__':
 
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-   
+    print 'NB different', sp.count
+
+    # with open('history_dif.json', 'w') as outfile:
+    #     json.dump(sp.history, outfile)
 
     
