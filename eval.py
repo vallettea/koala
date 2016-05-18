@@ -28,6 +28,8 @@ if __name__ == '__main__':
     # sp = c.gen_graph(outputs=["outNPV_Proj"])
     # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
+    # sp = sp.prune_graph(["IA_PriceExportGas"])
+
     # print "Serializing to disk...", file
     # sp.dump(file.replace("xlsx", "gzip"))
 
@@ -38,35 +40,25 @@ if __name__ == '__main__':
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
-
+    
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
-    for addr, cell in sp.cellmap.items():
-        sp.history[addr] = {'original': str(cell.value)}
 
-    startTime = datetime.now()
+
     sp.set_value('IA_PriceExportGas', 0)
-    sp.set_value('IA_PriceExportGas', tmp) # =InputData!$L$99:$DG$99
+    sp.set_value('IA_PriceExportGas', tmp)
     
-    print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
-
-    print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
-
-
-    print "==== pruning ======"
-    sp = sp.prune_graph(["IA_PriceExportGas"])
+    startTime = datetime.now()
     
 
-    print 'First evaluation', sp.evaluate('outNPV_Proj')
+    import cProfile
+    cProfile.run("sp.evaluate('outNPV_Proj')", "stats")
 
-    tmp = sp.evaluate('IA_PriceExportGas')
-    for addr, cell in sp.cellmap.items():
-        sp.history[addr] = {'original': str(cell.value)}
-
-    startTime = datetime.now()
-    sp.set_value('IA_PriceExportGas', 0)
-    sp.set_value('IA_PriceExportGas', tmp) # =InputData!$L$99:$DG$99
+    # from pycallgraph import PyCallGraph
+    # from pycallgraph.output import GraphvizOutput
+    # with PyCallGraph(output=GraphvizOutput(output_file='../../Desktop/test.png')):
+    #     sp.evaluate('outNPV_Proj')
     
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 
