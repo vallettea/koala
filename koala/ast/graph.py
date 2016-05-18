@@ -45,6 +45,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+        self.reset_buffer = set()
 
     def prune_graph(self, inputs):
 
@@ -319,6 +320,8 @@ class Spreadsheet(object):
     
     def set_value(self, address, val):
 
+        self.reset_buffer = set()
+
         if address not in self.cellmap:
             raise Exception("Address not present in graph.")
 
@@ -349,12 +352,15 @@ class Spreadsheet(object):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
 
+        self.reset_buffer.add(cell)
         # update depending ranges
         if type(cell.value) == Range:
             cell.value.reset()
         else:
             cell.value = None
-        map(self.reset,self.G.successors_iter(cell))
+        for child in self.G.successors_iter(cell):
+            if child not in self.reset_buffer:
+                self.reset(child)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
