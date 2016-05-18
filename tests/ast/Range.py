@@ -6,7 +6,8 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
-from koala.ast.Range import Range, find_associated_values
+from koala.ast.excelutils import Range
+from koala.ast.Range import find_associated_values
 
 class Test_Excel(unittest.TestCase):
     
