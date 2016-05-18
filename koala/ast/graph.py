@@ -31,7 +31,7 @@ import gzip
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
-from ExcelError import ExcelError, EmptyCellError
+from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
 
 
@@ -154,7 +154,7 @@ class Spreadsheet(object):
         else:
             for c in node.children(ast):
                 results.append(self.eval_volatiles_from_ast(ast, c, context))
-        return list(flatten_lists(results))
+        return list(flatten(results, only_lists = True))
 
 
     def dump(self, fname):
@@ -324,7 +324,11 @@ class Spreadsheet(object):
         return data
 
     def eval_ref(self, addr1, addr2 = None):
-        cell1 = self.cellmap[addr1]
+        try:
+            cell1 = self.cellmap[addr1]
+        except:
+            print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
+            return ExcelError('#NULL', 'Cell %s is empty' % addr1)
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -370,7 +374,7 @@ class Spreadsheet(object):
 
             except:
                 # print 'Empty cell at '+ cell
-                return EmptyCellError
+                return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
@@ -579,6 +583,10 @@ class RangeNode(OperandNode):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
+        if isinstance(self.tvalue, ExcelError):
+            print 'Excel Error Code found', self.tvalue
+            return self.tvalue
+
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
@@ -596,7 +604,10 @@ class RangeNode(OperandNode):
             if is_a_range:
                 sh,start,end = split_range(rng)
             else:
-                sh,col,row = split_address(rng)
+                try:
+                    sh,col,row = split_address(rng)
+                except:
+                    raise ValueError('Address %s is not a cell/range reference, nor a named range' % str(rng))
 
             if sh:
                 my_str = '"' + rng + '"'
@@ -927,7 +938,18 @@ def build_ast(expression):
                 G.add_edge(arg1, n)
                 
         elif isinstance(n,FunctionNode):
-            args = [stack.pop() for _ in range(n.num_args)]
+            args = []
+            for _ in range(n.num_args):
+                try:
+                    args.append(stack.pop())
+                except:
+                    print 'STACK', stack, n, expression
+                    raise Exception()
+            #try:
+                # args = [stack.pop() for _ in range(n.num_args)]
+            #except:
+            #        print 'STACK', stack, type(n)
+            #        raise Exception('prut')
             args.reverse()
             for i,a in enumerate(args):
                 G.add_node(a,{'pos':i})
