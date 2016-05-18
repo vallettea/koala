@@ -36,15 +36,86 @@ from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges):
+    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = []):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
-        self.params = None
+        self.outputs = outputs
+        self.inputs = inputs
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+
+    def prune_graph(self, inputs):
+
+        G = self.G
+
+        # get all the cells impacted by inputs
+        dependencies = set()
+        for input_address in inputs:
+                child = find_node(G, input_address)
+                if child == None:
+                    print "Not found ", input_address
+                    continue
+                g = make_subgraph(G, child, "descending")
+                dependencies = dependencies.union(g.nodes())
+
+        print "%s cells depending on inputs" % str(len(dependencies))
+
+        # prune the graph and set all cell independent of input to const
+        subgraph = networkx.DiGraph()
+        new_cellmap = {}
+        for output_address in self.outputs:
+            seed = find_node(G, output_address)
+            todo = map(lambda n: (seed,n), G.predecessors(seed))
+            done = set(todo)
+
+            while len(todo) > 0:
+                current, pred = todo.pop()
+                # print "==========================="
+                # print current.address(), pred.address()
+                if current in dependencies:
+                    if pred in dependencies or type(pred.value) == Range or pred.is_named_range:
+                        subgraph.add_edge(pred, current)
+                        new_cellmap[pred.address()] = pred
+                        new_cellmap[current.address()] = current
+
+                        nexts = G.predecessors(pred)
+                        for n in nexts:            
+                            if (pred,n) not in done:
+                                todo += [(pred,n)]
+                                done.add((pred,n))
+                    else:
+                        if pred.address() not in new_cellmap:
+                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                            # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
+                            # const_node.python_expression = pystr
+                            # const_node.compile()
+                            new_cellmap[pred.address()] = const_node
+
+                        const_node = new_cellmap[pred.address()]
+                        subgraph.add_edge(const_node, current)
+                        
+                else:
+                    # case of range independant of input, we add all children as const
+                    if pred.address() not in new_cellmap:
+                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                        # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
+                        # const_node.python_expression = pystr
+                        # const_node.compile()
+                        new_cellmap[pred.address()] = const_node
+
+                    const_node = new_cellmap[pred.address()]
+                    subgraph.add_edge(const_node, current)
+
+
+        print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(subgraph.nodes()),len(subgraph.edges()),len(new_cellmap))
+        undirected = networkx.Graph(subgraph)
+        print "Number of connected components %s", str(number_connected_components(undirected))
+        # print map(lambda x: x.address(), subgraph.nodes())
+
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs)
 
     def clean_volatile(self):
 
@@ -178,7 +249,8 @@ class Spreadsheet(object):
                 "always_eval": cell.always_eval
             }]
         data["nodes"] = nodes
-
+        data["outputs"] = self.outputs
+        data["inputs"] = self.inputs
         data["named_ranges"] = self.named_ranges
         with gzip.GzipFile(fname, 'w') as outfile:
             outfile.write(json.dumps(data))
@@ -226,7 +298,7 @@ class Spreadsheet(object):
         data["nodes"] = nodes
         G = json_graph.node_link_graph(data)
         cellmap = {n.address():n for n in G.nodes()}
-        return Spreadsheet(G, cellmap, data["named_ranges"])
+        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
 
     def export_to_dot(self,fname):
@@ -378,7 +450,7 @@ class Spreadsheet(object):
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
-            #print "returning constant or cached value for ", cell.address()
+            # print "returning constant or cached value for ", cell.address()
             if type(cell.value) == Range:
                 return cell.value.values()
             else:
@@ -987,6 +1059,18 @@ def make_subgraph(G, seed, direction = "ascending"):
 
     return subgraph
 
+def cell2code(named_ranges, cell, sheet):
+    """Generate python code for the given cell"""
+    if cell.formula:
+        ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
+        e = shunting_yard(cell.formula or str(cell.value), named_ranges, ref=ref)
+        ast,root = build_ast(e)
+        code = root.emit(ast, context=sheet)
+    else:
+        ast = None
+        code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
+    return code,ast
+
 class ExcelCompiler(object):
     """Class responsible for taking cells and named_range and create a graph
        that can be serialized to disk, and executed independently of excel.
@@ -1012,21 +1096,9 @@ class ExcelCompiler(object):
 
         self.named_ranges = cleaned_ranged_names
 
-    def cell2code(self, cell, sheet):
-        """Generate python code for the given cell"""
-        if cell.formula:
-            ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-            e = shunting_yard(cell.formula or str(cell.value), self.named_ranges, ref=ref)
-            ast,root = build_ast(e)
-            code = root.emit(ast, context=sheet)
-        else:
-            ast = None
-            code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
-        return code,ast
-
     
             
-    def gen_graph(self, outputs = None, inputs = None):
+    def gen_graph(self, outputs = None):
         
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
@@ -1088,7 +1160,7 @@ class ExcelCompiler(object):
             ###### 1) looking for cell c1 dependencies ####################
 
             # in case a formula, get all cells that are arguments
-            pystr, ast = self.cell2code(c1, cursheet)
+            pystr, ast = cell2code(self.named_ranges, c1, cursheet)
             # set the code & compile it (will flag problems sooner rather than later)
             c1.python_expression = pystr
             c1.compile()    
@@ -1199,7 +1271,7 @@ class ExcelCompiler(object):
                             steps.append(step+1)
                         else:
                             # constant cell, no need for further processing, just remember to set the code
-                            pystr,ast = self.cell2code(c2, cursheet)
+                            pystr,ast = cell2code(self.named_ranges, c2, cursheet)
                             c2.python_expression = pystr
                             c2.compile()     
                         
@@ -1217,60 +1289,8 @@ class ExcelCompiler(object):
         undirected = networkx.Graph(G)
         print "Number of connected components %s", str(number_connected_components(undirected))
 
-        if inputs != None:
-            # get all the cells impacted by inputs
-            dependencies = set()
-            for input_address in inputs:
-                    child = find_node(G, input_address)
-                    if child == None:
-                        print "Not found ", input_address
-                        continue
-                    g = make_subgraph(G, child, "descending")
-                    dependencies = dependencies.union(g.nodes())
-                    
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs)
 
-            print "%s cells depending on inputs" % str(len(dependencies))
 
-            # prune the graph and set all cell independent of input to const
-            subgraph = networkx.DiGraph()
-            new_cellmap = {}
-            for output_address in outputs:
-                seed = find_node(G, output_address)
-                todo = map(lambda n: (seed,n), G.predecessors(seed))
 
-                while len(todo) > 0:
-                    current, pred = todo.pop()
-                    # print "==========================="
-                    # print current.address(), pred.address()
-                    if current in dependencies:
-                        if pred in dependencies:
-                            subgraph.add_edge(pred, current)
-                            new_cellmap[pred.address()] = pred
-                            new_cellmap[current.address()] = current
-
-                            nexts = G.predecessors(pred)
-                            for n in nexts:            
-                                if n not in subgraph.nodes():
-                                    todo += [(pred,n)]
-                        else:
-                            if pred.address() not in new_cellmap:
-                                const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
-                                pystr,ast = self.cell2code(const_node, pred.sheet)
-                                const_node.python_expression = pystr
-                                const_node.compile()     
-                            else:
-                                const_node = new_cellmap[pred.address()]
-                            subgraph.add_edge(const_node, current)
-                            new_cellmap[const_node.address()] = const_node
-                        
-
-            G = subgraph
-            cellmap = new_cellmap
-            print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-            undirected = networkx.Graph(G)
-            print "Number of connected components %s", str(number_connected_components(undirected))
-            # print map(lambda x: x.address(), G.nodes())
-
-        sp = Spreadsheet(G, cellmap, self.named_ranges)
-        return sp
 
