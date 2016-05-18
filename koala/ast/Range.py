@@ -72,41 +72,38 @@ def get_cell_address(sheet, tuple):
         return col + row
 
 def find_associated_values(ref, first = None, second = None):
-    valid = False
 
     row, col = ref
 
     if type(first) == Range:
-        for key, value in first.items():
-            r, c = key
-            if r == row and c == col:
-                first_value = value
-                valid = True
-                break
-            if r == row or c == col:
-                first_value = value
-                valid = True
-            
-        if not valid:
+        try:
+            if first.range_type == "scalar":
+                first_value = first[(first.start[0], first.start[1])]
+            elif first.range_type == "vertical":
+                first_value = first[(str(row), first.start[1])]
+            elif first.range_type == "horizontal":
+                first_value = first[(first.start[0], str(col))]
+            else:
+                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
+        except:
             raise Exception('First argument of Range operation is not valid')
     else:
         first_value = first
 
-    valid = False
 
     if type(second) == Range:
-        for key, value in second.items():
-            r, c = key
-            if r == row and c == col:
-                second_value = value
-                valid = True
-                break
-            elif r == row or c == col:
-                second_value = value
-                valid = True
-
-        if not valid:
-            raise Exception('Second argument of Range operation is not valid')
+        try:
+            if second.range_type == "scalar":
+                second_value = second[(second.start[0], second.start[1])]
+            elif second.range_type == "vertical":
+                print 'Vert', row, second.nb_rows, second.nb_cols
+                second_value = second[(str(row), second.start[1])]
+            elif second.range_type == "horizontal":
+                second_value = second[(second.start[0], str(col))]
+            else:
+                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
+        except:
+            raise Exception('First argument of Range operation is not valid')
     else:
         second_value = second
     
@@ -149,14 +146,25 @@ class Range(OrderedDict):
             except:
                 result.append(((row, col), None))
 
-        # print 'References', cells
-        # print 'References', values
         self.cells = cells
         self.sheet = sheet
         self.length = len(cells)
 
         self.nb_cols = nc
         self.nb_rows = nr
+        if len(result) > 0:
+            self.start = result[0][0]
+        else:
+            self.start = None
+
+        if nc == 1 and nr == 1:
+            self.range_type = "scalar"
+        elif nc == 1:
+            self.range_type = "vertical"
+        elif nr == 1:
+            self.range_type = "horizontal"
+        else:
+            self.range_type = "bidimensional"
 
         OrderedDict.__init__(self, result)
 

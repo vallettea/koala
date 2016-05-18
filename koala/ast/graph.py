@@ -4,7 +4,6 @@ import koala.ast.excellib as excelfun
 from koala.ast.excellib import *
 from koala.ast.excelutils import *
 from math import *
-from collections import OrderedDict
 
 import networkx
 from networkx.classes.digraph import DiGraph
@@ -46,6 +45,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+        self.reset_buffer = set()
 
     def prune_graph(self, inputs):
 
@@ -320,6 +320,8 @@ class Spreadsheet(object):
     
     def set_value(self, address, val):
 
+        self.reset_buffer = set()
+
         if address not in self.cellmap:
             raise Exception("Address not present in graph.")
 
@@ -350,12 +352,15 @@ class Spreadsheet(object):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
 
+        self.reset_buffer.add(cell)
         # update depending ranges
         if type(cell.value) == Range:
             cell.value.reset()
         else:
             cell.value = None
-        map(self.reset,self.G.successors_iter(cell))
+        for child in self.G.successors_iter(cell):
+            if child not in self.reset_buffer:
+                self.reset(child)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
@@ -431,8 +436,8 @@ class Spreadsheet(object):
             return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        for key, value in range.items():
-            if value is None:
+        for key in range:
+            if range[key] is None:
                 addr = get_cell_address(range.sheet, key)
                 range[key] = self.evaluate(addr)
 
