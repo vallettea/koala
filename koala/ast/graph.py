@@ -4,7 +4,6 @@ import koala.ast.excellib as excelfun
 from koala.ast.excellib import *
 from koala.ast.excelutils import *
 from math import *
-from collections import OrderedDict
 
 import networkx
 from networkx.classes.digraph import DiGraph
@@ -431,8 +430,8 @@ class Spreadsheet(object):
             return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        for key, value in range.items():
-            if value is None:
+        for key in range:
+            if range[key] is None:
                 addr = get_cell_address(range.sheet, key)
                 range[key] = self.evaluate(addr)
 

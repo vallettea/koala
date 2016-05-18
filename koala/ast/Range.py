@@ -77,14 +77,14 @@ def find_associated_values(ref, first = None, second = None):
     row, col = ref
 
     if type(first) == Range:
-        for key, value in first.items():
+        for key in first:
             r, c = key
             if r == row and c == col:
-                first_value = value
+                first_value = first[key]
                 valid = True
                 break
             if r == row or c == col:
-                first_value = value
+                first_value = first[key]
                 valid = True
             
         if not valid:
@@ -95,14 +95,14 @@ def find_associated_values(ref, first = None, second = None):
     valid = False
 
     if type(second) == Range:
-        for key, value in second.items():
+        for key in second:
             r, c = key
             if r == row and c == col:
-                second_value = value
+                second_value = second[key]
                 valid = True
                 break
             elif r == row or c == col:
-                second_value = value
+                second_value = second[key]
                 valid = True
 
         if not valid:
