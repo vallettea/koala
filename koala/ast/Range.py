@@ -80,7 +80,6 @@ def find_associated_values(ref, first = None, second = None):
             if first.range_type == "scalar":
                 first_value = first[(first.start[0], first.start[1])]
             elif first.range_type == "vertical":
-                print 'Vert', row, first.nb_rows, first.nb_cols
                 first_value = first[(str(row), first.start[1])]
             elif first.range_type == "horizontal":
                 first_value = first[(first.start[0], str(col))]
@@ -153,7 +152,10 @@ class Range(OrderedDict):
 
         self.nb_cols = nc
         self.nb_rows = nr
-        self.start = result[0][0]
+        if len(result) > 0:
+            self.start = result[0][0]
+        else:
+            self.start = None
 
         if nc == 1 and nr == 1:
             self.range_type = "scalar"
