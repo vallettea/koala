@@ -102,19 +102,34 @@ class Cell(object):
         else:
             self.__named_range = address
             self.__sheet = None
-            self.__sheet = None
             self.__col = None
             self.__row = None
             self.__col_idx = None
             
         self.__formula = str(formula) if formula else None
-        self.value = value
+        self.__value = value
         self.python_expression = None
         self.always_eval = always_eval
         self._compiled_expression = None
         
         # every cell has a unique id
         self.__id = Cell.next_id()
+
+    @property
+    def value(self):
+        # Do something if you want
+        if type(self.__value) == Range:
+            return self.__value.value
+        else:
+            return self.__value
+
+    @value.setter
+    def value(self, new_value):
+        # Do something if you want
+        if type(self.__value) == Range:
+            self.__value.value = new_value
+        else:
+            self.__value = new_value
 
     @property
     def is_named_range(self):
