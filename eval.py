@@ -45,20 +45,12 @@ if __name__ == '__main__':
 
     tmp = sp.evaluate('IA_PriceExportGas')
 
-
-    sp.set_value('IA_PriceExportGas', 0)
-    sp.set_value('IA_PriceExportGas', tmp)
-    
     startTime = datetime.now()
-    
+    sp.set_value('IA_PriceExportGas', 0)
+    print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
+    sp.set_value('IA_PriceExportGas', tmp)
 
-    import cProfile
-    cProfile.run("sp.evaluate('outNPV_Proj')", "stats")
-
-    # from pycallgraph import PyCallGraph
-    # from pycallgraph.output import GraphvizOutput
-    # with PyCallGraph(output=GraphvizOutput(output_file='../../Desktop/test.png')):
-    #     sp.evaluate('outNPV_Proj')
+    startTime = datetime.now()
     
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 
