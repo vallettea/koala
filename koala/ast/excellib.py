@@ -28,7 +28,7 @@ from excelutils import (
     resolve_range
 )
 
-from ..ast.Range import RangeCore
+from ..ast.Range import RangeCore as Range
 from ExcelError import ExcelError, ErrorCodes
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
