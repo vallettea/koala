@@ -28,7 +28,7 @@ from excelutils import (
     resolve_range
 )
 
-from ..ast.Range import RangeCore
+from ..ast.Range import RangeCore as Range
 from ExcelError import ExcelError, ErrorCodes
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
@@ -114,16 +114,16 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     # - wildcards not supported
     # - doesn't really follow 2nd remark about sum_range length
 
-    if not isinstance(range, RangeCore):
+    if not isinstance(range, Range):
         return TypeError('%s must be a Range' % str(range))
 
-    if isinstance(criteria, RangeCore) and not isinstance(criteria , (str, bool)): # ugly... 
+    if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
         return 0
 
     indexes = find_corresponding_index(range.values(), criteria)
 
     if sum_range:
-        if isinstance(sum_range, RangeCore):
+        if isinstance(sum_range, Range):
             return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
@@ -153,7 +153,7 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
-    if isinstance(my_range, RangeCore):
+    if isinstance(my_range, Range):
         cells = my_range.cells
         nr = my_range.nrows
         nc = my_range.ncols
@@ -337,7 +337,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     total = 0
 
     for arg in l:
-        if isinstance(arg, RangeCore):
+        if isinstance(arg, Range):
             total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values())) # count inside a list
         elif is_number(arg): # int() is used for text representation of numbers
             total += 1
@@ -406,7 +406,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
                     filtered_remaining_range.append(item) # reconstructing values from indexes
 
             # WARNING HERE
-            filtered_remaining_ranges.append(RangeCore(filtered_remaining_cells, filtered_remaining_range))
+            filtered_remaining_ranges.append(Range(filtered_remaining_cells, filtered_remaining_range))
 
         new_tuple = ()
 
@@ -653,7 +653,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: RangeCore.apply_all('multiply', x, y), range_list).values())
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 

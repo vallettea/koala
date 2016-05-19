@@ -36,7 +36,7 @@ from koala.ast.excellib import (
     iferror
 )
 
-from koala.ast.Range import Range
+from koala.ast.Range import RangeCore as Range
 
 class Test_Offset(unittest.TestCase):
     def setup(self):
