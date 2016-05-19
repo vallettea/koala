@@ -28,7 +28,7 @@ from excelutils import (
     resolve_range
 )
 
-from ..ast.Range import Range 
+from ..ast.Range import RangeCore
 from ExcelError import ExcelError, ErrorCodes
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
@@ -114,16 +114,16 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     # - wildcards not supported
     # - doesn't really follow 2nd remark about sum_range length
 
-    if type(range) != Range:
+    if not isinstance(range, RangeCore):
         return TypeError('%s must be a Range' % str(range))
 
-    if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
+    if isinstance(criteria, RangeCore) and not isinstance(criteria , (str, bool)): # ugly... 
         return 0
 
     indexes = find_corresponding_index(range.values(), criteria)
 
     if sum_range:
-        if type(sum_range) != Range:
+        if isinstance(sum_range, RangeCore):
             return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
@@ -153,14 +153,14 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
-    if type(my_range) is Range:
+    if isinstance(my_range, RangeCore):
         cells = my_range.cells
-        nr = my_range.nb_rows
-        nc = my_range.nb_cols
+        nr = my_range.nrows
+        nc = my_range.ncols
     else:
         cells, nr, nc = my_range
         cells = list(flatten(cells))
-
+    
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
@@ -337,7 +337,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     total = 0
 
     for arg in l:
-        if type(arg) == Range:
+        if isinstance(arg, RangeCore):
             total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values())) # count inside a list
         elif is_number(arg): # int() is used for text representation of numbers
             total += 1
@@ -397,15 +397,16 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
         filtered_remaining_ranges = []
 
         for range in remaining_ranges: # filter items in remaining_ranges that match valid indexes from first countif layer
-            filtered_remaining_keys = []
+            filtered_remaining_cells = []
             filtered_remaining_range = []
 
             for index, item in enumerate(range.values()):
                 if index in indexes:
-                    filtered_remaining_keys.append(range.cells[index]) # reconstructing cells from indexes
+                    filtered_remaining_cells.append(range.cells[index]) # reconstructing cells from indexes
                     filtered_remaining_range.append(item) # reconstructing values from indexes
 
-            filtered_remaining_ranges.append(Range(filtered_remaining_keys, filtered_remaining_range))
+            # WARNING HERE
+            filtered_remaining_ranges.append(RangeCore(filtered_remaining_cells, filtered_remaining_range))
 
         new_tuple = ()
 
@@ -652,7 +653,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: RangeCore.apply_all('multiply', x, y), range_list).values())
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 

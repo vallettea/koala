@@ -72,7 +72,7 @@ class Cell(object):
 
     def __init__(self, address, sheet, value=None, formula=None, is_named_range=False, always_eval=False ):
         super(Cell,self).__init__()
-        
+
         if is_named_range == False:
 
             # remove $'s
@@ -117,19 +117,25 @@ class Cell(object):
 
     @property
     def value(self):
-        # Do something if you want
-        if type(self.__value) == Range:
+        try:
             return self.__value.value
-        else:
+        except:
             return self.__value
 
     @value.setter
     def value(self, new_value):
-        # Do something if you want
-        if type(self.__value) == Range:
+        try:
             self.__value.value = new_value
-        else:
+        except:
             self.__value = new_value
+
+    @property
+    def range(self):
+        try:
+            self.__value.value # hack to check if it is a Range (cant import Range here without creating circular ref)
+            return self.__value
+        except:
+            return None
 
     @property
     def is_named_range(self):
