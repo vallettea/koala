@@ -40,6 +40,18 @@ class Test_Excel(unittest.TestCase):
     def test_get(self):
         range1 = Range('D1:F2', [1, 2, 3, 4, 5, 6])
 
+    def test_define_Range_with_different_input_sizes(self):
+        with self.assertRaises(ValueError):
+            Range(['A1', 'A3'], [1, 2, 3])
+
+    def test_range_sizes(self):
+        range = Range('D1:F2', [1, 2, 3, 4, 5, 6])
+
+        self.assertEqual((range.nrows, range.ncols), (2, 3))
+
+    def test_get(self):
+        range1 = Range('D1:F2', [1, 2, 3, 4, 5, 6])
+
         self.assertEqual(range1.get(2, 2), 5)
 
     def test_get_row_0(self):
@@ -47,6 +59,7 @@ class Test_Excel(unittest.TestCase):
         range2 = Range('D2:F2', [4, 5, 6])
 
         self.assertEqual(range1.get(2, 0), range2)
+
 
     def test_get_col_0(self):
         range1 = Range('D1:F2', [1, 2, 3, 4, 5, 6])
@@ -75,23 +88,6 @@ class Test_Excel(unittest.TestCase):
         with self.assertRaises(Exception):
             get_values('C5', range1, range2)
 
-    # def test_is_associated(self):
-    #     range1 = Range('A1:A3', [1, 2, 3])
-    #     range2 = Range('B1:B3', [1, 2, 3])
-
-    #     self.assertEqual(range1.is_associated(range2), 'v')
-
-    # def test_is_associated_horizontal(self):
-    #     range1 = Range('A1:C1', [1, 2, 3])
-    #     range2 = Range('A2:C2', [1, 2, 3])
-
-    #     self.assertEqual(range1.is_associated(range2), 'c')
-
-    # def test_is_not_associated(self):
-    #     range1 = Range('A1:A3', [1, 2, 3])
-    #     range2 = Range('B2:B4', [1, 2, 3])
-
-    #     self.assertEqual(range1.is_associated(range2), None)
 
     # ADD
     def test_add_array_one(self):
@@ -174,7 +170,6 @@ class Test_Excel(unittest.TestCase):
         range2 = Range('B1:B3', [3, 3, 3])
 
         self.assertEqual(Range.apply_one('is_inferior_or_equal', range1, range2, (1, 'C')), True) # 1 <= 3 is False
-
 
 if __name__ == '__main__':
     unittest.main()

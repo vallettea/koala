@@ -118,6 +118,7 @@ class RangeCore(OrderedDict):
         self.__sheet = sheet
         self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
+
         OrderedDict.__init__(self, result)
 
     @property
