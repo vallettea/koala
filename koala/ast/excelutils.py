@@ -5,7 +5,7 @@ import functools
 import re
 import string
 
-from Range import Range
+# from Range import Range
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -72,7 +72,7 @@ class Cell(object):
 
     def __init__(self, address, sheet, value=None, formula=None, is_named_range=False, always_eval=False ):
         super(Cell,self).__init__()
-        
+
         if is_named_range == False:
 
             # remove $'s
@@ -102,19 +102,40 @@ class Cell(object):
         else:
             self.__named_range = address
             self.__sheet = None
-            self.__sheet = None
             self.__col = None
             self.__row = None
             self.__col_idx = None
             
         self.__formula = str(formula) if formula else None
-        self.value = value
+        self.__value = value
         self.python_expression = None
         self.always_eval = always_eval
         self._compiled_expression = None
         
         # every cell has a unique id
         self.__id = Cell.next_id()
+
+    @property
+    def value(self):
+        try:
+            return self.__value.value
+        except:
+            return self.__value
+
+    @value.setter
+    def value(self, new_value):
+        try:
+            self.__value.value = new_value
+        except:
+            self.__value = new_value
+
+    @property
+    def range(self):
+        try:
+            self.__value.value # hack to check if it is a Range (cant import Range here without creating circular ref)
+            return self.__value
+        except:
+            return None
 
     @property
     def is_named_range(self):
@@ -631,9 +652,8 @@ def check_length(range1, range2):
 def extract_numeric_values(*args):
     values = []
 
-
     for arg in args:
-        if type(arg) is Range:
+        if isinstance(arg, collections.Iterable):
             temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif type(arg) is tuple:
