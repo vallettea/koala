@@ -20,8 +20,8 @@ if __name__ == '__main__':
     file = "./data/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
 
     print file        
-    startTime = datetime.now()
 
+    # startTime = datetime.now()
     # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
     # c.clean_volatile()
     # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
@@ -32,7 +32,6 @@ if __name__ == '__main__':
 
     # print "Serializing to disk...", file
     # sp.dump(file.replace("xlsx", "gzip"))
-
 
     startTime = datetime.now()
     print "Reading from disk...", file
@@ -45,17 +44,24 @@ if __name__ == '__main__':
 
     tmp = sp.evaluate('IA_PriceExportGas')
 
+    # for addr, cell in sp.cellmap.items():
+    #     sp.history[addr] = {'original': str(cell.value)}
+
+#     sp = sp.prune_graph(["IA_PriceExportGas"])
+    
     startTime = datetime.now()
     sp.set_value('IA_PriceExportGas', 0)
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
     sp.set_value('IA_PriceExportGas', tmp)
-
     startTime = datetime.now()
     
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-   
+    # print 'NB different', sp.count
+
+    # with open('history_dif.json', 'w') as outfile:
+    #     json.dump(sp.history, outfile)
 
     
