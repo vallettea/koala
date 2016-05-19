@@ -50,6 +50,7 @@ class RangeCore(OrderedDict):
         if type(address) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = address
         else:
+            address = address.replace('$','')
             try:
                 cells, nrows, ncols = resolve_range(address)
             except:
@@ -59,7 +60,6 @@ class RangeCore(OrderedDict):
 
         if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
             print 'WARNING Range is a scalar', address, cells
-            # raise ValueError('Range must not be a scalar')
 
         # Fill the Range with cellmap values 
         if cellmap:
@@ -102,7 +102,7 @@ class RangeCore(OrderedDict):
                 result.append(((row, col), None))
 
         # dont allow messing with these params
-        # self.__address = address.replace('$','')
+        self.__address = address
         self.__cells = cells
         self.__length = len(cells)
         self.__nrows = nrows
@@ -231,7 +231,9 @@ class RangeCore(OrderedDict):
 
         if isinstance(first, RangeCore):
             try:
-                if first.type == "vertical":
+                if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                    first_value = 0
+                elif first.type == "vertical":
                     first_value = first[(row, first.start[1])]
                 elif first.type == "horizontal":
                     first_value = first[(first.start[0], col)]
@@ -245,14 +247,16 @@ class RangeCore(OrderedDict):
 
         if isinstance(second, RangeCore):
             try:
-                if second.type == "vertical":
+                if (second.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                    second_value = 0
+                elif second.type == "vertical":
                     second_value = second[(row, second.start[1])]
                 elif second.type == "horizontal":
                     second_value = second[(second.start[0], col)]
                 else:
-                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
+                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
             except:
-                raise Exception('First argument of Range operation is not valid')
+                raise Exception('Second argument of Range operation is not valid: ' + e)
         else:
             second_value = second
         

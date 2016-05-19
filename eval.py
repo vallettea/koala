@@ -12,6 +12,8 @@ from koala.ast.graph import ExcelCompiler, Spreadsheet
 from koala.ast.excelutils import Cell
 from koala.ast.astutils import *
 
+from koala.ast.Range import RangeCore
+
 
 if __name__ == '__main__':
 
@@ -21,17 +23,17 @@ if __name__ == '__main__':
 
     print file        
 
-    startTime = datetime.now()
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=["outNPV_Proj"])
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # startTime = datetime.now()
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=["outNPV_Proj"])
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    sp = sp.prune_graph(["IA_PriceExportGas"])
+    # sp = sp.prune_graph(["IA_PriceExportGas"])
 
-    print "Serializing to disk...", file
-    sp.dump(file.replace("xlsx", "gzip"))
+    # print "Serializing to disk...", file
+    # sp.dump(file.replace("xlsx", "gzip"))
 
     startTime = datetime.now()
     print "Reading from disk...", file
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     sys.setrecursionlimit(10000)
-    
+
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
