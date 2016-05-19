@@ -226,7 +226,7 @@ class Spreadsheet(object):
         for node in data["nodes"]:
             cell = node["id"]
 
-            if cell.range:
+            if isinstance(cell.range, RangeCore):
                 range = cell.range
                 value = {
                     "cells": range.cells,
@@ -283,8 +283,11 @@ class Spreadsheet(object):
         with gzip.GzipFile(fname, 'r') as infile:
             data = json.loads(infile.read(), object_hook=_decode_dict)
         def cell_from_dict(d):
-            if hasattr(d["value"], '__iter__'):
+            if type(d["value"]) == dict:
                 range = d["value"]
+                if len(range["values"]) == 0:
+                    range["values"] = [None] * len(range["cells"])
+                # print 'Reading Range', range
                 value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
             else:
                 value = d["value"]
