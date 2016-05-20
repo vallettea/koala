@@ -49,7 +49,7 @@ class Spreadsheet(object):
         self.reset_buffer = set()
 
     def prune_graph(self, inputs):
-        print '___### Pruning Graph ###___'
+        # print '___### Pruning Graph ###___'
 
         G = self.G
 
@@ -150,7 +150,7 @@ class Spreadsheet(object):
                 if cell.formula and volatile_name in cell.formula:
                     all_volatiles.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
 
-            print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
+            # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         ### 3) evaluate all volatiles
         cache = {} # formula => new_formula
@@ -1082,7 +1082,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = []):
-        print "___### Initializing Excel Compiler ###___"
+        # print "___### Initializing Excel Compiler ###___"
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -1095,7 +1095,7 @@ class ExcelCompiler(object):
 
 
     def clean_volatile(self):
-        print '___### Cleaning volatiles ###___'
+        # print '___### Cleaning volatiles ###___'
 
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
 
@@ -1107,7 +1107,7 @@ class ExcelCompiler(object):
     
             
     def gen_graph(self, outputs = None):
-        print '___### Generating Graph ###___'
+        # print '___### Generating Graph ###___'
 
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
