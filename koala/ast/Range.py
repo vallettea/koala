@@ -58,8 +58,8 @@ class RangeCore(OrderedDict):
 
         cells = list(flatten(cells))
 
-        if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
-            print 'WARNING Range is a scalar', address, cells
+        # if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
+        #     print 'WARNING Range is a scalar', address, cells
 
         # Fill the Range with cellmap values 
         if cellmap:
