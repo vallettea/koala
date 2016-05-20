@@ -296,7 +296,8 @@ def is_range(address):
 def split_range(rng):
     if rng.find('!') > 0:
         start,end = rng.split(':')
-        sh,start = start.split("!")
+        if start.find('!') > 0:
+            sh,start = start.split("!")
         if end.find('!') > 0:
             sh,end = end.split("!")
     else:
