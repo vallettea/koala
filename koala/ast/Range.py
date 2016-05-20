@@ -1,54 +1,13 @@
 
 import re
 from collections import OrderedDict, Iterable
-# from koala.ast.excelutils import col2num, num2col, flatten, is_number
 import string
 from ExcelError import ExcelError
+from excelutils import *
 
-# this is due to a circular reference, need to be addressed
-def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
-    try:
-        float(s)
-        return True
-    except:
-        return False
+# WARNING: Range should never be imported directly. Import Range from excelutils instead.
 
-def flatten(l):
-    for el in l:
-        if isinstance(el, Iterable) and not isinstance(el, basestring):
-            for sub in flatten(el):
-                yield sub
-        else:
-            yield el
-
-# e.g., convert BA -> 53
-def col2num(col):
-    
-    if not col:
-        raise Exception("Column may not be empty")
-    
-    tot = 0
-    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
-        if c == '$': continue
-        tot += (ord(c)-64) * 26 ** i
-    return tot
-
-# convert back
-def num2col(num):
-    
-    if num < 1:
-        raise Exception("Number must be larger than 0: %s" % num)
-    
-    s = ''
-    q = num
-    while q > 0:
-        (q,r) = divmod(q,26)
-        if r == 0:
-            q = q - 1
-            r = 26
-        s = string.ascii_uppercase[r-1] + s
-    return s
-
+### Range Utils ###
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
@@ -58,7 +17,7 @@ def parse_cell_address(ref):
         col = found.group(1)
         row = found.group(2)
 
-        return (row, col)
+        return (int(row), col)
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
@@ -67,47 +26,9 @@ def get_cell_address(sheet, tuple):
     col = tuple[1]
 
     if sheet is not None:
-        return sheet + '!' + col + row
+        return sheet + '!' + col + str(row)
     else:
-        return col + row
-
-def find_associated_values(ref, first = None, second = None):
-
-    row, col = ref
-
-    if type(first) == Range:
-        try:
-            if first.range_type == "scalar":
-                first_value = first[(first.start[0], first.start[1])]
-            elif first.range_type == "vertical":
-                first_value = first[(str(row), first.start[1])]
-            elif first.range_type == "horizontal":
-                first_value = first[(first.start[0], str(col))]
-            else:
-                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
-        except:
-            raise Exception('First argument of Range operation is not valid')
-    else:
-        first_value = first
-
-
-    if type(second) == Range:
-        try:
-            if second.range_type == "scalar":
-                second_value = second[(second.start[0], second.start[1])]
-            elif second.range_type == "vertical":
-                print 'Vert', row, second.nb_rows, second.nb_cols
-                second_value = second[(str(row), second.start[1])]
-            elif second.range_type == "horizontal":
-                second_value = second[(second.start[0], str(col))]
-            else:
-                raise ExcelError('#VALUE!', 'cannot use find_associated_values on bidimensional.')
-        except:
-            raise Exception('First argument of Range operation is not valid')
-    else:
-        second_value = second
-    
-    return (first_value, second_value)
+        return col + str(row)
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
@@ -121,83 +42,148 @@ def check_value(a):
     except:
         return 0
 
-class Range(OrderedDict):
 
-    def __init__(self, cells_tuple, values):
-        cells, nr, nc = cells_tuple
+class RangeCore(OrderedDict):
 
-        result = []
+    def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None):
+        
+        if type(address) == list: # some Range calculations such as excellib.countifs() use filtered keys
+            cells = address
+        else:
+            address = address.replace('$','')
+            try:
+                cells, nrows, ncols = resolve_range(address)
+            except:
+                raise ValueError('Range must not be a scalar')
 
-        if len(cells) != len(values):
-            raise ValueError("cells and values in a Range must have the same size")
+        cells = list(flatten(cells))
+
+        if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
+            print 'WARNING Range is a scalar', address, cells
+
+        # Fill the Range with cellmap values 
+        if cellmap:
+            cells = [cell for cell in cells if cell in cellmap]
+
+            values = []
+
+            for cell in cells:
+                if cell in cellmap: # this is to avoid Sheet1!A5 and other empty cells due to A:A style named range
+                    try:
+                        if isinstance(cellmap[cell].value, RangeCore):
+                            raise Exception('Range can\'t be values of Range')
+                        values.append(cellmap[cell].value)
+                    except: # if cellmap is not filled with actual Cells (for tests for instance)
+                        if isinstance(cellmap[cell], RangeCore):
+                            raise Exception('Range can\'t be values of Range')
+                        values.append(cellmap[cell])
+
+        if values:
+            if len(cells) != len(values):
+                raise ValueError("cells and values in a Range must have the same size")
 
         try:
             sheet = cells[0].split('!')[0]
         except:
             sheet = None
 
+        result = []
+
         for index, cell in enumerate(cells):
             found = re.search(CELL_REF_RE, cell)
             col = found.group(1)
-            row = found.group(2)
-
-            try: # Might not be needed
+            row = int(found.group(2))
+            
+            try:
+                if isinstance(values[index], RangeCore):
+                    raise Exception('Range can\'t be values of Range', address)
                 result.append(((row, col), values[index]))
-            except:
+            except: # when you don't provide any values
                 result.append(((row, col), None))
 
-        self.cells = cells
-        self.sheet = sheet
-        self.length = len(cells)
-
-        self.nb_cols = nc
-        self.nb_rows = nr
-        if len(result) > 0:
-            self.start = result[0][0]
+        # dont allow messing with these params
+        self.__address = address
+        self.__cells = cells
+        self.__length = len(cells)
+        self.__nrows = nrows
+        self.__ncols = ncols
+        if ncols == 1 and nrows == 1:
+            self.__type = 'scalar'
+        elif ncols == 1:
+            self.__type = 'vertical'
+        elif nrows == 1:
+            self.__type = 'horizontal'
         else:
-            self.start = None
+            self.__type = 'bidimensional'
+        self.__sheet = sheet
+        self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
-        if nc == 1 and nr == 1:
-            self.range_type = "scalar"
-        elif nc == 1:
-            self.range_type = "vertical"
-        elif nr == 1:
-            self.range_type = "horizontal"
-        else:
-            self.range_type = "bidimensional"
 
         OrderedDict.__init__(self, result)
+
+    @property
+    def address(self):
+        return self.__address
+    @property
+    def cells(self):
+        return self.__cells
+    @property
+    def length(self):
+        return self.__length
+    @property
+    def nrows(self):
+        return self.__nrows
+    @property
+    def ncols(self):
+        return self.__ncols
+    @property
+    def type(self):
+        return self.__type
+    @property
+    def sheet(self):
+        return self.__sheet
+    @property
+    def start(self):
+        return self.__start
+    @property
+    def value(self):
+        return self.values()
+    
+    @value.setter
+    def value(self, new_values):
+        for index, key in enumerate(self.keys()):
+            self[key] = new_values[index]
 
     def reset(self):
         for key in self.keys():
             self[key] = None
 
-    def is_associated(self, other):
-        if self.length != other.length:
-            return None
+    # def is_associated(self, other):
+    #     if self.length != other.length:
+    #         return None
 
-        nb_v = 0
-        nb_c = 0
+    #     nb_v = 0
+    #     nb_c = 0
 
-        for index, key in enumerate(self.keys()):
-            r1, c1 = key
-            r2, c2 = other.keys()[index]
+    #     for index, key in enumerate(self.keys()):
+    #         r1, c1 = key
+    #         r2, c2 = other.keys()[index]
 
-            if r1 == r2:
-                nb_v += 1
-            if c1 == c2:
-                nb_c += 1
+    #         if r1 == r2:
+    #             nb_v += 1
+    #         if c1 == c2:
+    #             nb_c += 1
 
-        if nb_v == self.length:
-            return 'v'
-        elif nb_c == self.length:
-            return 'c'
-        else:
-            return None
+    #     if nb_v == self.length:
+    #         return 'v'
+    #     elif nb_c == self.length:
+    #         return 'c'
+    #     else:
+    #         return None
 
     def get(self, row, col = None):
-        nr = self.nb_rows
-        nc = self.nb_cols
+        nr = self.nrows
+        nc = self.ncols
 
         values = self.values()
         cells = self.cells
@@ -217,7 +203,9 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range((filtered_cells, self.nb_rows, 1), filtered_values)
+                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+
+                return RangeCore(new_address, filtered_values)
 
             elif col == 0: # get row
 
@@ -226,7 +214,9 @@ class Range(OrderedDict):
                 filtered_values = map(lambda i: values[i], filtered_indices)
                 filtered_cells = map(lambda i: cells[i], filtered_indices)
 
-                return Range((filtered_cells, 1, self.nb_cols), filtered_values)
+                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+
+                return RangeCore(new_address, filtered_values)
 
             else:
                 base_col_number = col2num(cells[0][0])
@@ -236,6 +226,43 @@ class Range(OrderedDict):
                 return new_value
 
     @staticmethod
+    def find_associated_values(ref, first = None, second = None):
+        row, col = ref
+
+        if isinstance(first, RangeCore):
+            try:
+                if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                    first_value = 0
+                elif first.type == "vertical":
+                    first_value = first[(row, first.start[1])]
+                elif first.type == "horizontal":
+                    first_value = first[(first.start[0], col)]
+                else:
+                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % first.type)
+            except ExcelError as e:
+                raise Exception('First argument of Range operation is not valid: ' + e)
+        else:
+            first_value = first
+
+
+        if isinstance(second, RangeCore):
+            try:
+                if (second.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                    second_value = 0
+                elif second.type == "vertical":
+                    second_value = second[(row, second.start[1])]
+                elif second.type == "horizontal":
+                    second_value = second[(second.start[0], col)]
+                else:
+                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
+            except:
+                raise Exception('Second argument of Range operation is not valid: ' + e)
+        else:
+            second_value = second
+        
+        return (first_value, second_value)
+
+    @staticmethod
     def apply_one(func, self, other, ref = None):
         function = func_dict[func]
 
@@ -243,7 +270,7 @@ class Range(OrderedDict):
             first = self
             second = other
         else:
-            first, second = find_associated_values(ref, self, other)
+            first, second = RangeCore.find_associated_values(ref, self, other)
 
         return function(first, second)
 
@@ -251,17 +278,16 @@ class Range(OrderedDict):
     def apply_all(func, self, other, ref = None):
         function = func_dict[func]
 
-        # Here, the first arg of Range() has little importance: TBC
-
-        if type(self) == Range and type(other) == Range:
+        # Here, the first arg of RangeCore() has little importance: TBC
+        if isinstance(self, RangeCore) and isinstance(other, RangeCore):
             if self.length != other.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())))
+            return RangeCore(self.cells, map(lambda (key, value): function(value, other.values()[key]), enumerate(self.values())), nrows = self.nrows, ncols = self.ncols)
 
-        elif type(self) == Range:
-            return Range((self.cells, self.nb_rows, self.nb_cols), map(lambda (key, value): function(value, other), enumerate(self.values())))
-        elif type(other) == Range:
-            return Range((other.cells, other.nb_rows, other.nb_cols), map(lambda (key, value): function(value, other), enumerate(other.values())))
+        elif isinstance(self, RangeCore):
+            return RangeCore(self.cells, map(lambda (key, value): function(value, other), enumerate(self.values())), nrows = self.nrows, ncols = self.ncols)
+        elif isinstance(other, RangeCore):
+            return RangeCore(other.cells, map(lambda (key, value): function(value, other), enumerate(other.values())), nrows = other.nrows, ncols = other.ncols)
         else:
             return function(self, other)
 
@@ -358,17 +384,26 @@ class Range(OrderedDict):
         except Exception as e:
             return ExcelError('#N/A', e)
 
-
 func_dict = {
-    "multiply": Range.multiply,
-    "divide": Range.divide,
-    "add": Range.add,
-    "substract": Range.substract,
-    "minus": Range.minus,
-    "is_equal": Range.is_equal,
-    "is_not_equal": Range.is_not_equal,
-    "is_strictly_superior": Range.is_strictly_superior,
-    "is_strictly_inferior": Range.is_strictly_inferior,
-    "is_superior_or_equal": Range.is_superior_or_equal,
-    "is_inferior_or_equal": Range.is_inferior_or_equal,
+    "multiply": RangeCore.multiply,
+    "divide": RangeCore.divide,
+    "add": RangeCore.add,
+    "substract": RangeCore.substract,
+    "minus": RangeCore.minus,
+    "is_equal": RangeCore.is_equal,
+    "is_not_equal": RangeCore.is_not_equal,
+    "is_strictly_superior": RangeCore.is_strictly_superior,
+    "is_strictly_inferior": RangeCore.is_strictly_inferior,
+    "is_superior_or_equal": RangeCore.is_superior_or_equal,
+    "is_inferior_or_equal": RangeCore.is_inferior_or_equal,
 }
+
+
+def RangeFactory(cellmap = None):
+
+    class Range(RangeCore):
+
+        def __init__(self, address, values = None):
+            super(Range, self).__init__(address, values, cellmap = cellmap)       
+
+    return Range

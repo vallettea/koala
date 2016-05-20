@@ -22,7 +22,7 @@ import cPickle
 import logging
 from itertools import chain
 
-from Range import Range, find_associated_values, parse_cell_address, get_cell_address
+from Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
 
 import json
 import gzip
@@ -45,9 +45,11 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+        self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
 
     def prune_graph(self, inputs):
+        print '___### Pruning Graph ###___'
 
         G = self.G
 
@@ -76,7 +78,7 @@ class Spreadsheet(object):
                 # print "==========================="
                 # print current.address(), pred.address()
                 if current in dependencies:
-                    if pred in dependencies or type(pred.value) == Range or pred.is_named_range:
+                    if pred in dependencies or isinstance(pred.value, RangeCore) or pred.is_named_range:
                         subgraph.add_edge(pred, current)
                         new_cellmap[pred.address()] = pred
                         new_cellmap[current.address()] = current
@@ -88,7 +90,7 @@ class Spreadsheet(object):
                                 done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
                             # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                             # const_node.python_expression = pystr
                             # const_node.compile()
@@ -100,7 +102,7 @@ class Spreadsheet(object):
                 else:
                     # case of range independant of input, we add all children as const
                     if pred.address() not in new_cellmap:
-                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_named_range=False, always_eval=False)
+                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
                         # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                         # const_node.python_expression = pystr
                         # const_node.compile()
@@ -127,26 +129,15 @@ class Spreadsheet(object):
             reference = self.named_ranges[n]
             if is_range(reference):
                 if 'OFFSET' not in reference:
-                    range_cells, nrow, ncol = resolve_range(reference)
-
-                    range_cells = list(flatten(range_cells))
-                    range_values = []
-
-                    for cell in range_cells:
-                        if cell in self.cellmap: # this is to avoid Sheet1!A5 and other empty cells due to A:A style named range
-                            range_values.append(self.cellmap[cell].value)
-
-                    range_cells = [a for a in range_cells if a in self.cellmap]
-
-                    my_range = Range((range_cells, nrow, ncol), range_values)
-                    self.cellmap[n] = Cell(n, None, my_range, n, True )
+                    my_range = self.Range(reference)
+                    self.cellmap[n] = Cell(n, None, value = my_range, formula = reference, is_range = True, is_named_range = True )
                 else:
-                    self.cellmap[n] = Cell(n, None, None, self.named_ranges[n], True )
+                    self.cellmap[n] = Cell(n, None, value = None, formula = reference, is_range = False, is_named_range = True )
             else:
                 if reference in self.cellmap:
-                    self.cellmap[n] = Cell(n, None, self.cellmap[reference].value, reference, True )
+                    self.cellmap[n] = Cell(n, None, value = self.cellmap[reference].value, formula = reference, is_range = False, is_named_range = True )
                 else:
-                    self.cellmap[n] = Cell(n, None, None, reference, True )
+                    self.cellmap[n] = Cell(n, None, value = None, formula = reference, is_range = False, is_named_range = True )
         
         ### 2) gather all occurence of volatile functions in cells or named_range
         all_volatiles = []
@@ -198,7 +189,7 @@ class Spreadsheet(object):
                 new_named_ranges[cell["address"]] = new_formula
             else: 
                 old_cell = self.cellmap[cell["address"]]
-                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
+                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
             
         return new_cells, new_named_ranges
 
@@ -234,9 +225,15 @@ class Spreadsheet(object):
         nodes = []
         for node in data["nodes"]:
             cell = node["id"]
-            if type(cell.value) == Range:
-                range = cell.value
-                value = [(range.cells, range.nb_rows, range.nb_cols), range.values()]
+
+            if isinstance(cell.range, RangeCore):
+                range = cell.range
+                value = {
+                    "cells": range.cells,
+                    "values": range.value,
+                    "nrows": range.nrows,
+                    "ncols": range.ncols
+                }
             else:
                 value = cell.value
 
@@ -286,20 +283,26 @@ class Spreadsheet(object):
         with gzip.GzipFile(fname, 'r') as infile:
             data = json.loads(infile.read(), object_hook=_decode_dict)
         def cell_from_dict(d):
-            if hasattr(d["value"], '__iter__'):
-                value = Range(d["value"][0], d["value"][1])
+            cell_is_range = type(d["value"]) == dict
+            if cell_is_range:
+                range = d["value"]
+                if len(range["values"]) == 0:
+                    range["values"] = [None] * len(range["cells"])
+                value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
             else:
                 value = d["value"]
-            new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_named_range=d["is_named_range"], always_eval=d["always_eval"])
+            new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], always_eval=d["always_eval"])
             new_cell.python_expression = d["python_expression"]
             new_cell.compile()
             return {"id": new_cell}
+
         nodes = map(cell_from_dict, data["nodes"])
         data["nodes"] = nodes
+
         G = json_graph.node_link_graph(data)
         cellmap = {n.address():n for n in G.nodes()}
-        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
+        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
     def export_to_dot(self,fname):
         write_dot(self.G,fname)
@@ -327,8 +330,8 @@ class Spreadsheet(object):
 
         # case where the address refers to a range
 
-        if type(self.cellmap[address].value) == Range:
-            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].value.cells if a in self.cellmap]
+        if self.cellmap[address].range:
+            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.cells if a in self.cellmap]
             if type(val) != list:
                 val = [val]*len(cell_to_set)
             for cell, value in zip(cell_to_set, val):
@@ -354,8 +357,8 @@ class Spreadsheet(object):
 
         self.reset_buffer.add(cell)
         # update depending ranges
-        if type(cell.value) == Range:
-            cell.value.reset()
+        if cell.range:
+            cell.range.reset()
         else:
             cell.value = None
         for child in self.G.successors_iter(cell):
@@ -368,37 +371,44 @@ class Spreadsheet(object):
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
-    def recalculate(self):
-        for c in self.cellmap.values():
-            if isinstance(c,CellRange):
-                self.evaluate_range(c,is_addr=False)
-            else:
-                self.evaluate(c,is_addr=False)
+    ### might not be needed anymore
+    
+    # def recalculate(self):
+    #     for c in self.cellmap.values():
+    #         if isinstance(c,CellRange):
+    #             self.evaluate_range(c,is_addr=False)
+    #         else:
+    #             self.evaluate(c,is_addr=False)
                 
-    def evaluate_range(self,rng,is_addr=True):
+    # def evaluate_range(self,rng,is_addr=True):
 
-        address = None
-        if is_addr:
-            address = rng
-            rng = self.cellmap[rng]
-        else:
-            address = rng.celladdrs
+    ### might not be needed anymore
 
-        # its important that [] gets treated ad false here
-        if rng.value:
-            return rng.value
+    #     address = None
+    #     if is_addr:
+    #         address = rng
+    #         if address in cellmap:
+    #             return self.cellmap[address]
+    #         else:
+    #             return self.Range(address)
+    #     else:
+    #         address = rng.celladdrs
 
-        cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
+    #     # its important that [] gets treated ad false here
+    #     if rng.value:
+    #         return rng.value
 
-        cells = list(flatten(cells))
+    #     # cells,nrows,ncols = rng.celladdrs,rng.nrows,rng.ncols
 
-        values = [ self.evaluate(c) for c in cells if c in self.cellmap]
-        cells = [c for c in cells if c in self.cellmap]
+    #     # cells = list(flatten(cells))
 
-        data = Range((cells, nrows, ncols), values)
-        rng.value = data
+    #     # values = [ self.evaluate(c) for c in cells if c in self.cellmap]
+    #     # cells = [c for c in cells if c in self.cellmap]
+
+    #     data = self.Range()
+    #     rng.value = data
         
-        return data
+    #     return data
 
     def eval_ref(self, addr1, addr2 = None):
         try:
@@ -412,8 +422,9 @@ class Spreadsheet(object):
         if isinstance(addr2, ExcelError):
             return addr2
         if addr2 == None:
-            if type(cell1.value) == Range:
-                return self.update_range(cell1.value)
+            if cell1.is_range:
+                # print 'RANGE', cell1.range
+                return self.update_range(cell1.range)
             elif addr1 in self.named_ranges or not is_range(addr1):
                 return self.evaluate(addr1)
             else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
@@ -425,7 +436,8 @@ class Spreadsheet(object):
                 if '!' in addr2:
                     addr2 = addr2.split('!')[1]
 
-                return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
+                return self.Range('%s:%s' % (addr1, addr2))
+                # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
         else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
             if '!' in addr1:
                 sheet = addr1.split('!')[0]
@@ -433,7 +445,8 @@ class Spreadsheet(object):
                 sheet = None
             if '!' in addr2:
                 addr2 = addr2.split('!')[1]
-            return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
+            return self.Range('%s:%s' % (addr1, addr2))
+            # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
         for key in range:
@@ -456,10 +469,8 @@ class Spreadsheet(object):
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and cell.value != None:
             # print "returning constant or cached value for ", cell.address()
-            if type(cell.value) == Range:
-                return cell.value.values()
-            else:
-                return cell.value
+            
+            return cell.value
         
         try:
             # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
@@ -486,17 +497,10 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print "PB 1", Range.apply_all('multiply',self.eval_ref("Calculations!P58:P68"),self.eval_ref("Calculations!P91:P101"),('124', 'P'))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
-        try:
-            if type(cell.value) == Range:
-                return cell.value.values()
-            else:
-                return cell.value
-        except:
-            for f in missing_functions:
-                print 'MISSING', f
+        return cell.value
+
 
 class ASTNode(object):
     """A generic node in the AST"""
@@ -526,8 +530,6 @@ class ASTNode(object):
         break_functions = ['index']
 
         while current is not None:
-            # print 'VERIF', current.tvalue.lower()
-
             if current.tvalue.lower() in special_functions:
                 found = True
                 break
@@ -543,8 +545,6 @@ class ASTNode(object):
         current = self
 
         while current is not None:
-            # print 'VERIF', current.tvalue.lower(), current.ttype
-
             if (current.ttype[:8] == 'operator' or current.ttype == 'function') and current.tvalue.lower() != 'if':
                 found = True
                 break
@@ -604,7 +604,7 @@ class OperatorNode(ASTNode):
 
          
         if self.ttype == "operator-prefix":
-            return "Range.apply_one('minus', %s, None, %s)" % (args[0].emit(ast,context=context), str(self.ref))
+            return "RangeCore.apply_one('minus', %s, None, %s)" % (args[0].emit(ast,context=context), str(self.ref))
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             is_special = self.find_special_function(ast)
@@ -614,7 +614,7 @@ class OperatorNode(ASTNode):
             arg1 = args[0]
             arg2 = args[1]
 
-            return "Range." + call + "(%s)" % ','.join(["'"+function+"'", str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), str(self.ref)])
+            return "RangeCore." + call + "(%s)" % ','.join(["'"+function+"'", str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), str(self.ref)])
 
         parent = self.parent(ast)
 
@@ -702,7 +702,7 @@ class RangeNode(OperandNode):
             to_eval = False
 
         if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
-            return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
                         
         if to_eval == False:
             return my_str
@@ -710,10 +710,10 @@ class RangeNode(OperandNode):
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -726,15 +726,15 @@ class RangeNode(OperandNode):
                 return 'resolve_range(' + my_str + ')'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         # elif is_a_range:
         #     return 'eval_range(' + str + ')'
         else:
             if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
-                return 'find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
+                return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
             else:
                 return 'self.eval_ref(' + my_str + ')'
 
@@ -1082,6 +1082,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = []):
+        print "___### Initializing Excel Compiler ###___"
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -1090,10 +1091,12 @@ class ExcelCompiler(object):
         self.cells = read_cells(archive, ignore_sheets)
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
-        
+        self.Range = RangeFactory(self.cells)
 
 
     def clean_volatile(self):
+        print '___### Cleaning volatiles ###___'
+
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
 
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
@@ -1104,7 +1107,8 @@ class ExcelCompiler(object):
     
             
     def gen_graph(self, outputs = None):
-        
+        print '___### Generating Graph ###___'
+
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
         else:
@@ -1113,25 +1117,12 @@ class ExcelCompiler(object):
                 if o in self.named_ranges:
                     reference = self.named_ranges[o]
                     if is_range(reference):
-                        address_in_dep, nrows, ncols = resolve_range(reference)
-                        address_in_dep = list(flatten(address_in_dep))
 
-                        values_in_dep =[]
-                        formulas_in_dep = []
-                        for c in address_in_dep:
-                            if c in self.cells:
-                                values_in_dep.append(self.cells[c].value)
-                                formulas_in_dep.append(self.cells[c].formula)
-                            else:
-                                # raise Exception( '%s unavailable' % c)
-                                values_in_dep.append(None)
-                                formulas_in_dep.append(None)
-
-                        rng = Range((address_in_dep, nrows, ncols), values_in_dep)
-                        virtual_cell = Cell(o, None, rng, reference, True )
+                        rng = self.Range(reference)
+                        virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                         seeds.append(virtual_cell)
                     else:
-                        virtual_cell = Cell(o, None, self.cells[reference].value, reference, True )
+                        virtual_cell = Cell(o, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
                         seeds.append(virtual_cell)
                 else:
                     if is_range(o):
@@ -1213,22 +1204,18 @@ class ExcelCompiler(object):
                         reference = self.named_ranges[dep]
                     else:
                         reference = dep
-                    address_in_dep, nrows, ncols = resolve_range(reference)
-                    address_in_dep = list(flatten(address_in_dep))
 
-                    values_in_dep =[]
+                    rng = self.Range(reference)
+
                     formulas_in_dep = []
-                    for c in address_in_dep:
+                    for c in rng.cells:
                         if c in self.cells:
-                            values_in_dep.append(self.cells[c].value)
                             formulas_in_dep.append(self.cells[c].formula)
                         else:
                             # raise Exception( '%s unavailable' % c)
-                            values_in_dep.append(None)
                             formulas_in_dep.append(None)
-
-                    rng = Range((address_in_dep, nrows, ncols), values_in_dep)
-                    virtual_cell = Cell(dep, None, rng, reference, True )
+                
+                    virtual_cell = Cell(dep, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
                     # save the range
                     cellmap[dep] = virtual_cell
@@ -1239,9 +1226,10 @@ class ExcelCompiler(object):
                     # cells in the range should point to the range as their parent
                     target = virtual_cell 
                     origins = []
-                    for (child, value, formula) in zip(address_in_dep, values_in_dep, formulas_in_dep):
+                    for (child, value, formula) in zip(rng.cells, rng.value, formulas_in_dep):
                         if child not in cellmap:
-                            origins.append(Cell(child, None, value, formula, False))  
+                            cell_is_range = isinstance(value, RangeCore)
+                            origins.append(Cell(child, None, value = value, formula = formula, is_range = cell_is_range, is_named_range = False))  
                         else:
                             origins.append(cellmap[child])   
                 else:
@@ -1254,12 +1242,12 @@ class ExcelCompiler(object):
 
                     if reference in self.cells:
                         if dep in self.named_ranges:
-                            virtual_cell = Cell(dep, None, self.cells[reference].value, reference, True )
+                            virtual_cell = Cell(dep, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True )
                             origins = [virtual_cell]
                         else:
                             origins = [self.cells[reference]] 
                     else:
-                        virtual_cell = Cell(dep, None, None, None, True )
+                        virtual_cell = Cell(dep, None, value = None, formula = None, is_range = False, is_named_range = True )
                         origins = [virtual_cell]
 
                     target = cellmap[c1.address()]

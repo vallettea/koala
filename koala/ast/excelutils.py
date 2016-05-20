@@ -5,7 +5,7 @@ import functools
 import re
 import string
 
-from Range import Range
+# from Range import Range
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -70,9 +70,9 @@ class Cell(object):
         return cls.ctr
     
 
-    def __init__(self, address, sheet, value=None, formula=None, is_named_range=False, always_eval=False ):
+    def __init__(self, address, sheet, value=None, formula=None, is_range = False, is_named_range=False, always_eval=False ):
         super(Cell,self).__init__()
-        
+
         if is_named_range == False:
 
             # remove $'s
@@ -102,24 +102,49 @@ class Cell(object):
         else:
             self.__named_range = address
             self.__sheet = None
-            self.__sheet = None
             self.__col = None
             self.__row = None
             self.__col_idx = None
             
         self.__formula = str(formula) if formula else None
-        self.value = value
+        self.__value = value
         self.python_expression = None
         self.always_eval = always_eval
-        self._compiled_expression = None
+        self.__compiled_expression = None
+        self.__is_range = is_range
         
         # every cell has a unique id
         self.__id = Cell.next_id()
 
     @property
+    def value(self):
+        if self.__is_range:
+            return self.__value.value
+        else:
+            return self.__value
+
+    @value.setter
+    def value(self, new_value):
+        if self.__is_range:
+            self.__value.value = new_value
+        else:
+            self.__value = new_value
+
+    @property
+    def range(self):
+        if self.__is_range:
+            return self.__value
+        else:
+            return None
+
+    @property
     def is_named_range(self):
         return self.__named_range is not None
     
+    @property
+    def is_range(self):
+        return self.__is_range
+
     @property
     def sheet(self):
         return self.__sheet
@@ -146,12 +171,12 @@ class Cell(object):
 
     @property
     def compiled_expression(self):
-        return self._compiled_expression
+        return self.__compiled_expression
 
     # code objects are not serializable
     def __getstate__(self):
         d = dict(self.__dict__)
-        f = '_compiled_expression'
+        f = '__compiled_expression'
         if f in d: del d[f]
         return d
 
@@ -181,7 +206,7 @@ class Cell(object):
             self.python_expression='"' + self.python_expression + '"'
         
         try:
-            self._compiled_expression = compile(self.python_expression,'<string>','eval')
+            self.__compiled_expression = compile(self.python_expression,'<string>','eval')
         except Exception as e:
             raise Exception("Failed to compile cell %s with expression %s: %s" % (self.address(),self.python_expression,e)) 
     
@@ -631,9 +656,8 @@ def check_length(range1, range2):
 def extract_numeric_values(*args):
     values = []
 
-
     for arg in args:
-        if type(arg) is Range:
+        if isinstance(arg, collections.Iterable):
             temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif type(arg) is tuple:
