@@ -174,7 +174,7 @@ class Spreadsheet(object):
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
-                            print 'ERROR', repl["value"].value, repl["value"].info
+                            print 'EXCEL ERROR ENCOUNTERED', repl["value"].value, repl["value"].info
                             repl["value"] = "#N/A"
 
                         if repl["expression_type"] == "value":
@@ -476,8 +476,6 @@ class Spreadsheet(object):
         if is_addr:
             try:
                 cell = self.cellmap[cell]
-                if cell.address() == 'Cashflow!L39':
-                    print 'COUCOU', cell.python_expression
             except:
                 # print 'Empty cell at '+ cell
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)
