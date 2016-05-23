@@ -432,7 +432,11 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
-                    return self.update_range(cell1.range)
+                    if cell1.range.need_update:
+                        cell1.range.need_update = False
+                        return self.update_range(cell1.range)
+                    else:
+                        return cell1.range
                 elif addr1 in self.named_ranges or not is_range(addr1):
                     return self.evaluate(addr1)
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
@@ -461,21 +465,10 @@ class Spreadsheet(object):
     def update_range(self, range):
         debug = False
 
-        if range.need_update:
-            range.need_update = False
-
-            for key in range:
-                if range.name == "Cashflow!L39:L50":
-                    print 'KEY', key, range[key]
-                if range[key] is None:
-                    addr = get_cell_address(range.sheet, key)
-                    # if debug:
-                    #     print "addr 1", addr, key
-                    range[key] = self.evaluate(addr)
-                    # if debug:
-                    #     print "addr 2", self.evaluate(addr)
+        for key in range: # only ranges with need_update to True are updated, so all values are None and need evaluation
+            addr = get_cell_address(range.sheet, key)
+            range[key] = self.evaluate(addr)
             
-
         return range
 
     def evaluate(self,cell,is_addr=True):
