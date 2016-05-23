@@ -487,13 +487,12 @@ class Spreadsheet(object):
             return cell.value
         
         try:
-            # print "Evalling: %s, %s" % (cell.address(),cell.python_expression)
+            cell.need_update = False
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
             cell.value = vv
-            cell.need_update = False
 
             # # DEBUG: saving differences
             # if cell.address() in self.history:
