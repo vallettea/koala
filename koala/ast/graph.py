@@ -49,7 +49,7 @@ class Spreadsheet(object):
         self.reset_buffer = set()
 
     def prune_graph(self, inputs):
-        # print '___### Pruning Graph ###___'
+        print '___### Pruning Graph ###___'
 
         G = self.G
 
@@ -63,7 +63,7 @@ class Spreadsheet(object):
                 g = make_subgraph(G, child, "descending")
                 dependencies = dependencies.union(g.nodes())
 
-        print "%s cells depending on inputs" % str(len(dependencies))
+        # print "%s cells depending on inputs" % str(len(dependencies))
 
         # prune the graph and set all cell independent of input to const
         subgraph = networkx.DiGraph()
@@ -114,7 +114,7 @@ class Spreadsheet(object):
 
         print "Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(subgraph.nodes()),len(subgraph.edges()),len(new_cellmap))
         undirected = networkx.Graph(subgraph)
-        print "Number of connected components %s", str(number_connected_components(undirected))
+        # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs)
@@ -168,12 +168,13 @@ class Spreadsheet(object):
                 ast,root = build_ast(e)
                 code = root.emit(ast)
                 
-                replacements = self.eval_volatiles_from_ast(ast, root, cell["sheet"])
+                replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
                 new_formula = cell["formula"]
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
+                            print 'ERROR', repl["value"].value, repl["value"].info
                             repl["value"] = "#N/A"
 
                         if repl["expression_type"] == "value":
@@ -183,7 +184,6 @@ class Spreadsheet(object):
                 else:
                     new_formula = None
                 cache[cell["formula"]] = new_formula
-              
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["address"]] = new_formula
@@ -198,8 +198,10 @@ class Spreadsheet(object):
         for c in node.children(ast):
             self.print_value_ast(ast, c, indent+1)
 
-    def eval_volatiles_from_ast(self, ast, node, context):
+    def eval_volatiles_from_ast(self, ast, node, cell):
         results = []
+        context = cell["sheet"]
+
         if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
             (node.token.tvalue == "OFFSET"):
             #print self.print_value_ast(ast, node, 1)
@@ -211,11 +213,16 @@ class Spreadsheet(object):
                 expression_type = "value"
             else:
                 expression_type = "formula"
-            volatile_value = eval(expression)
+            
+            try:
+                volatile_value = eval(expression)
+            except Exception as e:
+                raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
+
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
-                results.append(self.eval_volatiles_from_ast(ast, c, context))
+                results.append(self.eval_volatiles_from_ast(ast, c, cell))
         return list(flatten(results, only_lists = True))
 
 
@@ -684,7 +691,8 @@ class RangeNode(OperandNode):
                 try:
                     sh,col,row = split_address(rng)
                 except:
-                    raise ValueError('Address %s is not a cell/range reference, nor a named range' % str(rng))
+                    print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
+                    sh = None
 
             if sh:
                 my_str = '"' + rng + '"'
@@ -1082,7 +1090,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = []):
-        # print "___### Initializing Excel Compiler ###___"
+        print "___### Initializing Excel Compiler ###___"
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -1095,7 +1103,7 @@ class ExcelCompiler(object):
 
 
     def clean_volatile(self):
-        # print '___### Cleaning volatiles ###___'
+        print '___### Cleaning volatiles ###___'
 
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
 
@@ -1107,7 +1115,7 @@ class ExcelCompiler(object):
     
             
     def gen_graph(self, outputs = None):
-        # print '___### Generating Graph ###___'
+        print '___### Generating Graph ###___'
 
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
@@ -1131,13 +1139,13 @@ class ExcelCompiler(object):
                         seeds.append(self.cells[o])
 
 
-        print "Seeds %s cells" % len(seeds)
+        # print "Seeds %s cells" % len(seeds)
         
         # cells to analyze: only formulas
         todo = [s for s in seeds if s.formula]
         steps = [i for i,s in enumerate(todo)]
 
-        print "%s cells on the todo list" % len(todo)
+        # print "%s cells on the todo list" % len(todo)
 
         # map of all cells
         cellmap = dict([(x.address(),x) for x in seeds])
@@ -1280,7 +1288,7 @@ class ExcelCompiler(object):
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
-        print "Number of connected components %s", str(number_connected_components(undirected))
+        # print "Number of connected components %s", str(number_connected_components(undirected))
 
         return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs)
 
