@@ -56,6 +56,9 @@ if __name__ == '__main__':
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
+
+    # import cProfile
+    # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
     
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 

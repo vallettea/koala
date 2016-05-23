@@ -302,6 +302,8 @@ class Spreadsheet(object):
         G = json_graph.node_link_graph(data)
         cellmap = {n.address():n for n in G.nodes()}
 
+        print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+
         return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
     def export_to_dot(self,fname):
@@ -448,6 +450,7 @@ class Spreadsheet(object):
             return self.Range('%s:%s' % (addr1, addr2))
             # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
+    # @profile
     def update_range(self, range):
         for key in range:
             if range[key] is None:
