@@ -239,7 +239,8 @@ class Spreadsheet(object):
                     "cells": range.cells,
                     "values": range.value,
                     "nrows": range.nrows,
-                    "ncols": range.ncols
+                    "ncols": range.ncols,
+                    "name": range.name
                 }
             else:
                 value = cell.value
@@ -295,7 +296,7 @@ class Spreadsheet(object):
                 range = d["value"]
                 if len(range["values"]) == 0:
                     range["values"] = [None] * len(range["cells"])
-                value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
+                value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"], name = range["name"])
             else:
                 value = d["value"]
             new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], always_eval=d["always_eval"])
@@ -368,6 +369,7 @@ class Spreadsheet(object):
             cell.range.reset()
         else:
             cell.value = None
+            cell.need_update = True
         for child in self.G.successors_iter(cell):
             if child not in self.reset_buffer:
                 self.reset(child)
@@ -418,48 +420,61 @@ class Spreadsheet(object):
     #     return data
 
     def eval_ref(self, addr1, addr2 = None):
-        try:
-            cell1 = self.cellmap[addr1]
-        except:
-            print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
-            return ExcelError('#NULL', 'Cell %s is empty' % addr1)
-
         if isinstance(addr1, ExcelError):
             return addr1
-        if isinstance(addr2, ExcelError):
+        elif isinstance(addr2, ExcelError):
             return addr2
-        if addr2 == None:
-            if cell1.is_range:
-                # print 'RANGE', cell1.range
-                return self.update_range(cell1.range)
-            elif addr1 in self.named_ranges or not is_range(addr1):
-                return self.evaluate(addr1)
-            else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
-                addr1, addr2 = addr1.split(':')
+        else:
+            try:
+                cell1 = self.cellmap[addr1]
+            except:
+                print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
+                return ExcelError('#NULL', 'Cell %s is empty' % addr1)
+            if addr2 == None:
+                if cell1.is_range:
+                    return self.update_range(cell1.range)
+                elif addr1 in self.named_ranges or not is_range(addr1):
+                    return self.evaluate(addr1)
+                else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
+                    # if addr1 == "Cashflow!L39:L50":
+
+                    addr1, addr2 = addr1.split(':')
+                    if '!' in addr1:
+                        sheet = addr1.split('!')[0]
+                    else:
+                        sheet = None
+                    if '!' in addr2:
+                        addr2 = addr2.split('!')[1]
+
+                    return self.Range('%s:%s' % (addr1, addr2))
+                    # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
+            else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
                 if '!' in addr1:
                     sheet = addr1.split('!')[0]
                 else:
                     sheet = None
                 if '!' in addr2:
                     addr2 = addr2.split('!')[1]
-
                 return self.Range('%s:%s' % (addr1, addr2))
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
-        else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
-            if '!' in addr1:
-                sheet = addr1.split('!')[0]
-            else:
-                sheet = None
-            if '!' in addr2:
-                addr2 = addr2.split('!')[1]
-            return self.Range('%s:%s' % (addr1, addr2))
-            # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        for key in range:
-            if range[key] is None:
-                addr = get_cell_address(range.sheet, key)
-                range[key] = self.evaluate(addr)
+        debug = False
+
+        if range.need_update:
+            range.need_update = False
+
+            for key in range:
+                if range.name == "Cashflow!L39:L50":
+                    print 'KEY', key, range[key]
+                if range[key] is None:
+                    addr = get_cell_address(range.sheet, key)
+                    # if debug:
+                    #     print "addr 1", addr, key
+                    range[key] = self.evaluate(addr)
+                    # if debug:
+                    #     print "addr 2", self.evaluate(addr)
+            
 
         return range
 
@@ -468,13 +483,14 @@ class Spreadsheet(object):
         if is_addr:
             try:
                 cell = self.cellmap[cell]
-
+                if cell.address() == 'Cashflow!L39':
+                    print 'COUCOU', cell.python_expression
             except:
                 # print 'Empty cell at '+ cell
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
-        if not cell.formula or not cell.always_eval and cell.value != None:
+        if not cell.formula or not cell.always_eval and not cell.need_update:
             # print "returning constant or cached value for ", cell.address()
             
             return cell.value
@@ -486,6 +502,7 @@ class Spreadsheet(object):
             else:
                 vv = 0
             cell.value = vv
+            cell.need_update = False
 
             # # DEBUG: saving differences
             # if cell.address() in self.history:
@@ -504,6 +521,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
+                # print 'PB', self.eval_ref(RangeCore.apply_one('add',RangeCore.apply_one('add',self.eval_ref("Cashflow!L33"),self.eval_ref("Cashflow!L35"),(39, 'L')),self.eval_ref("Cashflow!L37"),(39, 'L')))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value

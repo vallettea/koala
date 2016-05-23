@@ -45,7 +45,7 @@ def check_value(a):
 
 class RangeCore(OrderedDict):
 
-    def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None):
+    def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
         if type(address) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = address
@@ -103,6 +103,7 @@ class RangeCore(OrderedDict):
 
         # dont allow messing with these params
         self.__address = address
+        self.__name = address if type(address) != list else name
         self.__cells = cells
         self.__length = len(cells)
         self.__nrows = nrows
@@ -118,12 +119,16 @@ class RangeCore(OrderedDict):
         self.__sheet = sheet
         self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
+        self.need_update = False
 
         OrderedDict.__init__(self, result)
 
     @property
     def address(self):
         return self.__address
+    @property
+    def name(self):
+        return self.__name
     @property
     def cells(self):
         return self.__cells
@@ -155,6 +160,7 @@ class RangeCore(OrderedDict):
             self[key] = new_values[index]
 
     def reset(self):
+        self.need_update = True
         for key in self.keys():
             self[key] = None
 

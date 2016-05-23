@@ -109,6 +109,7 @@ class Cell(object):
         self.__formula = str(formula) if formula else None
         self.__value = value
         self.python_expression = None
+        self.need_update = False
         self.always_eval = always_eval
         self.__compiled_expression = None
         self.__is_range = is_range
