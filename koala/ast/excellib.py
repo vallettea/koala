@@ -662,6 +662,13 @@ def iferror(value, value_if_error): # Excel reference: https://support.office.co
     else:
         return value
 
+def irr(values, guess = None): # Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
+                               # Numpy reference: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.irr.html
+    if guess is not None and guess != 0:
+        raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
+    else:
+        return np.irr(values)
+
 if __name__ == '__main__':
     pass
 
