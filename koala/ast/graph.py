@@ -463,7 +463,14 @@ class Spreadsheet(object):
                         return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    return self.evaluate(addr1)
+                    new_value = self.evaluate(addr1)
+
+                    if addr1 in self.addr_to_range:
+                        for ref in self.addr_to_range[addr1]:
+                            range = self.cellmap[ref].range
+                            range[parse_cell_address(addr1)] = new_value
+                    
+                    return new_value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     # if addr1 == "Cashflow!L39:L50":
                     addr1, addr2 = addr1.split(':')
