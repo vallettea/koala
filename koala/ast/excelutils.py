@@ -138,6 +138,13 @@ class Cell(object):
         else:
             return None
 
+    @range.setter
+    def range(self, new_range):
+        if self.__is_range:
+            self.__value = new_range
+        else:
+            raise Exception('Setting a range as non-range Cell %s value' % self.address()) 
+
     @property
     def is_named_range(self):
         return self.__named_range is not None

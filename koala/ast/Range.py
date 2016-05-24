@@ -159,10 +159,9 @@ class RangeCore(OrderedDict):
         for index, key in enumerate(self.keys()):
             self[key] = new_values[index]
 
-    def reset(self):
+    def reset(self, addr):
         self.need_update = True
-        for key in self.keys():
-            self[key] = None
+        self[parse_cell_address(addr)] = None
 
     # def is_associated(self, other):
     #     if self.length != other.length:

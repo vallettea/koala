@@ -40,6 +40,12 @@ class Spreadsheet(object):
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
+
+        addr_to_name = {}
+        for name in named_ranges:
+            addr_to_name[named_ranges[name]] = name
+        self.addr_to_name = addr_to_name
+
         self.outputs = outputs
         self.inputs = inputs
         self.history = dict()
@@ -359,20 +365,20 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-    def reset(self, cell):
+    def reset(self, cell, previous = None):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
 
-        self.reset_buffer.add(cell)
         # update depending ranges
-        if cell.range:
-            cell.range.reset()
+        if cell.is_range:
+            cell.range.reset(previous)
         else:
+            self.reset_buffer.add(cell)
             cell.value = None
             cell.need_update = True
         for child in self.G.successors_iter(cell):
             if child not in self.reset_buffer:
-                self.reset(child)
+                self.reset(child, addr)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
@@ -432,11 +438,26 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
+                    range_name = cell1.address()
+
                     if cell1.range.need_update:
+                        updated_range = self.update_range(cell1.range)
                         cell1.range.need_update = False
-                        return self.update_range(cell1.range)
+
+                        cell1.range = updated_range
+
+                        # update Range in sibling Cell
+                        if range_name in self.named_ranges:
+                            if cell1.range.name in self.cellmap:
+                                self.cellmap[cell1.range.name].range = updated_range
+                        else:
+                            if cell1.range.name in self.addr_to_name:
+                                self.cellmap[self.addr_to_name[cell1.range.name]].range = updated_range
+
+                        return updated_range
                     else:
                         return cell1.range
+
                 elif addr1 in self.named_ranges or not is_range(addr1):
                     return self.evaluate(addr1)
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
@@ -465,14 +486,20 @@ class Spreadsheet(object):
     def update_range(self, range):
         debug = False
 
-        for key in range: # only ranges with need_update to True are updated, so all values are None and need evaluation
+        for index, key in enumerate(range): # only ranges with need_update to True are updated, so all values are None and need evaluation
             addr = get_cell_address(range.sheet, key)
-            range[key] = self.evaluate(addr)
+
+            if self.cellmap[addr].need_update:
+                range[key] = self.evaluate(addr)
+                cell = range.cells[index]
+
+                if cell in self.cellmap: 
+                    self.cellmap[cell].value = range[key]
+                    self.cellmap[cell].need_update = False
             
         return range
 
     def evaluate(self,cell,is_addr=True):
-
         if is_addr:
             try:
                 cell = self.cellmap[cell]
@@ -481,37 +508,37 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
-        if not cell.formula or not cell.always_eval and not cell.need_update:
+        if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
             # print "returning constant or cached value for ", cell.address()
-            
             return cell.value
         
         try:
+            
             cell.need_update = False
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
+            
             cell.value = vv
 
-            # # DEBUG: saving differences
-            # if cell.address() in self.history:
-            #     ori_value = self.history[cell.address()]['original']
-            #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
-            #         self.count += 1
-            #         self.history[cell.address()]['formula'] = str(cell.formula)
-            #         self.history[cell.address()]['priority'] = self.count
-            #         self.history[cell.address()]['python'] = str(cell.python_expression)
+            # DEBUG: saving differences
+            if cell.address() in self.history:
+                ori_value = self.history[cell.address()]['original']
+                if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
+                    self.count += 1
+                    self.history[cell.address()]['formula'] = str(cell.formula)
+                    self.history[cell.address()]['priority'] = self.count
+                    self.history[cell.address()]['python'] = str(cell.python_expression)
 
-            #     self.history[cell.address()]['new'] = str(cell.value)
-            # else:
-            #     self.history[cell.address()] = {'new': str(cell.value)}
+                self.history[cell.address()]['new'] = str(cell.value)
+            else:
+                self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print 'PB', self.eval_ref(RangeCore.apply_one('add',RangeCore.apply_one('add',self.eval_ref("Cashflow!L33"),self.eval_ref("Cashflow!L35"),(39, 'L')),self.eval_ref("Cashflow!L37"),(39, 'L')))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
@@ -1220,7 +1247,7 @@ class ExcelCompiler(object):
                         reference = self.named_ranges[dep]
                     else:
                         reference = dep
-
+                    
                     rng = self.Range(reference)
 
                     formulas_in_dep = []
