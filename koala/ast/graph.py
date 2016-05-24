@@ -46,6 +46,18 @@ class Spreadsheet(object):
             addr_to_name[named_ranges[name]] = name
         self.addr_to_name = addr_to_name
 
+        addr_to_range = {}        
+        for c in self.cellmap.values():
+            if c.is_range:
+                addr = c.address() if c.is_named_range else c.range.name
+                for cell in c.range.cells:
+                    if cell not in addr_to_range:
+                        addr_to_range[cell] = [addr]
+                    else:
+                        addr_to_range[cell].append(addr)
+
+        self.addr_to_range = addr_to_range
+
         self.outputs = outputs
         self.inputs = inputs
         self.history = dict()
@@ -446,14 +458,6 @@ class Spreadsheet(object):
 
                         cell1.range = updated_range
 
-                        # update Range in sibling Cell
-                        if range_name in self.named_ranges:
-                            if cell1.range.name in self.cellmap:
-                                self.cellmap[cell1.range.name].range = updated_range
-                        else:
-                            if cell1.range.name in self.addr_to_name:
-                                self.cellmap[self.addr_to_name[cell1.range.name]].range = updated_range
-
                         return updated_range
                     else:
                         return cell1.range
@@ -462,7 +466,6 @@ class Spreadsheet(object):
                     return self.evaluate(addr1)
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     # if addr1 == "Cashflow!L39:L50":
-
                     addr1, addr2 = addr1.split(':')
                     if '!' in addr1:
                         sheet = addr1.split('!')[0]
@@ -484,19 +487,23 @@ class Spreadsheet(object):
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        debug = False
 
         for index, key in enumerate(range): # only ranges with need_update to True are updated, so all values are None and need evaluation
             addr = get_cell_address(range.sheet, key)
 
             if self.cellmap[addr].need_update:
-                range[key] = self.evaluate(addr)
-                cell = range.cells[index]
+                # evaluating cell
+                new_value = self.evaluate(addr)
+                # range[key] = self.evaluate(addr)
 
-                if cell in self.cellmap: 
-                    self.cellmap[cell].value = range[key]
-                    self.cellmap[cell].need_update = False
-            
+                if addr in self.cellmap:
+                    self.cellmap[addr].value = new_value
+                    self.cellmap[addr].need_update = False
+
+                if addr in self.addr_to_range:
+                    for ref in self.addr_to_range[addr]:
+                        self.cellmap[ref].range[key] = new_value
+
         return range
 
     def evaluate(self,cell,is_addr=True):
@@ -505,7 +512,7 @@ class Spreadsheet(object):
                 cell = self.cellmap[cell]
             except:
                 # print 'Empty cell at '+ cell
-                return ExcelError('#NULL', 'Cell %s is empty' % cell)
+                return ExcelError('#NULL', 'Cell %s is empty' % cell)    
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
@@ -513,13 +520,11 @@ class Spreadsheet(object):
             return cell.value
         
         try:
-            
             cell.need_update = False
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
-            
             cell.value = vv
 
             # DEBUG: saving differences
