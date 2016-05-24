@@ -465,10 +465,7 @@ class Spreadsheet(object):
                 elif addr1 in self.named_ranges or not is_range(addr1):
                     new_value = self.evaluate(addr1)
 
-                    if addr1 in self.addr_to_range:
-                        for ref in self.addr_to_range[addr1]:
-                            range = self.cellmap[ref].range
-                            range[parse_cell_address(addr1)] = new_value
+                    self.update_linked_ranges(addr1, new_value)
                     
                     return new_value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
@@ -493,6 +490,12 @@ class Spreadsheet(object):
                 return self.Range('%s:%s' % (addr1, addr2))
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
+    def update_linked_ranges(self, addr, new_value):
+        if addr in self.addr_to_range:
+            key = parse_cell_address(addr)
+            for ref in self.addr_to_range[addr]:
+                self.cellmap[ref].range[key] = new_value
+
     def update_range(self, range):
 
         for index, key in enumerate(range): # only ranges with need_update to True are updated, so all values are None and need evaluation
@@ -507,9 +510,7 @@ class Spreadsheet(object):
                     self.cellmap[addr].value = new_value
                     self.cellmap[addr].need_update = False
 
-                if addr in self.addr_to_range:
-                    for ref in self.addr_to_range[addr]:
-                        self.cellmap[ref].range[key] = new_value
+                self.update_linked_ranges(addr, new_value)
 
         return range
 
