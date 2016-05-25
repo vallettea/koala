@@ -9,18 +9,12 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
-from networkx.readwrite.gexf import write_gexf
 from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 
-import networkx as nx
-
-from astutils import find_node, subgraph
+from astutils import subgraph
 
 from tokenizer import ExcelParser, f_token, shunting_yard, reverse_rpn
-import cPickle
-import logging
-from itertools import chain
 
 from Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
 
@@ -32,6 +26,7 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
+from serialize import write_graphml
 
 
 class Spreadsheet(object):
@@ -56,7 +51,7 @@ class Spreadsheet(object):
         # get all the cells impacted by inputs
         dependencies = set()
         for input_address in inputs:
-                child = find_node(G, input_address)
+                child = self.cellmap[input_address]
                 if child == None:
                     print "Not found ", input_address
                     continue
@@ -69,7 +64,7 @@ class Spreadsheet(object):
         subgraph = networkx.DiGraph()
         new_cellmap = {}
         for output_address in self.outputs:
-            seed = find_node(G, output_address)
+            seed = self.cellmap[output_address]
             todo = map(lambda n: (seed,n), G.predecessors(seed))
             done = set(todo)
 
@@ -252,6 +247,174 @@ class Spreadsheet(object):
         with gzip.GzipFile(fname, 'w') as outfile:
             outfile.write(json.dumps(data))
 
+    def dump3(self, fname):
+        data = write_graphml(self.G, fname)
+        
+
+    def dump2(self, fname):
+        data = json_graph.node_link_data(self.G)
+        outfile = open(fname, 'w')
+        for node in data["nodes"]:
+            cell = node["id"]
+            formula = cell.formula if cell.formula else "0"
+            python_expression = cell.python_expression if cell.python_expression else "0"
+            always_eval = "1" if cell.always_eval else "0"
+            is_range = "1" if cell.is_range else "0"
+            is_named_range = "1" if cell.is_named_range else "0"
+            always_eval = "1" if cell.always_eval else "0"
+
+            # write common attributes
+            outfile.write(";".join([
+                cell.address(),
+                formula,
+                python_expression,
+                is_range,
+                is_named_range,
+                always_eval
+            ]) + "\n")
+            
+            # write a bloc a just a value depending on is_range
+            if isinstance(cell.range, RangeCore):
+                range = cell.range
+                outfile.write(";".join(map(str,range.value)) + "\n")
+                outfile.write(";".join(map(str,range.cells)) + "\n")
+                outfile.write(str(range.nrows) + ";" + str(range.ncols) + "\n")
+            else:
+                outfile.write(str(cell.value) + "\n")
+
+            # end of the block corresponding to a cell
+            outfile.write("====" + "\n")
+
+        # writing the edges
+        outfile.write("edges" + "\n")
+        for edge in data["links"]:
+            outfile.write(str(edge["source"]) + ";" + str(edge["target"]) + "\n")
+
+        # writing the rest
+        outfile.write("outputs" + "\n")
+        outfile.write(";".join(self.outputs) + "\n")
+        outfile.write("inputs" + "\n")
+        outfile.write(";".join(self.inputs) + "\n")
+        outfile.write("named_ranges" + "\n")
+        for k in self.named_ranges:
+            outfile.write(k + ";" + self.named_ranges[k] + "\n")
+        
+        outfile.close()
+
+    @staticmethod
+    def load2(fname):
+
+        def clean_bool(string):
+            if string == "0":
+                return None
+            else:
+                return string
+
+        def to_bool(string):
+            if string == "1":
+                return True
+            else:
+                return False
+        def to_float(string):
+            if string == "None":
+                return None
+            try:
+                return float(string)
+            except:
+                return string
+
+        mode = "node0"
+        nodes = []
+        edges = []
+        named_ranges = {}
+        infile = open(fname, 'r')
+        for line in infile.read().splitlines():
+
+            if line == "====":
+                mode = "node0"
+                continue
+            elif line == "edges":
+                mode = "edges"
+                continue
+            elif line == "outputs":
+                mode = "outputs"
+                continue
+            elif line == "inputs":
+                mode = "inputs"
+                continue
+            elif line == "named_ranges":
+                mode = "named_ranges"
+                continue
+
+            if mode == "node0":
+                [address, formula, python_expression, is_range, is_named_range, always_eval] = line.split(";")
+                formula = clean_bool(formula)
+                python_expression = clean_bool(python_expression)
+                is_range = to_bool(is_range)
+                is_named_range = to_bool(is_named_range)
+                always_eval = to_bool(always_eval)
+                mode = "node1"
+            elif mode == "node1":
+                if is_range:
+                    splits = line.split(";")
+                    if len(splits) > 1:
+                        values = map(to_float, splits)
+                    else:
+                        try:
+                            values = [to_float(line)]
+                        except:
+                            values = [None]
+                    mode = "node2"
+                else:
+                    values = to_float(line)
+                    cell = Cell(address, None, values, formula, is_range, is_named_range, always_eval)
+                    cell.python_expression = python_expression
+                    cell.compile()                    
+                    nodes.append({"id": cell})
+            elif mode == "node2":
+                splits = line.split(";")
+                if len(splits) > 1:
+                    cells = splits
+                else:
+                    cells = [address]
+                mode = "node3"
+            elif mode == "node3":
+                nrows, ncols = map(int, line.split(";"))
+
+                if values == ['']:
+                    cells = []
+                    values = []
+                vv = Range(cells, values, nrows = nrows, ncols = ncols)
+                cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
+                cell.python_expression = python_expression
+                cell.compile() 
+                nodes.append({"id": cell})
+
+            elif mode == "edges":
+                source, target = line.split(";")
+                edges.append({"source": int(source), "target": int(target)})
+            elif mode == "outputs":
+                outputs = line.split(";")
+            elif mode == "inputs":
+                inputs = line.split(";")
+            elif mode == "named_ranges":
+                k,v = line.split(";")
+                named_ranges[k] = v
+                
+        data = {'directed': True, 'graph': {},'multigraph': False}
+        data["nodes"] = nodes
+        data["links"] = edges
+        data["outputs"] = outputs
+        data["inputs"] = inputs
+        data["named_ranges"] = named_ranges
+
+        G = json_graph.node_link_graph(data)
+        cellmap = {n.address():n for n in G.nodes()}
+
+        print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+
+        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
+
     @staticmethod
     def load(fname):
 
@@ -315,12 +478,12 @@ class Spreadsheet(object):
     def plot_graph(self):
         import matplotlib.pyplot as plt
 
-        pos=nx.spring_layout(self.G,iterations=2000)
-        #pos=nx.spectral_layout(G)
-        #pos = nx.random_layout(G)
-        nx.draw_networkx_nodes(self.G, pos)
-        nx.draw_networkx_edges(self.G, pos, arrows=True)
-        nx.draw_networkx_labels(self.G, pos)
+        pos=networkx.spring_layout(self.G,iterations=2000)
+        #pos=networkx.spectral_layout(G)
+        #pos = networkx.random_layout(G)
+        networkx.draw_networkx_nodes(self.G, pos)
+        networkx.draw_networkx_edges(self.G, pos, arrows=True)
+        networkx.draw_networkx_labels(self.G, pos)
         plt.show()
     
     def set_value(self, address, val):
@@ -1042,10 +1205,6 @@ def build_ast(expression):
 
     return G,stack.pop()
 
-def find_node(G, seed_address):
-    for i,seed in enumerate(G.nodes()):
-        if seed.address() == seed_address:
-            return seed
 
 def make_subgraph(G, seed, direction = "ascending"):
     subgraph = networkx.DiGraph()
@@ -1146,7 +1305,7 @@ class ExcelCompiler(object):
         cellmap = dict([(x.address(),x) for x in seeds])
     
         # directed graph
-        G = nx.DiGraph()
+        G = networkx.DiGraph()
 
         # match the info in cellmap
         for c in cellmap.itervalues(): G.add_node(c)

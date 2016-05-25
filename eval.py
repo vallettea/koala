@@ -35,21 +35,27 @@ if __name__ == '__main__':
     # print "Serializing to disk...", file
     # sp.dump(file.replace("xlsx", "gzip"))
 
-    startTime = datetime.now()
-    print "Reading from disk...", file
-    sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
-    print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
+    # startTime = datetime.now()
+    # print "Reading from disk...", file
+    # sp = Spreadsheet.load(file.replace("xlsx", "gzip"))
+    # print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
+    # sp.dump2(file.replace("xlsx", "txt"))
 
-    sys.setrecursionlimit(10000)
+    sp = Spreadsheet.load2(file.replace("xlsx", "txt"))
+
+    import cProfile
+    cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
+
+#     sys.setrecursionlimit(10000)
 
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
 
-    # for addr, cell in sp.cellmap.items():
-    #     sp.history[addr] = {'original': str(cell.value)}
+#     # for addr, cell in sp.cellmap.items():
+#     #     sp.history[addr] = {'original': str(cell.value)}
 
-#     sp = sp.prune_graph(["IA_PriceExportGas"])
+# #     sp = sp.prune_graph(["IA_PriceExportGas"])
     
     startTime = datetime.now()
     sp.set_value('IA_PriceExportGas', 0)
@@ -57,8 +63,8 @@ if __name__ == '__main__':
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
 
-    # import cProfile
-    # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
+#     import cProfile
+#     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
     
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 

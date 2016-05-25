@@ -211,10 +211,7 @@ class Cell(object):
             raise Exception("Failed to compile cell %s with expression %s: %s" % (self.address(),self.python_expression,e)) 
     
     def __str__(self):
-        if self.formula:
-            return "%s%s" % (self.address(), self.formula)
-        else:
-            return "%s=%s" % (self.address(), self.value)
+        return self.address()
 
     @staticmethod
     def inc_col_address(address,inc):
