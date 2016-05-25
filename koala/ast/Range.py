@@ -9,13 +9,19 @@ from excelutils import *
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
+cache = {}
+
 def parse_cell_address(ref):
     try:
-        found = re.search(CELL_REF_RE, ref)
-        col = found.group(1)
-        row = found.group(2)
-
-        return (int(row), col)
+        if ref not in cache:
+            found = re.search(CELL_REF_RE, ref)
+            col = found.group(1)
+            row = found.group(2)
+            result = (int(row), col)
+            cache[ref] = result
+            return result
+        else:
+            return cache[ref]
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
@@ -89,9 +95,7 @@ class RangeCore(dict):
         order = []
 
         for cell, value in zip(cells, values):
-            found = re.search(CELL_REF_RE, cell)
-            col = found.group(1)
-            row = int(found.group(2))
+            row,col = parse_cell_address(cell)
             order.append((row, col))
             try:
                 if isinstance(value, RangeCore):
