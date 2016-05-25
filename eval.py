@@ -35,11 +35,11 @@ if __name__ == '__main__':
     # sp = sp.prune_graph(["IA_PriceExportGas"])
 
     # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "txt"))
+    # sp.dump2(file.replace("xlsx", "gzip"))
 
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "txt"))
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
 

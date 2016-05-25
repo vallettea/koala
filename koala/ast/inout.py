@@ -14,7 +14,7 @@ from networkx.drawing.nx_pylab import draw, draw_circular
 ########### based on custom format #################
 def dump2(self, fname):
     data = json_graph.node_link_data(self.G)
-    outfile = open(fname, 'w')
+    outfile = gzip.GzipFile(fname, 'w')
     for node in data["nodes"]:
         cell = node["id"]
         formula = cell.formula if cell.formula else "0"
@@ -87,7 +87,7 @@ def load2(fname):
     nodes = []
     edges = []
     named_ranges = {}
-    infile = open(fname, 'r')
+    infile = gzip.GzipFile(fname, 'r')
     for line in infile.read().splitlines():
 
         if line == "====":
