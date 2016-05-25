@@ -7,9 +7,6 @@ from math import *
 
 import networkx
 from networkx.classes.digraph import DiGraph
-from networkx.drawing.nx_pydot import write_dot
-from networkx.drawing.nx_pylab import draw, draw_circular
-from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 
 from astutils import subgraph
@@ -26,7 +23,7 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
-from serialize import write_graphml
+from inout import *
 
 
 class Spreadsheet(object):
@@ -215,276 +212,19 @@ class Spreadsheet(object):
 
 
     def dump(self, fname):
-        data = json_graph.node_link_data(self.G)
-        # save nodes as simple objects
-        nodes = []
-        for node in data["nodes"]:
-            cell = node["id"]
-
-            if isinstance(cell.range, RangeCore):
-                range = cell.range
-                value = {
-                    "cells": range.cells,
-                    "values": range.value,
-                    "nrows": range.nrows,
-                    "ncols": range.ncols
-                }
-            else:
-                value = cell.value
-
-            nodes += [{
-                "address": cell.address(),
-                "formula": cell.formula,
-                "value": value,
-                "python_expression": cell.python_expression,
-                "is_named_range": cell.is_named_range,
-                "always_eval": cell.always_eval
-            }]
-        data["nodes"] = nodes
-        data["outputs"] = self.outputs
-        data["inputs"] = self.inputs
-        data["named_ranges"] = self.named_ranges
-        with gzip.GzipFile(fname, 'w') as outfile:
-            outfile.write(json.dumps(data))
-
-    def dump3(self, fname):
-        data = write_graphml(self.G, fname)
+        dump(sp, fname)
         
 
     def dump2(self, fname):
-        data = json_graph.node_link_data(self.G)
-        outfile = open(fname, 'w')
-        for node in data["nodes"]:
-            cell = node["id"]
-            formula = cell.formula if cell.formula else "0"
-            python_expression = cell.python_expression if cell.python_expression else "0"
-            always_eval = "1" if cell.always_eval else "0"
-            is_range = "1" if cell.is_range else "0"
-            is_named_range = "1" if cell.is_named_range else "0"
-            always_eval = "1" if cell.always_eval else "0"
-
-            # write common attributes
-            outfile.write(";".join([
-                cell.address(),
-                formula,
-                python_expression,
-                is_range,
-                is_named_range,
-                always_eval
-            ]) + "\n")
-            
-            # write a bloc a just a value depending on is_range
-            if isinstance(cell.range, RangeCore):
-                range = cell.range
-                outfile.write(";".join(map(str,range.value)) + "\n")
-                outfile.write(";".join(map(str,range.cells)) + "\n")
-                outfile.write(str(range.nrows) + ";" + str(range.ncols) + "\n")
-            else:
-                outfile.write(str(cell.value) + "\n")
-
-            # end of the block corresponding to a cell
-            outfile.write("====" + "\n")
-
-        # writing the edges
-        outfile.write("edges" + "\n")
-        for edge in data["links"]:
-            outfile.write(str(edge["source"]) + ";" + str(edge["target"]) + "\n")
-
-        # writing the rest
-        outfile.write("outputs" + "\n")
-        outfile.write(";".join(self.outputs) + "\n")
-        outfile.write("inputs" + "\n")
-        outfile.write(";".join(self.inputs) + "\n")
-        outfile.write("named_ranges" + "\n")
-        for k in self.named_ranges:
-            outfile.write(k + ";" + self.named_ranges[k] + "\n")
-        
-        outfile.close()
+        dump2(self, fname)
 
     @staticmethod
     def load2(fname):
-
-        def clean_bool(string):
-            if string == "0":
-                return None
-            else:
-                return string
-
-        def to_bool(string):
-            if string == "1":
-                return True
-            else:
-                return False
-        def to_float(string):
-            if string == "None":
-                return None
-            try:
-                return float(string)
-            except:
-                return string
-
-        mode = "node0"
-        nodes = []
-        edges = []
-        named_ranges = {}
-        infile = open(fname, 'r')
-        for line in infile.read().splitlines():
-
-            if line == "====":
-                mode = "node0"
-                continue
-            elif line == "edges":
-                mode = "edges"
-                continue
-            elif line == "outputs":
-                mode = "outputs"
-                continue
-            elif line == "inputs":
-                mode = "inputs"
-                continue
-            elif line == "named_ranges":
-                mode = "named_ranges"
-                continue
-
-            if mode == "node0":
-                [address, formula, python_expression, is_range, is_named_range, always_eval] = line.split(";")
-                formula = clean_bool(formula)
-                python_expression = clean_bool(python_expression)
-                is_range = to_bool(is_range)
-                is_named_range = to_bool(is_named_range)
-                always_eval = to_bool(always_eval)
-                mode = "node1"
-            elif mode == "node1":
-                if is_range:
-                    splits = line.split(";")
-                    if len(splits) > 1:
-                        values = map(to_float, splits)
-                    else:
-                        try:
-                            values = [to_float(line)]
-                        except:
-                            values = [None]
-                    mode = "node2"
-                else:
-                    values = to_float(line)
-                    cell = Cell(address, None, values, formula, is_range, is_named_range, always_eval)
-                    cell.python_expression = python_expression
-                    cell.compile()                    
-                    nodes.append({"id": cell})
-            elif mode == "node2":
-                splits = line.split(";")
-                if len(splits) > 1:
-                    cells = splits
-                else:
-                    cells = [address]
-                mode = "node3"
-            elif mode == "node3":
-                nrows, ncols = map(int, line.split(";"))
-
-                if values == ['']:
-                    cells = []
-                    values = []
-                vv = Range(cells, values, nrows = nrows, ncols = ncols)
-                cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
-                cell.python_expression = python_expression
-                cell.compile() 
-                nodes.append({"id": cell})
-
-            elif mode == "edges":
-                source, target = line.split(";")
-                edges.append({"source": int(source), "target": int(target)})
-            elif mode == "outputs":
-                outputs = line.split(";")
-            elif mode == "inputs":
-                inputs = line.split(";")
-            elif mode == "named_ranges":
-                k,v = line.split(";")
-                named_ranges[k] = v
-                
-        data = {'directed': True, 'graph': {},'multigraph': False}
-        data["nodes"] = nodes
-        data["links"] = edges
-        data["outputs"] = outputs
-        data["inputs"] = inputs
-        data["named_ranges"] = named_ranges
-
-        G = json_graph.node_link_graph(data)
-        cellmap = {n.address():n for n in G.nodes()}
-
-        print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-
-        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
+        return Spreadsheet(*load2(fname))
 
     @staticmethod
     def load(fname):
-
-        def _decode_list(data):
-            rv = []
-            for item in data:
-                if isinstance(item, unicode):
-                    item = item.encode('utf-8')
-                elif isinstance(item, list):
-                    item = _decode_list(item)
-                elif isinstance(item, dict):
-                    item = _decode_dict(item)
-                rv.append(item)
-            return rv
-
-        def _decode_dict(data):
-            rv = {}
-            for key, value in data.iteritems():
-                if isinstance(key, unicode):
-                    key = key.encode('utf-8')
-                if isinstance(value, unicode):
-                    value = value.encode('utf-8')
-                elif isinstance(value, list):
-                    value = _decode_list(value)
-                elif isinstance(value, dict):
-                    value = _decode_dict(value)
-                rv[key] = value
-            return rv
-        with gzip.GzipFile(fname, 'r') as infile:
-            data = json.loads(infile.read(), object_hook=_decode_dict)
-        def cell_from_dict(d):
-            cell_is_range = type(d["value"]) == dict
-            if cell_is_range:
-                range = d["value"]
-                if len(range["values"]) == 0:
-                    range["values"] = [None] * len(range["cells"])
-                value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
-            else:
-                value = d["value"]
-            new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], always_eval=d["always_eval"])
-            new_cell.python_expression = d["python_expression"]
-            new_cell.compile()
-            return {"id": new_cell}
-
-        nodes = map(cell_from_dict, data["nodes"])
-        data["nodes"] = nodes
-
-        G = json_graph.node_link_graph(data)
-        cellmap = {n.address():n for n in G.nodes()}
-
-        print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-
-        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
-
-    def export_to_dot(self,fname):
-        write_dot(self.G,fname)
-                    
-    def export_to_gexf(self,fname):
-        write_gexf(self.G,fname)
-    
-    def plot_graph(self):
-        import matplotlib.pyplot as plt
-
-        pos=networkx.spring_layout(self.G,iterations=2000)
-        #pos=networkx.spectral_layout(G)
-        #pos = networkx.random_layout(G)
-        networkx.draw_networkx_nodes(self.G, pos)
-        networkx.draw_networkx_edges(self.G, pos, arrows=True)
-        networkx.draw_networkx_labels(self.G, pos)
-        plt.show()
+        return Spreadsheet(*load(fname))
     
     def set_value(self, address, val):
 
