@@ -7,31 +7,22 @@ from math import *
 
 import networkx
 from networkx.classes.digraph import DiGraph
-from networkx.drawing.nx_pydot import write_dot
-from networkx.drawing.nx_pylab import draw, draw_circular
-from networkx.readwrite.gexf import write_gexf
-from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 
-import networkx as nx
-
-from astutils import find_node, subgraph
+from astutils import subgraph
 
 from tokenizer import ExcelParser, f_token, shunting_yard, reverse_rpn
-import cPickle
-import logging
-from itertools import chain
 
 from Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
 
 import json
-import gzip
 
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
+from inout import *
 
 
 class Spreadsheet(object):
@@ -56,7 +47,7 @@ class Spreadsheet(object):
         # get all the cells impacted by inputs
         dependencies = set()
         for input_address in inputs:
-                child = find_node(G, input_address)
+                child = self.cellmap[input_address]
                 if child == None:
                     print "Not found ", input_address
                     continue
@@ -69,7 +60,7 @@ class Spreadsheet(object):
         subgraph = networkx.DiGraph()
         new_cellmap = {}
         for output_address in self.outputs:
-            seed = find_node(G, output_address)
+            seed = self.cellmap[output_address]
             todo = map(lambda n: (seed,n), G.predecessors(seed))
             done = set(todo)
 
@@ -220,106 +211,19 @@ class Spreadsheet(object):
 
 
     def dump(self, fname):
-        data = json_graph.node_link_data(self.G)
-        # save nodes as simple objects
-        nodes = []
-        for node in data["nodes"]:
-            cell = node["id"]
+        dump(sp, fname)
+        
 
-            if isinstance(cell.range, RangeCore):
-                range = cell.range
-                value = {
-                    "cells": range.cells,
-                    "values": range.value,
-                    "nrows": range.nrows,
-                    "ncols": range.ncols
-                }
-            else:
-                value = cell.value
+    def dump2(self, fname):
+        dump2(self, fname)
 
-            nodes += [{
-                "address": cell.address(),
-                "formula": cell.formula,
-                "value": value,
-                "python_expression": cell.python_expression,
-                "is_named_range": cell.is_named_range,
-                "always_eval": cell.always_eval
-            }]
-        data["nodes"] = nodes
-        data["outputs"] = self.outputs
-        data["inputs"] = self.inputs
-        data["named_ranges"] = self.named_ranges
-        with gzip.GzipFile(fname, 'w') as outfile:
-            outfile.write(json.dumps(data))
+    @staticmethod
+    def load2(fname):
+        return Spreadsheet(*load2(fname))
 
     @staticmethod
     def load(fname):
-
-        def _decode_list(data):
-            rv = []
-            for item in data:
-                if isinstance(item, unicode):
-                    item = item.encode('utf-8')
-                elif isinstance(item, list):
-                    item = _decode_list(item)
-                elif isinstance(item, dict):
-                    item = _decode_dict(item)
-                rv.append(item)
-            return rv
-
-        def _decode_dict(data):
-            rv = {}
-            for key, value in data.iteritems():
-                if isinstance(key, unicode):
-                    key = key.encode('utf-8')
-                if isinstance(value, unicode):
-                    value = value.encode('utf-8')
-                elif isinstance(value, list):
-                    value = _decode_list(value)
-                elif isinstance(value, dict):
-                    value = _decode_dict(value)
-                rv[key] = value
-            return rv
-        with gzip.GzipFile(fname, 'r') as infile:
-            data = json.loads(infile.read(), object_hook=_decode_dict)
-        def cell_from_dict(d):
-            cell_is_range = type(d["value"]) == dict
-            if cell_is_range:
-                range = d["value"]
-                if len(range["values"]) == 0:
-                    range["values"] = [None] * len(range["cells"])
-                value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
-            else:
-                value = d["value"]
-            new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], always_eval=d["always_eval"])
-            new_cell.python_expression = d["python_expression"]
-            new_cell.compile()
-            return {"id": new_cell}
-
-        nodes = map(cell_from_dict, data["nodes"])
-        data["nodes"] = nodes
-
-        G = json_graph.node_link_graph(data)
-        cellmap = {n.address():n for n in G.nodes()}
-
-        return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
-
-    def export_to_dot(self,fname):
-        write_dot(self.G,fname)
-                    
-    def export_to_gexf(self,fname):
-        write_gexf(self.G,fname)
-    
-    def plot_graph(self):
-        import matplotlib.pyplot as plt
-
-        pos=nx.spring_layout(self.G,iterations=2000)
-        #pos=nx.spectral_layout(G)
-        #pos = nx.random_layout(G)
-        nx.draw_networkx_nodes(self.G, pos)
-        nx.draw_networkx_edges(self.G, pos, arrows=True)
-        nx.draw_networkx_labels(self.G, pos)
-        plt.show()
+        return Spreadsheet(*load(fname))
     
     def set_value(self, address, val):
 
@@ -448,6 +352,7 @@ class Spreadsheet(object):
             return self.Range('%s:%s' % (addr1, addr2))
             # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
+    # @profile
     def update_range(self, range):
         for key in range:
             if range[key] is None:
@@ -1039,10 +944,6 @@ def build_ast(expression):
 
     return G,stack.pop()
 
-def find_node(G, seed_address):
-    for i,seed in enumerate(G.nodes()):
-        if seed.address() == seed_address:
-            return seed
 
 def make_subgraph(G, seed, direction = "ascending"):
     subgraph = networkx.DiGraph()
@@ -1143,7 +1044,7 @@ class ExcelCompiler(object):
         cellmap = dict([(x.address(),x) for x in seeds])
     
         # directed graph
-        G = nx.DiGraph()
+        G = networkx.DiGraph()
 
         # match the info in cellmap
         for c in cellmap.itervalues(): G.add_node(c)

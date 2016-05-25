@@ -1,10 +1,5 @@
 import networkx
 
-def find_node(G, seed_address):
-    for i,seed in enumerate(G.nodes()):
-        if seed.address() == seed_address:
-            return seed
-
 def subgraph(G, seed):
     subgraph = networkx.DiGraph()
     todo = map(lambda n: (seed,n), G.predecessors(seed))
