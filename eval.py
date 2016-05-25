@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # file = "./example/example.xlsx"
     file = "./data/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
 
-    print file        
+    # print file        
 
     # startTime = datetime.now()
     # c = ExcelCompiler(file, ignore_sheets = ['IHS'])

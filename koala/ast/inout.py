@@ -11,6 +11,8 @@ from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 
+SEP = ";;"
+
 ########### based on custom format #################
 def dump2(self, fname):
     data = json_graph.node_link_data(self.G)
@@ -25,7 +27,7 @@ def dump2(self, fname):
         always_eval = "1" if cell.always_eval else "0"
 
         # write common attributes
-        outfile.write(";".join([
+        outfile.write(SEP.join([
             cell.address(),
             formula,
             python_expression,
@@ -37,9 +39,9 @@ def dump2(self, fname):
         # write a bloc a just a value depending on is_range
         if isinstance(cell.range, RangeCore):
             range = cell.range
-            outfile.write(";".join(map(str,range.value)) + "\n")
-            outfile.write(";".join(map(str,range.cells)) + "\n")
-            outfile.write(str(range.nrows) + ";" + str(range.ncols) + "\n")
+            outfile.write(SEP.join(map(str,range.value)) + "\n")
+            outfile.write(SEP.join(map(str,range.cells)) + "\n")
+            outfile.write(str(range.nrows) + SEP + str(range.ncols) + "\n")
         else:
             outfile.write(str(cell.value) + "\n")
 
@@ -49,16 +51,16 @@ def dump2(self, fname):
     # writing the edges
     outfile.write("edges" + "\n")
     for edge in data["links"]:
-        outfile.write(str(edge["source"]) + ";" + str(edge["target"]) + "\n")
+        outfile.write(str(edge["source"]) + SEP + str(edge["target"]) + "\n")
 
     # writing the rest
     outfile.write("outputs" + "\n")
-    outfile.write(";".join(self.outputs) + "\n")
+    outfile.write(SEP.join(self.outputs) + "\n")
     outfile.write("inputs" + "\n")
-    outfile.write(";".join(self.inputs) + "\n")
+    outfile.write(SEP.join(self.inputs) + "\n")
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
-        outfile.write(k + ";" + self.named_ranges[k] + "\n")
+        outfile.write(k + SEP + self.named_ranges[k] + "\n")
     
     outfile.close()
 
@@ -107,7 +109,7 @@ def load2(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, always_eval] = line.split(";")
+            [address, formula, python_expression, is_range, is_named_range, always_eval] = line.split(SEP)
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
@@ -116,7 +118,7 @@ def load2(fname):
             mode = "node1"
         elif mode == "node1":
             if is_range:
-                splits = line.split(";")
+                splits = line.split(SEP)
                 if len(splits) > 1:
                     values = map(to_float, splits)
                 else:
@@ -132,14 +134,14 @@ def load2(fname):
                 cell.compile()                    
                 nodes.append(cell)
         elif mode == "node2":
-            splits = line.split(";")
+            splits = line.split(SEP)
             if len(splits) > 1:
                 cells = splits
             else:
                 cells = [address]
             mode = "node3"
         elif mode == "node3":
-            nrows, ncols = map(int, line.split(";"))
+            nrows, ncols = map(int, line.split(SEP))
 
             if values == ['']:
                 cells = []
@@ -151,14 +153,14 @@ def load2(fname):
             nodes.append(cell)
 
         elif mode == "edges":
-            source, target = line.split(";")
+            source, target = line.split(SEP)
             edges.append((int(source), int(target)))
         elif mode == "outputs":
-            outputs = line.split(";")
+            outputs = line.split(SEP)
         elif mode == "inputs":
-            inputs = line.split(";")
+            inputs = line.split(SEP)
         elif mode == "named_ranges":
-            k,v = line.split(";")
+            k,v = line.split(SEP)
             named_ranges[k] = v
             
     pos2cell = dict(enumerate(nodes))
