@@ -23,19 +23,19 @@ if __name__ == '__main__':
     # file = "./example/example.xlsx"
     file = "./data/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
 
-    # print file        
+    print file        
 
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # sp = sp.prune_graph(["IA_PriceExportGas"])
+    sp = sp.prune_graph(["IA_PriceExportGas"])
 
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip"))
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip"))
 
     startTime = datetime.now()
     print "Reading from disk...", file
