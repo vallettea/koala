@@ -2,6 +2,7 @@
 from koala.ast.excelutils import Cell
 from Range import RangeCore
 
+from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
@@ -126,7 +127,7 @@ def load2(fname):
                 cell = Cell(address, None, values, formula, is_range, is_named_range, always_eval)
                 cell.python_expression = python_expression
                 cell.compile()                    
-                nodes.append({"id": cell})
+                nodes.append(cell)
         elif mode == "node2":
             splits = line.split(";")
             if len(splits) > 1:
@@ -144,11 +145,11 @@ def load2(fname):
             cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
             cell.python_expression = python_expression
             cell.compile() 
-            nodes.append({"id": cell})
+            nodes.append(cell)
 
         elif mode == "edges":
             source, target = line.split(";")
-            edges.append({"source": int(source), "target": int(target)})
+            edges.append((int(source), int(target)))
         elif mode == "outputs":
             outputs = line.split(";")
         elif mode == "inputs":
@@ -157,19 +158,15 @@ def load2(fname):
             k,v = line.split(";")
             named_ranges[k] = v
             
-    data = {'directed': True, 'graph': {},'multigraph': False}
-    data["nodes"] = nodes
-    data["links"] = edges
-    data["outputs"] = outputs
-    data["inputs"] = inputs
-    data["named_ranges"] = named_ranges
-
-    G = json_graph.node_link_graph(data)
+    pos2cell = dict(enumerate(nodes))
+    links = [(pos2cell[i], pos2cell[j]) for (i,j) in edges]
+    print links[0]
+    G = DiGraph(data = links)
     cellmap = {n.address():n for n in G.nodes()}
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
+    return (G, cellmap, named_ranges, outputs, inputs)
 
 ########### based on json #################
 def dump(self, fname):
