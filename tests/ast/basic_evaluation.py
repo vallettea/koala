@@ -11,7 +11,7 @@ from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.graph import ExcelCompiler
 
-from koala.ast.Range import Range
+# from koala.ast.Range import Range
 
 class Test_Excel(unittest.TestCase):
     

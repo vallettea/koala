@@ -322,11 +322,15 @@ class Spreadsheet(object):
             new_cell.compile()
             return {"id": new_cell}
 
+
         nodes = map(cell_from_dict, data["nodes"])
+        
         data["nodes"] = nodes
 
         G = json_graph.node_link_graph(data)
         cellmap = {n.address():n for n in G.nodes()}
+
+        # print 'IS THE SAME', len(test_cellmap), len(cellmap) 
 
         return Spreadsheet(G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
@@ -354,18 +358,23 @@ class Spreadsheet(object):
         if address not in self.cellmap:
             raise Exception("Address not present in graph.")
 
+        cell = self.cellmap[address]
         # case where the address refers to a range
+        if self.cellmap[address].range: 
 
-        if self.cellmap[address].range:
             cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.cells if a in self.cellmap]
             if type(val) != list:
                 val = [val]*len(cell_to_set)
-            for cell, value in zip(cell_to_set, val):
-                if cell.value != value:
-                    # reset the node + its dependencies
-                    self.reset(cell)
-                    # set the value
-                    cell.value = value
+
+            self.reset(cell)
+            cell.range.value = val
+            # for cell, value in zip(cell_to_set, val):
+            #     if cell.value != value:
+            #         # reset the node + its dependencies
+            #         # set the value
+            #         cell.value = value
+                    # print 'RESET range value', cell.value, self.cellmap["IA_PriceExportGas"].range[(99, 'L')], self.cellmap["InputData!L99"].value
+            # self.cellmap[address].reset()
 
         # case where the address refers to a single value
         else:
@@ -376,6 +385,7 @@ class Spreadsheet(object):
                 self.reset(cell)
                 # set the value
                 cell.value = val
+                print 'RESET', cell.value
 
     def reset(self, cell, previous = None):
         addr = cell.address()
@@ -383,6 +393,8 @@ class Spreadsheet(object):
 
         # update depending ranges
         if cell.is_range:
+            if addr == "IA_PriceExportGas":
+                print 'RESETTING', addr
             cell.range.reset(previous)
         else:
             self.reset_buffer.add(cell)
@@ -438,6 +450,12 @@ class Spreadsheet(object):
     #     return data
 
     def eval_ref(self, addr1, addr2 = None):
+        debug = False
+
+        if addr1 == "Calculations!P91:P101" or addr1 == "Calculations!P91":
+            debug = True
+            print 'Evaluating', addr1, self.cellmap["Calculations!P91"].value, self.cellmap["Calculations!P91"].need_update
+
         if isinstance(addr1, ExcelError):
             return addr1
         elif isinstance(addr2, ExcelError):
@@ -450,12 +468,15 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
+                    if debug:
+                        print 'Eval Ref', addr1
                     range_name = cell1.address()
 
                     if cell1.range.need_update:
-                        updated_range = self.update_range(cell1.range)
                         cell1.range.need_update = False
-
+                        if debug:
+                            print 'Updated needed'
+                        updated_range = self.update_range(cell1.range)
                         cell1.range = updated_range
 
                         return updated_range
@@ -463,9 +484,15 @@ class Spreadsheet(object):
                         return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    new_value = self.evaluate(addr1)
+                    if addr1 == "Calculations!P91":
+                        print 'Evaluating P91', cell1.address(), cell1.value, cell1.need_update 
 
-                    self.update_linked_ranges(addr1, new_value)
+                    new_value = self.evaluate(addr1)
+                    cell1.need_update = False
+                    cell1.value = new_value
+                    if addr1 == "Calculations!P91":
+                        print 'Evaluated P91', cell1.address(), cell1.value, cell1.need_update
+                    # self.update_linked_ranges(addr1, new_value)
                     
                     return new_value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
@@ -495,22 +522,35 @@ class Spreadsheet(object):
             key = parse_cell_address(addr)
             for ref in self.addr_to_range[addr]:
                 self.cellmap[ref].range[key] = new_value
+                # if ref == 'FA_ProfitShare_Liquids':
+                #     print 'VERIF', self.cellmap[ref].range[key], addr
 
     def update_range(self, range):
+        # print 'UPDATING', range.name
+        debug = False
+        if range.name == "Calculations!P91:P101":
+            debug = True
+        # print "UPDATING", range.name
 
         for index, key in enumerate(range): # only ranges with need_update to True are updated, so all values are None and need evaluation
             addr = get_cell_address(range.sheet, key)
 
             if self.cellmap[addr].need_update:
                 # evaluating cell
+                if debug:
+                    print "KEY", addr, self.cellmap[addr].value, self.cellmap[addr].need_update
                 new_value = self.evaluate(addr)
                 # range[key] = self.evaluate(addr)
 
                 if addr in self.cellmap:
-                    self.cellmap[addr].value = new_value
                     self.cellmap[addr].need_update = False
+                    if addr == "Calculations!P91":
+                        print "---->", addr, self.cellmap["Calculations!P91"].value, range.value
 
-                self.update_linked_ranges(addr, new_value)
+                # self.update_linked_ranges(addr, new_value)
+
+        # if range.name == "Calculations!L287:DG287":
+        #     print "UPDATED", range.name, range.value
 
         return range
 
@@ -536,6 +576,18 @@ class Spreadsheet(object):
             cell.value = vv
 
             # DEBUG: saving differences
+            if cell.address() == "Calculations!P287":
+                print cell.address(), cell.value, cell.python_expression
+                # print "278", self.cellmap["Calculations!P278"]
+                # print "284", self.cellmap["Calculations!P284"]
+                # print "287", self.cellmap["Calculations!P287"]
+                print "Liquids", self.cellmap["FA_ProfitShare_Liquids"].value
+                print "Gas", self.cellmap["FA_ProfitShare_Gas"].value
+                print "Total", self.cellmap["FA_ProfitShare_Total"].value
+
+                import sys
+                sys.exit(0)
+
             if cell.address() in self.history:
                 ori_value = self.history[cell.address()]['original']
                 if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
@@ -552,6 +604,7 @@ class Spreadsheet(object):
             if e.message.startswith("Problem evalling"):
                 raise e
             else:
+                print 'PB', self.eval_ref('IA_PriceExportGas'),self.eval_ref('IA_PriceExportDiffGas')
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
