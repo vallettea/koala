@@ -1,6 +1,4 @@
-
 import re
-from collections import OrderedDict, Iterable
 import string
 from ExcelError import ExcelError
 from excelutils import *
@@ -11,13 +9,19 @@ from excelutils import *
 
 CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
+cache = {}
+
 def parse_cell_address(ref):
     try:
-        found = re.search(CELL_REF_RE, ref)
-        col = found.group(1)
-        row = found.group(2)
-
-        return (int(row), col)
+        if ref not in cache:
+            found = re.search(CELL_REF_RE, ref)
+            col = found.group(1)
+            row = found.group(2)
+            result = (int(row), col)
+            cache[ref] = result
+            return result
+        else:
+            return cache[ref]
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
@@ -43,7 +47,7 @@ def check_value(a):
         return 0
 
 
-class RangeCore(OrderedDict):
+class RangeCore(dict):
 
     def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
@@ -57,6 +61,7 @@ class RangeCore(OrderedDict):
                 raise ValueError('Range must not be a scalar')
 
         cells = list(flatten(cells))
+
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
 
@@ -90,12 +95,11 @@ class RangeCore(OrderedDict):
             sheet = None
 
         result = []
+        order = []
 
-        for index, cell in enumerate(cells):
-            found = re.search(CELL_REF_RE, cell)
-            col = found.group(1)
-            row = int(found.group(2))
-            
+        for cell, value in zip(cells, values):
+            row,col = parse_cell_address(cell)
+            order.append((row, col))
             try:
                 if cellmap:
                     result.append(((row, col), cellmap[cell]))
@@ -104,6 +108,7 @@ class RangeCore(OrderedDict):
                     if isinstance(values[index], RangeCore):
                         raise Exception('Range can\'t be values of Range', address)
                     result.append(((row, col), values[index]))
+
             except: # when you don't provide any values
                 result.append(((row, col), None))
 
@@ -112,6 +117,7 @@ class RangeCore(OrderedDict):
         self.__address = address
         self.__name = address if type(address) != list else name
         self.__cells = cells
+        self.order = order
         self.__length = len(cells)
         self.__nrows = nrows
         self.__ncols = ncols
@@ -128,7 +134,7 @@ class RangeCore(OrderedDict):
 
         self.need_update = False
 
-        OrderedDict.__init__(self, result)
+        dict.__init__(self, result)
 
 
     @property
@@ -178,6 +184,10 @@ class RangeCore(OrderedDict):
         else:
             for key, value in enumerate(self.keys()):
                 self[value] = new_values[key]
+
+
+    def values(self):
+        return map(lambda c: self[c], self.order)
 
     def reset(self, addr):
         self.need_update = True
@@ -304,6 +314,7 @@ class RangeCore(OrderedDict):
                         second_value = second[(second.start[0], col)]
                 else:
                     raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
+
             except ExcelError as e:
                 raise Exception('Second argument of Range operation is not valid: ' + e)
         else:
@@ -331,13 +342,14 @@ class RangeCore(OrderedDict):
         if isinstance(self, RangeCore) and isinstance(other, RangeCore):
             if self.length != other.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-
-            return RangeCore(self.cells, map(lambda (key, cell): function(cell.value if type(cell) == Cell else cell, other.values()[key].value if type(other) == Cell else other.values()[key]), enumerate(self.values())), nrows = self.nrows, ncols = self.ncols)
-
+            vals = [function(x.value if type(x) == Cell else x, y if type(y) == Cell else y) for x,y in zip(self.values(), other.values())]
+            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
         elif isinstance(self, RangeCore):
-            return RangeCore(self.cells, map(lambda (key, cell): function(cell.value if type(cell) == Cell else cell, other), enumerate(self.values())), nrows = self.nrows, ncols = self.ncols)
+            vals = [function(x.value if type(x) == Cell else x, other) for x in self.values()]
+            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
         elif isinstance(other, RangeCore):
-            return RangeCore(other.cells, map(lambda (key, cell): function(self, cell.value if type(cell) == Cell else cell), enumerate(other.values())), nrows = other.nrows, ncols = other.ncols)
+            vals = [function(self, x.value if type(x) == Cell else x) for x in other.values()]
+            return RangeCore(other.cells, vals, nrows = other.nrows, ncols = other.ncols)
         else:
             return function(self, other)
 
