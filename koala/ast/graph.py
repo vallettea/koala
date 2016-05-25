@@ -16,7 +16,6 @@ from tokenizer import ExcelParser, f_token, shunting_yard, reverse_rpn
 from Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
 
 import json
-import gzip
 
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells

@@ -1,3 +1,6 @@
+import json
+import gzip
+import networkx
 
 from koala.ast.excelutils import Cell
 from Range import RangeCore
@@ -261,8 +264,6 @@ def load(fname):
 def export_to_dot(self,fname):
     write_dot(self.G,fname)
                 
-def export_to_gexf(self,fname):
-    write_gexf(self.G,fname)
 
 ########### plotting #################
 def plot_graph(self):

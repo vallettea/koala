@@ -1,3 +1,5 @@
+import pyximport; pyximport.install()
+
 import glob
 import sys
 from datetime import datetime
@@ -42,8 +44,8 @@ if __name__ == '__main__':
 
 
 
-    import cProfile
-    cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
+    # import cProfile
+    # cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
 
 #     sys.setrecursionlimit(10000)
 

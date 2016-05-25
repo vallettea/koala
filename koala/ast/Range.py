@@ -259,7 +259,7 @@ class RangeCore(dict):
                     second_value = second[(second.start[0], col)]
                 else:
                     raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
-            except:
+            except Exception as e:
                 raise Exception('Second argument of Range operation is not valid: ' + e)
         else:
             second_value = second
