@@ -49,14 +49,14 @@ def check_value(a):
 
 class RangeCore(dict):
 
-    def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None, name = None):
+    def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
-        if type(address) == list: # some Range calculations such as excellib.countifs() use filtered keys
-            cells = address
+        if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
+            cells = reference
         else:
-            address = address.replace('$','')
+            reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(address)
+                cells, nrows, ncols = resolve_range(reference)
             except:
                 raise ValueError('Range must not be a scalar')
 
@@ -106,7 +106,7 @@ class RangeCore(dict):
 
                 else:
                     if isinstance(values[index], RangeCore):
-                        raise Exception('Range can\'t be values of Range', address)
+                        raise Exception('Range can\'t be values of Range', reference)
                     result.append(((row, col), values[index]))
 
             except: # when you don't provide any values
@@ -114,8 +114,7 @@ class RangeCore(dict):
 
         # dont allow messing with these params
         self.__cellmap = cellmap
-        self.__address = address
-        self.__name = address if type(address) != list else name
+        self.__name = reference if type(reference) != list else name
         self.__cells = cells
         self.order = order
         self.__length = len(cells)
@@ -132,14 +131,8 @@ class RangeCore(dict):
         self.__sheet = sheet
         self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
-        self.need_update = False
-
         dict.__init__(self, result)
 
-
-    @property
-    def address(self):
-        return self.__address
     @property
     def name(self):
         return self.__name
@@ -165,41 +158,27 @@ class RangeCore(dict):
     def start(self):
         return self.__start
     @property
-    def value(self):
+    def values(self):
         if self.__cellmap:
             values = []
             for cell in self.cells:
                 values.append(self.__cellmap[cell].value)
             return values
         else:
-            return self.values()
+            return self.Cells
     
-    @value.setter
-    def value(self, new_values):
-        # for index, key in enumerate(self.keys()):
-            # self[key] = new_values[index]
+    @values.setter
+    def values(self, new_values):
         if self.__cellmap:
-            for index, cell in enumerate(self.values()):
+            for index, cell in enumerate(self.Cells):
                 cell.value = new_values[index]
         else:
-            for key, value in enumerate(self.keys()):
+            for key, value in enumerate(self.order):
                 self[value] = new_values[key]
 
-
-    def values(self):
+    @property
+    def Cells(self):
         return map(lambda c: self[c], self.order)
-
-    def reset(self, addr):
-        self.need_update = True
-        
-        if addr is not None:
-            if addr == "Calculations!P91":
-                print 'resetting', addr
-            self[parse_cell_address(addr)].need_update = True
-            self[parse_cell_address(addr)].value = None
-        else:
-            for cell in self.values():
-                cell.value = None
 
     # def is_associated(self, other):
     #     if self.length != other.length:
@@ -228,7 +207,7 @@ class RangeCore(dict):
         nr = self.nrows
         nc = self.ncols
 
-        values = self.value
+        values = self.values
         cells = self.cells
 
         if nr == 1 or nc == 1: # 1-dim range
@@ -342,14 +321,30 @@ class RangeCore(dict):
         if isinstance(self, RangeCore) and isinstance(other, RangeCore):
             if self.length != other.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-            vals = [function(x.value if type(x) == Cell else x, y if type(y) == Cell else y) for x,y in zip(self.values(), other.values())]
+            
+            vals = [function(
+                x.value if type(x) == Cell else x,
+                y.value if type(y) == Cell else y
+            ) for x,y in zip(self.Cells, other.Cells)]
+
             return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
+        
         elif isinstance(self, RangeCore):
-            vals = [function(x.value if type(x) == Cell else x, other) for x in self.values()]
+            vals = [function(
+                x.value if type(x) == Cell else x,
+                other
+            ) for x in self.Cells]
+            
             return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
+
         elif isinstance(other, RangeCore):
-            vals = [function(self, x.value if type(x) == Cell else x) for x in other.values()]
+            vals = [function(
+                self,
+                x.value if type(x) == Cell else x
+            ) for x in other.Cells]
+
             return RangeCore(other.cells, vals, nrows = other.nrows, ncols = other.ncols)
+
         else:
             return function(self, other)
 
@@ -465,7 +460,7 @@ def RangeFactory(cellmap = None):
 
     class Range(RangeCore):
 
-        def __init__(self, address, values = None):
-            super(Range, self).__init__(address, values, cellmap = cellmap)       
+        def __init__(self, reference, values = None):
+            super(Range, self).__init__(reference, values, cellmap = cellmap)       
 
     return Range

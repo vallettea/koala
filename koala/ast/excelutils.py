@@ -120,14 +120,14 @@ class Cell(object):
     @property
     def value(self):
         if self.__is_range:
-            return self.__value.value
+            return self.__value.values
         else:
             return self.__value
 
     @value.setter
     def value(self, new_value):
         if self.__is_range:
-            self.__value.value = new_value
+            self.__value.values = new_value
         else:
             self.__value = new_value
 
@@ -654,7 +654,7 @@ def find_corresponding_index(list, criteria):
 
 def check_length(range1, range2):
     
-    if len(range1.values()) != len(range2.values()):
+    if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
     else:
         return range2
@@ -664,7 +664,8 @@ def extract_numeric_values(*args):
 
     for arg in args:
         if isinstance(arg, collections.Iterable):
-            temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+            temp = [x for x in arg.values if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif type(arg) is tuple:
             temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges

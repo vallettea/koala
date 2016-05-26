@@ -25,12 +25,12 @@ class Test_Excel(unittest.TestCase):
     def test_Range_getter(self):
         range = Range('Sheet1!A1:A3', [10, 20, 30])
         print 'RANGE2', range
-        self.assertEqual(range.value, [10, 20, 30])
+        self.assertEqual(range.values, [10, 20, 30])
 
     def test_Range_setter(self):
         range = Range('A1:A3', [10, 20, 30])
-        range.value = [33, 44, 55]
-        self.assertEqual(range.values(), [33, 44, 55])
+        range.values = [33, 44, 55]
+        self.assertEqual(range.values, [33, 44, 55])
 
     def test_range_sizes(self):
         range = Range('D1:F2', [1, 2, 3, 4, 5, 6])
@@ -71,9 +71,10 @@ class Test_Excel(unittest.TestCase):
         with self.assertRaises(ValueError):
             Range('A3', [1])
 
-    def test_range_must_not_be_scalar_2(self):
-        with self.assertRaises(ValueError):
-            Range('A3:A3', [1])
+    # # This test is deprecated for now
+    # def test_range_must_not_be_scalar_2(self):
+    #     with self.assertRaises(ValueError):
+    #         Range('A3:A3', [1])
 
     def test_get_values(self):
         range1 = Range('D4:D6', [1, 2, 3])
@@ -106,7 +107,7 @@ class Test_Excel(unittest.TestCase):
         range1 = Range('A1:A3', [1, 10, 3])
         range2 = Range('B1:B3', [3, 3, 1])
 
-        self.assertEqual(Range.apply_all('add', range1, range2, (1, 'C')).values(), [4, 13, 4])
+        self.assertEqual(Range.apply_all('add', range1, range2, (1, 'C')).values, [4, 13, 4])
 
     # SUBSTRACT
     def test_substract_one(self):

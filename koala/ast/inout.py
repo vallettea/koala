@@ -169,7 +169,7 @@ def dump(self, fname):
             range = cell.range
             value = {
                 "cells": range.cells,
-                "values": range.value,
+                "values": range.values,
                 "nrows": range.nrows,
                 "ncols": range.ncols
             }
