@@ -281,11 +281,13 @@ class Spreadsheet(object):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
 
+        # if addr == "Cashflow!L76:DG76":
+        #     print 'Resetting', addr
         # update cells
         if not cell.is_range:
-            self.reset_buffer.add(cell)
             cell.value = None
         
+        self.reset_buffer.add(cell)
         cell.need_update = True
 
         for child in self.G.successors_iter(cell):
