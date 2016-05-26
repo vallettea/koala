@@ -97,7 +97,7 @@ class RangeCore(dict):
         result = []
         order = []
 
-        for cell, value in zip(cells, values):
+        for index, cell in enumerate(cells):
             row,col = parse_cell_address(cell)
             order.append((row, col))
             try:
