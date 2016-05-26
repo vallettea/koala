@@ -56,6 +56,7 @@ class Spreadsheet(object):
         self.volatile_to_remove = ["INDEX", "OFFSET"]
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
+        self.debug = True
 
     def prune_graph(self, inputs):
         print '___### Pruning Graph ###___'
@@ -236,7 +237,7 @@ class Spreadsheet(object):
 
 
     def dump(self, fname):
-        dump(sp, fname)
+        dump(self, fname)
 
     def dump2(self, fname):
         dump2(self, fname)
@@ -286,7 +287,7 @@ class Spreadsheet(object):
         # update cells
         if not cell.is_range:
             cell.value = None
-        
+
         self.reset_buffer.add(cell)
         cell.need_update = True
 
@@ -301,7 +302,9 @@ class Spreadsheet(object):
             self.print_value_tree(c.address(), indent+1)
 
     def eval_ref(self, addr1, addr2 = None):
-        debug = False
+        # debug = False
+        # if addr1 == "FA_ProfitShare_Liquids":
+        #     debug = True
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -317,18 +320,27 @@ class Spreadsheet(object):
                 if cell1.is_range:
                     range_name = cell1.address()
 
-                    if cell1.need_update:
-                        
-                        cell1.need_update = False
-                        updated_range = self.update_range(cell1.range)
-                        cell1.range = updated_range
+                    # if addr1 == "FA_ProfitShare_Liquids" and not cell1.need_update:
+                    #     print 'FUCK'
 
-                        return updated_range
+                    if cell1.need_update:
+                        # if debug:
+                        #     print 'INFO', cell1.address(), cell1.need_update, cell1.value
+                        cell1.need_update = False
+                        self.update_range(cell1.range)
+                        # cell1.range = updated_range
+
+                        # if debug:
+                        #     print 'AFTER INFO', cell1.address(), cell1.need_update, cell1.value
+
+                        return cell1.range
                     else:
                         return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
                     cell1.need_update = False
+                    # if self.debug:
+                    #     print 'UPDATING CELL', addr1
                     new_value = self.evaluate(addr1)
                     cell1.value = new_value
 
@@ -358,17 +370,30 @@ class Spreadsheet(object):
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
-        for index, key in enumerate(range): # only ranges with need_update to True are updated, so all values are None and need evaluation
+        # debug = False
+        # # print 'UPDATING', range.name
+        # if range.name == 'Calculations!L278:DG278':
+        #     debug = True
+        #     self.debug = True
+        #     print 'UPDATING', range.name
+
+        # if self.debug:
+        #     print 'UPDATING RANGE', range.name
+
+        for index, key in enumerate(range.order): # only ranges with need_update to True are updated, so all values are None and need evaluation
             addr = get_cell_address(range.sheet, key)
 
             if self.cellmap[addr].need_update:
                 # evaluating cell
                 new_value = self.evaluate(addr)
-        
+                # if debug:
+                #     print 'New value', addr, new_value
+
                 if addr in self.cellmap:
                     self.cellmap[addr].need_update = False
 
-        return range
+        # if range.name == 'Calculations!L278:DG278':
+        #     self.debug = False
 
     def evaluate(self,cell,is_addr=True):
         if is_addr:
@@ -382,16 +407,22 @@ class Spreadsheet(object):
         if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
             # print "returning constant or cached value for ", cell.address()
             return cell.value
-        
+        # print 'EVAL', cell.address()
         try:
             cell.need_update = False
             if cell.compiled_expression != None:
+                # if cell.address() == 'Calculations!Q287':
+                #     print 'python', cell.python_expression
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
             cell.value = vv
 
             # DEBUG: saving differences
+            # if cell.address() == 'Calculations!Q287':
+            #     print 'FA_ProfitShare_Gas', self.cellmap['FA_ProfitShare_Gas'].value
+            #     print 'FA_ProfitShare_Liquids', self.cellmap['FA_ProfitShare_Liquids'].value
+
             # if cell.address() in self.history:
             #     ori_value = self.history[cell.address()]['original']
             #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
