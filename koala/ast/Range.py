@@ -248,6 +248,27 @@ class RangeCore(dict):
                 return new_value
 
     @staticmethod
+    def find_associated_cell(ref, range):
+        row, col = ref
+
+        # print 'REF', ref, range.order
+
+        if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+            raise Exception('Range is empty, no cell can be associated')
+        elif range.type == "vertical":
+            if (row, range.start[1]) in range.order:
+                return range.cells[range.order.index((row, range.start[1]))]
+            else:
+                return None
+        elif range.type == "horizontal":
+            if (range.start[0], col) in range.order:
+                return range.cells[range.order.index((range.start[0], col))]
+            else:
+                return None
+        else:
+            raise ExcelError('#VALUE!', 'cannot use find_associated_cell on %s' % range.type)
+
+    @staticmethod
     def find_associated_values(ref, first = None, second = None):
         row, col = ref
 

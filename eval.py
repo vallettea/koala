@@ -22,7 +22,8 @@ if __name__ == '__main__':
 
     # files = glob.glob("./data/*.xlsx")
     # file = "./example/example.xlsx"
-    file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
+    # file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
+    file = "../engie/data/input/100021230 - Africa - Angola - CLOV - Oil - Producing.xlsx"
 
     print file
 
@@ -36,17 +37,17 @@ if __name__ == '__main__':
     # sp = sp.prune_graph(["IA_PriceExportGas"])
 
     # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip"))
+    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
 
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip"))
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace("input", "graphs"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     # import cProfile
     # cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
 
-#     sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(10000)
 
     print 'First evaluation', sp.evaluate('outNPV_Proj')
 
@@ -65,7 +66,9 @@ if __name__ == '__main__':
 
 #     import cProfile
 #     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
-    
+    # print 'HEY', xsum(sp.eval_ref("Cashflow!L76:DG76",ref=(81, 'G')))
+
+
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))

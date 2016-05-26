@@ -55,6 +55,23 @@ FUNCTION_MAP = {
       "round": "xround"
       }
 
+IND_FUN = [
+    "SUM",
+    "MIN",
+    "MAX",
+    "SUMPRODUCT",
+    "IRR",
+    "COUNT",
+    "COUNTA",
+    "COUNTIF",
+    "COUNTIFS",
+    "MATCH",
+    "LOOKUP",
+    "INDEX",
+    "AVERAGE",
+    "SUMIF"
+]
+
 ######################################################################################
 # List of excel equivalent functions
 # TODO: needs unit testing
