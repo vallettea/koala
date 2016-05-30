@@ -345,7 +345,13 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     return total
 
 def counta(range):
-    return len(filter(lambda x: x != None, range.values))
+    if isinstance(range, ExcelError):
+        if range.value == '#NULL':
+            return 0
+        else:
+            raise Exception('ExcelError other than #NULL passed to excellib.counta()')
+    else:
+        return len(filter(lambda x: x != None, range.values))
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
     
