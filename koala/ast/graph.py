@@ -57,6 +57,7 @@ class Spreadsheet(object):
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = True
+        self.pending = {}
 
     def prune_graph(self, inputs):
         print '___### Pruning Graph ###___'
@@ -319,39 +320,24 @@ class Spreadsheet(object):
                 if cell1.is_range:
                     range_name = cell1.address()
 
-                    # if debug:
-                    #     print 'FUCK', addr1, cell1.need_update, cell1.value
-
                     if cell1.need_update:
                         # if debug:
-                        #     print 'INFO', cell1.address(), cell1.need_update, cell1.value
                         # cell1.need_update = False
-                        self.update_range(cell1.range, ref)
-                        test = True
+                        self.update_range(cell1.range)
+                        range_need_update = True
                         for c in self.G.successors_iter(cell1):
-                            # print 'COUCOU'
                             if not c.need_update:
-                                test = False
-                                # print 'HELO'
+                                range_need_update = False
                                 break
-                            # print 'RERER'
 
-                        cell1.need_update = test
-                        # cell1.range = updated_range
-
-                        # if debug:
-                        #     print 'AFTER INFO', cell1.address(), cell1.need_update, cell1.value
+                        cell1.need_update = range_need_update
 
                         return cell1.range
                     else:
                         return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    
-                    # if self.debug:
-                    #     print 'UPDATING CELL', addr1
                     new_value = self.evaluate(addr1)
-                    # cell1.need_update = False
                     cell1.value = new_value
                     
                     return new_value
@@ -377,37 +363,29 @@ class Spreadsheet(object):
                 return self.Range('%s:%s' % (addr1, addr2))
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
-    def update_range(self, range, ref = None):
+    def update_range(self, range):
         debug = False
-        # print 'UPDATING', range.name
-        # if range.name == 'Calculations!L278:DG278':
+        # if range.name.startswith('Calculations!K272'):
         #     debug = True
         #     self.debug = True
-        #     print 'UPDATING', range.name
+        #     print 'UPDATING', range.name, ref
 
         # if self.debug:
         #     print 'UPDATING RANGE', range.name
 
-        if ref:
-            addr = RangeCore.find_associated_cell(ref, range)
+        if range.name not in self.pending.keys():
+            self.pending[range.name] = []
 
-            if self.cellmap[addr].need_update:
-                # evaluating cell
-                new_value = self.evaluate(addr)
-        else:
-            for index, key in enumerate(range.order): # only ranges with need_update to True are updated, so all values are None and need evaluation
-                addr = get_cell_address(range.sheet, key)
+        for index, key in enumerate(range.order):
+            addr = get_cell_address(range.sheet, key)
+
+            if addr not in self.pending[range.name]:
+                self.pending[range.name].append(addr)
 
                 if self.cellmap[addr].need_update:
-                    # evaluating cell
                     new_value = self.evaluate(addr)
-                    # if debug:
-                    #     print 'New value', addr, new_value
 
-                    # self.cellmap[addr].need_update = False
-
-            # if range.name == 'Calculations!L278:DG278':
-            #     self.debug = False
+        self.pending[range.name] = []
             
 
     def evaluate(self,cell,is_addr=True):
@@ -422,23 +400,15 @@ class Spreadsheet(object):
         if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
             # print "returning constant or cached value for ", cell.address()
             return cell.value
-        # print 'EVAL', cell.address()
         try:
-            
             if cell.compiled_expression != None:
-                if cell.address() == 'Calculations!Q287':
-                    print 'python', cell.python_expression
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
             cell.value = vv
             cell.need_update = False
-
+            
             # DEBUG: saving differences
-            # if cell.address() == 'Calculations!Q287':
-            #     print 'FA_ProfitShare_Gas', self.cellmap['FA_ProfitShare_Gas'].value
-            #     print 'FA_ProfitShare_Liquids', self.cellmap['FA_ProfitShare_Liquids'].value
-
             if cell.address() in self.history:
                 ori_value = self.history[cell.address()]['original']
                 if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
@@ -452,7 +422,7 @@ class Spreadsheet(object):
                 self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
-            if e.message.startswith("Problem evalling"):
+            if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
@@ -510,14 +480,6 @@ class ASTNode(object):
                 current = current.parent(ast)
 
         return found
-
-    def has_ind_func_parent(self, ast):
-
-        if self.parent(ast) is not None and self.parent(ast).tvalue in IND_FUN:
-            print "PARENT", self.parent(ast).tvalue
-            return True
-        else:
-            return False
 
     def emit(self,ast,context=None):
         """Emit code"""
@@ -633,10 +595,7 @@ class RangeNode(OperandNode):
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
-        ref = ',ref=' + str(self.ref) if self.ref else ''
-
         has_operator_or_func_parent = self.has_operator_or_func_parent(ast)
-        has_ind_func_parent = self.has_ind_func_parent(ast)
 
         if is_a_named_range:
             my_str = "'" + str(self) + "'" 
@@ -672,7 +631,7 @@ class RangeNode(OperandNode):
             to_eval = False
 
         if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
-            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
                         
         if to_eval == False:
             return my_str
@@ -680,10 +639,10 @@ class RangeNode(OperandNode):
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -695,19 +654,17 @@ class RangeNode(OperandNode):
                 return 'resolve_range(' + my_str + ')'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
+            return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
         # elif is_a_range:
         #     return 'eval_range(' + str + ')'
         else:
             if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
-                return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + ref + '))[0]'
-            elif has_ind_func_parent:
-                return 'self.eval_ref(' + my_str + ')'
+                return 'RangeCore.find_associated_values(' + str(self.ref) + ', self.eval_ref(' + my_str + '))[0]'
             else:
-                return 'self.eval_ref(' + my_str + ref + ')'
+                return 'self.eval_ref(' + my_str + ')'
 
         return my_str
     
@@ -725,8 +682,6 @@ class FunctionNode(ASTNode):
 
         # Get the arguments
         args = self.children(ast)
-        
-        ref = ',ref=' + str(self.ref) if self.ref else ''
 
         if fun == "atan2":
             # swap arguments
@@ -767,12 +722,12 @@ class FunctionNode(ASTNode):
             if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 return 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
-                return 'self.eval_ref(index(' + ",".join([n.emit(ast,context=context) for n in args]) + ref + "))"
+                return 'self.eval_ref(index(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         elif fun == "offset":
             if self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 return 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
-                return 'self.eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ref + "))"
+                return 'self.eval_ref(offset(' + ",".join([n.emit(ast,context=context) for n in args]) + "))"
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)

@@ -27,17 +27,17 @@ if __name__ == '__main__':
 
     print file
 
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # sp = sp.prune_graph(["IA_PriceExportGas"])
+    sp = sp.prune_graph(["IA_PriceExportGas"])
 
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
 
     startTime = datetime.now()
     print "Reading from disk...", file
@@ -66,8 +66,6 @@ if __name__ == '__main__':
 
 #     import cProfile
 #     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
-    # print 'HEY', xsum(sp.eval_ref("Cashflow!L76:DG76",ref=(81, 'G')))
-
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
 

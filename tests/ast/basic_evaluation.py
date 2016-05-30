@@ -20,6 +20,7 @@ class Test_Excel(unittest.TestCase):
         file_name = "./tests/ast/basic_evaluation.xlsx"
 
         c = ExcelCompiler(file_name)
+        c.clean_volatile()
         self.sp = c.gen_graph()
         
     def test_D1(self):
