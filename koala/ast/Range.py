@@ -254,7 +254,7 @@ class RangeCore(dict):
         # print 'REF', ref, range.order
 
         if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
-            raise Exception('Range is empty, no cell can be associated')
+            return None
         elif range.type == "vertical":
             if (row, range.start[1]) in range.order:
                 return range.cells[range.order.index((row, range.start[1]))]
@@ -272,6 +272,7 @@ class RangeCore(dict):
     def find_associated_values(ref, first = None, second = None):
         row, col = ref
 
+        # This might be simpler with new RangeCore.apply() strategy
         if isinstance(first, RangeCore):
             try:
                 if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
@@ -286,7 +287,7 @@ class RangeCore(dict):
                         try:
                             first_value = first[(first.start[0], col)].value
                         except:
-                            print 'WHAT', first[(first.start[0], col)]
+                            print 'WHAT', zip(first.order, first.values), (first.start[0], col)
                             raise Exception
                     else:
                         first_value = first[(first.start[0], col)]
@@ -321,6 +322,23 @@ class RangeCore(dict):
             second_value = second
         
         return (first_value, second_value)
+
+    @staticmethod
+    def apply(func, self, other, ref = None):
+        if ref:
+            if isinstance(self, RangeCore) and self.length > 0:
+                cell = RangeCore.find_associated_cell(ref, self)
+            elif other is not None and isinstance(other, RangeCore) and other.length > 0:
+                cell = RangeCore.find_associated_cell(ref, other)
+            else:
+                cell = None
+
+            if cell is not None:
+                return RangeCore.apply_one(func, self, other, ref)
+            else:
+                return RangeCore.apply_all(func, self, other, ref)
+        else:
+            return RangeCore.apply_all(func, self, other, ref)
 
     @staticmethod
     def apply_one(func, self, other, ref = None):

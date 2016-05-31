@@ -536,7 +536,7 @@ class OperatorNode(ASTNode):
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             is_special = self.find_special_function(ast)
-            call = 'apply' + ('_all' if is_special else '_one')
+            call = 'apply' + ('_all' if is_special else '')
             function = self.op_range_translator.get(op)
 
             arg1 = args[0]
