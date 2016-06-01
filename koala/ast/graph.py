@@ -41,7 +41,7 @@ class Spreadsheet(object):
         for c in self.cellmap.values():
             if c.is_range:
                 addr = c.address() if c.is_named_range else c.range.name
-                for cell in c.range.cells:
+                for cell in c.range.addresses:
                     if cell not in addr_to_range:
                         addr_to_range[cell] = [addr]
                     else:
@@ -262,7 +262,7 @@ class Spreadsheet(object):
         # case where the address refers to a range
         if self.cellmap[address].range: 
 
-            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.cells if a in self.cellmap]
+            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.addresses if a in self.cellmap]
             if type(val) != list:
                 val = [val]*len(cell_to_set)
 
@@ -364,6 +364,9 @@ class Spreadsheet(object):
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
+        # This function loops through its Cell references to evaluate the ones that need so
+        # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
+        
         debug = False
         # if range.name.startswith('Calculations!K272'):
         #     debug = True
@@ -409,17 +412,17 @@ class Spreadsheet(object):
             cell.need_update = False
             
             # DEBUG: saving differences
-            # if cell.address() in self.history:
-            #     ori_value = self.history[cell.address()]['original']
-            #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
-            #         self.count += 1
-            #         self.history[cell.address()]['formula'] = str(cell.formula)
-            #         self.history[cell.address()]['priority'] = self.count
-            #         self.history[cell.address()]['python'] = str(cell.python_expression)
+            if cell.address() in self.history:
+                ori_value = self.history[cell.address()]['original']
+                if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
+                    self.count += 1
+                    self.history[cell.address()]['formula'] = str(cell.formula)
+                    self.history[cell.address()]['priority'] = self.count
+                    self.history[cell.address()]['python'] = str(cell.python_expression)
 
-            #     self.history[cell.address()]['new'] = str(cell.value)
-            # else:
-            #     self.history[cell.address()] = {'new': str(cell.value)}
+                self.history[cell.address()]['new'] = str(cell.value)
+            else:
+                self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if e.message is not None and e.message.startswith("Problem evalling"):
@@ -1132,7 +1135,7 @@ class ExcelCompiler(object):
                     rng = self.Range(reference)
 
                     formulas_in_dep = []
-                    for c in rng.cells:
+                    for c in rng.addresses:
                         if c in self.cells:
                             formulas_in_dep.append(self.cells[c].formula)
                         else:
@@ -1150,8 +1153,8 @@ class ExcelCompiler(object):
                     # cells in the range should point to the range as their parent
                     target = virtual_cell 
                     origins = []
-                    # for (child, value, formula) in zip(rng.cells, rng.value, formulas_in_dep):
-                    for child in rng.cells:
+                    # for (child, value, formula) in zip(rng.addresses, rng.value, formulas_in_dep):
+                    for child in rng.addresses:
                         if child not in cellmap:
                             # cell_is_range = isinstance(value, RangeCore)
                             origins.append(self.cells[child])  

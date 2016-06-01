@@ -154,7 +154,7 @@ def right(text,n):
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
     if isinstance(my_range, Range):
-        cells = my_range.cells
+        cells = my_range.addresses
         nr = my_range.nrows
         nc = my_range.ncols
     else:
@@ -408,7 +408,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
 
             for index, item in enumerate(range.values):
                 if index in indexes:
-                    filtered_remaining_cells.append(range.cells[index]) # reconstructing cells from indexes
+                    filtered_remaining_cells.append(range.addresses[index]) # reconstructing cells from indexes
                     filtered_remaining_range.append(item) # reconstructing values from indexes
 
             # WARNING HERE
