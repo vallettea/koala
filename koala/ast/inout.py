@@ -168,7 +168,7 @@ def dump(self, fname):
         if isinstance(cell.range, RangeCore):
             range = cell.range
             value = {
-                "cells": range.cells,
+                "cells": range.addresses,
                 "values": range.values,
                 "nrows": range.nrows,
                 "ncols": range.ncols

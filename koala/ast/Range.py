@@ -115,7 +115,7 @@ class RangeCore(dict):
         # dont allow messing with these params
         self.__cellmap = cellmap
         self.__name = reference if type(reference) != list else name
-        self.__cells = cells
+        self.__addresses = cells
         self.order = order
         self.__length = len(cells)
         self.__nrows = nrows
@@ -137,8 +137,8 @@ class RangeCore(dict):
     def name(self):
         return self.__name
     @property
-    def cells(self):
-        return self.__cells
+    def addresses(self):
+        return self.__addresses
     @property
     def length(self):
         return self.__length
@@ -162,22 +162,22 @@ class RangeCore(dict):
         if self.__cellmap:
             values = []
             for cell in self.cells:
-                values.append(self.__cellmap[cell].value)
+                values.append(cell.value)
             return values
         else:
-            return self.Cells
+            return self.cells
     
     @values.setter
     def values(self, new_values):
         if self.__cellmap:
-            for index, cell in enumerate(self.Cells):
+            for index, cell in enumerate(self.cells):
                 cell.value = new_values[index]
         else:
             for key, value in enumerate(self.order):
                 self[value] = new_values[key]
 
     @property
-    def Cells(self):
+    def cells(self):
         return map(lambda c: self[c], self.order)
 
     # def is_associated(self, other):
@@ -208,7 +208,7 @@ class RangeCore(dict):
         nc = self.ncols
 
         values = self.values
-        cells = self.cells
+        cells = self.addresses
 
         if nr == 1 or nc == 1: # 1-dim range
             if col is not None:
@@ -257,12 +257,12 @@ class RangeCore(dict):
             return None
         elif range.type == "vertical":
             if (row, range.start[1]) in range.order:
-                return range.cells[range.order.index((row, range.start[1]))]
+                return range.addresses[range.order.index((row, range.start[1]))]
             else:
                 return None
         elif range.type == "horizontal":
             if (range.start[0], col) in range.order:
-                return range.cells[range.order.index((range.start[0], col))]
+                return range.addresses[range.order.index((range.start[0], col))]
             else:
                 return None
         else:
@@ -364,25 +364,25 @@ class RangeCore(dict):
             vals = [function(
                 x.value if type(x) == Cell else x,
                 y.value if type(y) == Cell else y
-            ) for x,y in zip(self.Cells, other.Cells)]
+            ) for x,y in zip(self.cells, other.cells)]
 
-            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
+            return RangeCore(self.addresses, vals, nrows = self.nrows, ncols = self.ncols)
         
         elif isinstance(self, RangeCore):
             vals = [function(
                 x.value if type(x) == Cell else x,
                 other
-            ) for x in self.Cells]
+            ) for x in self.cells]
             
-            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
+            return RangeCore(self.addresses, vals, nrows = self.nrows, ncols = self.ncols)
 
         elif isinstance(other, RangeCore):
             vals = [function(
                 self,
                 x.value if type(x) == Cell else x
-            ) for x in other.Cells]
+            ) for x in other.cells]
 
-            return RangeCore(other.cells, vals, nrows = other.nrows, ncols = other.ncols)
+            return RangeCore(other.addresses, vals, nrows = other.nrows, ncols = other.ncols)
 
         else:
             return function(self, other)

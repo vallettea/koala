@@ -41,7 +41,7 @@ class Spreadsheet(object):
         for c in self.cellmap.values():
             if c.is_range:
                 addr = c.address() if c.is_named_range else c.range.name
-                for cell in c.range.cells:
+                for cell in c.range.addresses:
                     if cell not in addr_to_range:
                         addr_to_range[cell] = [addr]
                     else:
@@ -262,7 +262,7 @@ class Spreadsheet(object):
         # case where the address refers to a range
         if self.cellmap[address].range: 
 
-            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.cells if a in self.cellmap]
+            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.addresses if a in self.cellmap]
             if type(val) != list:
                 val = [val]*len(cell_to_set)
 
@@ -1132,7 +1132,7 @@ class ExcelCompiler(object):
                     rng = self.Range(reference)
 
                     formulas_in_dep = []
-                    for c in rng.cells:
+                    for c in rng.addresses:
                         if c in self.cells:
                             formulas_in_dep.append(self.cells[c].formula)
                         else:
@@ -1150,8 +1150,8 @@ class ExcelCompiler(object):
                     # cells in the range should point to the range as their parent
                     target = virtual_cell 
                     origins = []
-                    # for (child, value, formula) in zip(rng.cells, rng.value, formulas_in_dep):
-                    for child in rng.cells:
+                    # for (child, value, formula) in zip(rng.addresses, rng.value, formulas_in_dep):
+                    for child in rng.addresses:
                         if child not in cellmap:
                             # cell_is_range = isinstance(value, RangeCore)
                             origins.append(self.cells[child])  
