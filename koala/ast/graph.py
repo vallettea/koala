@@ -364,6 +364,9 @@ class Spreadsheet(object):
                 # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
+        # This function loops through its Cell references to evaluate the ones that need so
+        # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
+        
         debug = False
         # if range.name.startswith('Calculations!K272'):
         #     debug = True

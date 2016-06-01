@@ -180,29 +180,6 @@ class RangeCore(dict):
     def cells(self):
         return map(lambda c: self[c], self.order)
 
-    # def is_associated(self, other):
-    #     if self.length != other.length:
-    #         return None
-
-    #     nb_v = 0
-    #     nb_c = 0
-
-    #     for index, key in enumerate(self.keys()):
-    #         r1, c1 = key
-    #         r2, c2 = other.keys()[index]
-
-    #         if r1 == r2:
-    #             nb_v += 1
-    #         if c1 == c2:
-    #             nb_c += 1
-
-    #     if nb_v == self.length:
-    #         return 'v'
-    #     elif nb_c == self.length:
-    #         return 'c'
-    #     else:
-    #         return None
-
     def get(self, row, col = None):
         nr = self.nrows
         nc = self.ncols
@@ -249,9 +226,11 @@ class RangeCore(dict):
 
     @staticmethod
     def find_associated_cell(ref, range):
-        row, col = ref
+        # This function retrieves the cell associated to ref in a Range
+        # For instance, in the range [A1, B1, C1], the cell associated to B2 is B1
+        # This is useful to mimic the way Excel works
 
-        # print 'REF', ref, range.order
+        row, col = ref
 
         if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
             return None
@@ -270,9 +249,14 @@ class RangeCore(dict):
 
     @staticmethod
     def find_associated_values(ref, first = None, second = None):
+        # This function is equivalent to RangeCore.find_associated_values, but for up to 2 ranges, and retrieves the value and not the Cell.
+
+        # WARNING:
+        # This function might be deprecated in future evolutions since find_associated_cell might be more elegant
+        # combined with the RangeCore.apply() strategy
+
         row, col = ref
 
-        # This might be simpler with new RangeCore.apply() strategy
         if isinstance(first, RangeCore):
             try:
                 if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
@@ -325,6 +309,9 @@ class RangeCore(dict):
 
     @staticmethod
     def apply(func, self, other, ref = None):
+        # This function decides whether RangeCore.apply_one or RangeCore.apply_all should be used
+        # This is a necessary complement to what is decided in graph.py:OperandNode.emit()
+        
         if ref:
             if isinstance(self, RangeCore) and self.length > 0:
                 cell = RangeCore.find_associated_cell(ref, self)
@@ -342,6 +329,9 @@ class RangeCore(dict):
 
     @staticmethod
     def apply_one(func, self, other, ref = None):
+        # This function applies a function to range operands, only for the cells associated to ref
+        # Note that non-range operands are supported by RangeCore.find_associated_values()
+
         function = func_dict[func]
 
         if ref is None:
@@ -354,6 +344,8 @@ class RangeCore(dict):
 
     @staticmethod
     def apply_all(func, self, other, ref = None):
+        # This function applies a function to range operands, for all the cells in the Ranges
+
         function = func_dict[func]
 
         # Here, the first arg of RangeCore() has little importance: TBC
