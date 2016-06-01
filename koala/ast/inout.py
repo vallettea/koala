@@ -3,7 +3,7 @@ import gzip
 import networkx
 
 from koala.ast.excelutils import Cell
-from Range import RangeCore
+from Range import RangeCore, RangeFactory
 
 from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
@@ -15,10 +15,13 @@ SEP = ";;"
 
 ########### based on custom format #################
 def dump2(self, fname):
-    data = json_graph.node_link_data(self.G)
     outfile = gzip.GzipFile(fname, 'w')
-    for node in data["nodes"]:
-        cell = node["id"]
+
+    # write simple cells first
+    simple_cells = filter(lambda cell: cell.is_range == False, self.G.nodes())
+    range_cells = filter(lambda cell: cell.is_range, self.G.nodes())
+
+    def parse_cell_info(cell):
         formula = cell.formula if cell.formula else "0"
         python_expression = cell.python_expression if cell.python_expression else "0"
         always_eval = "1" if cell.always_eval else "0"
@@ -35,23 +38,23 @@ def dump2(self, fname):
             is_named_range,
             always_eval
         ]) + "\n")
-        
-        # write a bloc a just a value depending on is_range
-        if isinstance(cell.range, RangeCore):
-            range = cell.range
-            outfile.write(SEP.join(map(str,range.value)) + "\n")
-            outfile.write(SEP.join(map(str,range.cells)) + "\n")
-            outfile.write(str(range.nrows) + SEP + str(range.ncols) + "\n")
-        else:
-            outfile.write(str(cell.value) + "\n")
 
-        # end of the block corresponding to a cell
+    for cell in simple_cells:
+        parse_cell_info(cell)
+        outfile.write(str(cell.value) + "\n")
+        outfile.write("====" + "\n")
+
+    outfile.write("-----" + "\n")
+
+    for cell in range_cells:
+        parse_cell_info(cell)
+        outfile.write(cell.range.name + "\n")
         outfile.write("====" + "\n")
 
     # writing the edges
     outfile.write("edges" + "\n")
-    for edge in data["links"]:
-        outfile.write(str(edge["source"]) + SEP + str(edge["target"]) + "\n")
+    for source, target in self.G.edges():
+        outfile.write(source.address() + SEP + target.address() + "\n")
 
     # writing the rest
     outfile.write("outputs" + "\n")
@@ -95,7 +98,13 @@ def load2(fname):
         if line == "====":
             mode = "node0"
             continue
+        if line == "-----":
+            cellmap_temp = {n.address(): n for n in nodes}
+            Range = RangeFactory(cellmap_temp)
+            mode = "node0"
+            continue
         elif line == "edges":
+            cellmap = {n.address(): n for n in nodes}
             mode = "edges"
             continue
         elif line == "outputs":
@@ -118,43 +127,21 @@ def load2(fname):
             mode = "node1"
         elif mode == "node1":
             if is_range:
-                splits = line.split(SEP)
-                if len(splits) > 1:
-                    values = map(to_float, splits)
-                else:
-                    try:
-                        values = [to_float(line)]
-                    except:
-                        values = [None]
-                mode = "node2"
+                name = line
+                vv = Range(name)
+                cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
+                cell.python_expression = python_expression
+                cell.compile() 
+                nodes.append(cell)
             else:
-                values = to_float(line)
-                cell = Cell(address, None, values, formula, is_range, is_named_range, always_eval)
+                value = to_float(line)
+                cell = Cell(address, None, value, formula, is_range, is_named_range, always_eval)
                 cell.python_expression = python_expression
                 cell.compile()                    
                 nodes.append(cell)
-        elif mode == "node2":
-            splits = line.split(SEP)
-            if len(splits) > 1:
-                cells = splits
-            else:
-                cells = [address]
-            mode = "node3"
-        elif mode == "node3":
-            nrows, ncols = map(int, line.split(SEP))
-
-            if values == ['']:
-                cells = []
-                values = []
-            vv = RangeCore(cells, values, nrows = nrows, ncols = ncols)
-            cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
-            cell.python_expression = python_expression
-            cell.compile() 
-            nodes.append(cell)
-
         elif mode == "edges":
             source, target = line.split(SEP)
-            edges.append((int(source), int(target)))
+            edges.append((cellmap[source], cellmap[target]))
         elif mode == "outputs":
             outputs = line.split(SEP)
         elif mode == "inputs":
@@ -163,11 +150,8 @@ def load2(fname):
             k,v = line.split(SEP)
             named_ranges[k] = v
             
-    pos2cell = dict(enumerate(nodes))
-    links = [(pos2cell[i], pos2cell[j]) for (i,j) in edges]
-    print links[0]
-    G = DiGraph(data = links)
-    cellmap = {n.address():n for n in G.nodes()}
+
+    G = DiGraph(data = edges)
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
@@ -185,7 +169,7 @@ def dump(self, fname):
             range = cell.range
             value = {
                 "cells": range.cells,
-                "values": range.value,
+                "values": range.values,
                 "nrows": range.nrows,
                 "ncols": range.ncols
             }

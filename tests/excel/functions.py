@@ -33,10 +33,22 @@ from koala.ast.excellib import (
     sumif,
     sumproduct,
     index,
+    irr,
     iferror
 )
 
 from koala.ast.Range import RangeCore as Range
+
+class Test_Irr(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_irr_basic(self):
+        self.assertEqual(round(irr([-100, 39, 59, 55, 20], 0), 7), 0.2809484)
+
+    def test_irr_with_guess_non_null(self):
+        with self.assertRaises(ValueError):
+            irr([-100, 39, 59, 55, 20], 2)
 
 class Test_Offset(unittest.TestCase):
     def setup(self):

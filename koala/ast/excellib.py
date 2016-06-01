@@ -120,19 +120,19 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
         return 0
 
-    indexes = find_corresponding_index(range.values(), criteria)
+    indexes = find_corresponding_index(range.values, criteria)
 
     if sum_range:
         if isinstance(sum_range, Range):
             return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
-            return sum_range.values()[x] if x < sum_range.length else 0
+            return sum_range.values[x] if x < sum_range.length else 0
         
         return sum(map(f, indexes))
 
     else:
-        return sum(map(lambda x: range.values()[x], indexes))
+        return sum(map(lambda x: range.values[x], indexes))
         
 
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
@@ -217,14 +217,14 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
     
     # index of the last numeric value
     lastnum = -1
-    for i,v in enumerate(lookup_range.values()):
+    for i,v in enumerate(lookup_range.values):
         if isinstance(v,(int,float)):
             if v > value:
                 break
             else:
                 lastnum = i
 
-    output_range = result_range.values() if result_range is not None else lookup_range.values()
+    output_range = result_range.values if result_range is not None else lookup_range.values
 
     if lastnum < 0:
         return ExcelError('#VALUE!', 'No numeric data found in the lookup range')
@@ -284,7 +284,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
 
     lookup_value = type_convert(lookup_value)
     range_length = lookup_range.length
-    range_values = lookup_range.values()
+    range_values = lookup_range.values
 
     if match_type == 1:
         # Verify ascending sort
@@ -338,14 +338,20 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
     for arg in l:
         if isinstance(arg, Range):
-            total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values())) # count inside a list
+            total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values)) # count inside a list
         elif is_number(arg): # int() is used for text representation of numbers
             total += 1
 
     return total
 
 def counta(range):
-    return len(filter(lambda x: x != None, range.values()))
+    if isinstance(range, ExcelError):
+        if range.value == '#NULL':
+            return 0
+        else:
+            raise Exception('ExcelError other than #NULL passed to excellib.counta()')
+    else:
+        return len(filter(lambda x: x != None, range.values))
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
     
@@ -353,7 +359,7 @@ def countif(range, criteria): # Excel reference: https://support.office.com/en-u
     # - wildcards not supported
     # - support of strings with >, <, <=, =>, <> not provided
 
-    valid = find_corresponding_index(range.values(), criteria)
+    valid = find_corresponding_index(range.values, criteria)
 
     return len(valid)
 
@@ -368,7 +374,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
 
 
     if l >= 2:
-        indexes = find_corresponding_index(args[0].values(), args[1]) # find indexes that match first layer of countif
+        indexes = find_corresponding_index(args[0].values, args[1]) # find indexes that match first layer of countif
 
         remaining_ranges = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 0] # get only ranges
         remaining_criteria = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 1] # get only criteria
@@ -400,7 +406,7 @@ def countifs(*args): # Excel reference: https://support.office.com/en-us/article
             filtered_remaining_cells = []
             filtered_remaining_range = []
 
-            for index, item in enumerate(range.values()):
+            for index, item in enumerate(range.values):
                 if index in indexes:
                     filtered_remaining_cells.append(range.cells[index]) # reconstructing cells from indexes
                     filtered_remaining_range.append(item) # reconstructing values from indexes
@@ -653,7 +659,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
-    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values())
+    return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values)
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
@@ -661,6 +667,52 @@ def iferror(value, value_if_error): # Excel reference: https://support.office.co
         return value_if_error
     else:
         return value
+
+def irr(values, guess = None): # Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
+                               # Numpy reference: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.irr.html
+    if (isinstance(values, Range)):
+        values = values.values
+
+    if guess is not None and guess != 0:
+        raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
+    else:
+        try:
+            return np.irr(values)
+        except Exception as e:
+            return ExcelError('#NUM!', e)
+
+def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
+    
+    if not isinstance(table_array, Range):
+        return ExcelError('#VALUE', 'table_array should be a Range')
+
+    if col_index_num > table_array.ncols:
+        return ExcelError('#VALUE', 'col_index_num is greater than the number of cols in table_array')
+
+    first_column = table_array.get(0, 1)
+    result_column = table_array.get(0, col_index_num)
+
+    list = zip(first_column.order, first_column.values)
+    
+    if not range_lookup:
+        if lookup_value not in first_column.values:
+            return ExcelError('#N/A', 'lookup_value not in first column of table_array')
+        else:
+            i = first_column.values.index(lookup_value)
+            ref = first_column.order[i]
+    else:
+        i = None
+        for v in first_column.values:
+            if lookup_value >= v:
+                i = first_column.values.index(v)
+                ref = first_column.order[i]
+            else:
+                break
+
+        if i is None:
+            return ExcelError('#N/A', 'lookup_value smaller than all values of table_array')
+
+    return Range.find_associated_values(ref, result_column)[0]
 
 if __name__ == '__main__':
     pass

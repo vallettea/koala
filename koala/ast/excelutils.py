@@ -109,6 +109,7 @@ class Cell(object):
         self.__formula = str(formula) if formula else None
         self.__value = value
         self.python_expression = None
+        self.need_update = False
         self.always_eval = always_eval
         self.__compiled_expression = None
         self.__is_range = is_range
@@ -119,14 +120,14 @@ class Cell(object):
     @property
     def value(self):
         if self.__is_range:
-            return self.__value.value
+            return self.__value.values
         else:
             return self.__value
 
     @value.setter
     def value(self, new_value):
         if self.__is_range:
-            self.__value.value = new_value
+            self.__value.values = new_value
         else:
             self.__value = new_value
 
@@ -136,6 +137,13 @@ class Cell(object):
             return self.__value
         else:
             return None
+
+    @range.setter
+    def range(self, new_range):
+        if self.__is_range:
+            self.__value = new_range
+        else:
+            raise Exception('Setting a range as non-range Cell %s value' % self.address()) 
 
     @property
     def is_named_range(self):
@@ -293,7 +301,8 @@ def is_range(address):
 def split_range(rng):
     if rng.find('!') > 0:
         start,end = rng.split(':')
-        sh,start = start.split("!")
+        if start.find('!') > 0:
+            sh,start = start.split("!")
         if end.find('!') > 0:
             sh,end = end.split("!")
     else:
@@ -645,7 +654,7 @@ def find_corresponding_index(list, criteria):
 
 def check_length(range1, range2):
     
-    if len(range1.values()) != len(range2.values()):
+    if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
     else:
         return range2
@@ -655,7 +664,8 @@ def extract_numeric_values(*args):
 
     for arg in args:
         if isinstance(arg, collections.Iterable):
-            temp = [x for x in arg.values() if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
+            # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+            temp = [x for x in arg.values if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif type(arg) is tuple:
             temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges

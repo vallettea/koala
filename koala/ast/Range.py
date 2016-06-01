@@ -49,38 +49,41 @@ def check_value(a):
 
 class RangeCore(dict):
 
-    def __init__(self, address, values = None, cellmap = None, nrows = None, ncols = None):
+    def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
-        if type(address) == list: # some Range calculations such as excellib.countifs() use filtered keys
-            cells = address
+        if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
+            cells = reference
         else:
-            address = address.replace('$','')
+            reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(address)
+                cells, nrows, ncols = resolve_range(reference)
             except:
                 raise ValueError('Range must not be a scalar')
 
         cells = list(flatten(cells))
 
+        if cellmap:
+            cells = [cell for cell in cells if cell in cellmap]
+
         # if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
         #     print 'WARNING Range is a scalar', address, cells
 
         # Fill the Range with cellmap values 
-        if cellmap:
-            cells = [cell for cell in cells if cell in cellmap]
+        # if cellmap:
+        #     cells = [cell for cell in cells if cell in cellmap]
 
-            values = []
+        #     values = []
 
-            for cell in cells:
-                if cell in cellmap: # this is to avoid Sheet1!A5 and other empty cells due to A:A style named range
-                    try:
-                        if isinstance(cellmap[cell].value, RangeCore):
-                            raise Exception('Range can\'t be values of Range')
-                        values.append(cellmap[cell].value)
-                    except: # if cellmap is not filled with actual Cells (for tests for instance)
-                        if isinstance(cellmap[cell], RangeCore):
-                            raise Exception('Range can\'t be values of Range')
-                        values.append(cellmap[cell])
+        #     for cell in cells:
+        #         if cell in cellmap: # this is to avoid Sheet1!A5 and other empty cells due to A:A style named range
+        #             try:
+        #                 if isinstance(cellmap[cell].value, RangeCore):
+        #                     raise Exception('Range can\'t be values of Range')
+        #                 values.append(cellmap[cell].value)
+        #             except: # if cellmap is not filled with actual Cells (for tests for instance)
+        #                 if isinstance(cellmap[cell], RangeCore):
+        #                     raise Exception('Range can\'t be values of Range')
+        #                 values.append(cellmap[cell])
 
         if values:
             if len(cells) != len(values):
@@ -94,18 +97,24 @@ class RangeCore(dict):
         result = []
         order = []
 
-        for cell, value in zip(cells, values):
+        for index, cell in enumerate(cells):
             row,col = parse_cell_address(cell)
             order.append((row, col))
             try:
-                if isinstance(value, RangeCore):
-                    raise Exception('Range can\'t be values of Range', address)
-                result.append(((row, col), value))
+                if cellmap:
+                    result.append(((row, col), cellmap[cell]))
+
+                else:
+                    if isinstance(values[index], RangeCore):
+                        raise Exception('Range can\'t be values of Range', reference)
+                    result.append(((row, col), values[index]))
+
             except: # when you don't provide any values
                 result.append(((row, col), None))
 
         # dont allow messing with these params
-        self.__address = address
+        self.__cellmap = cellmap
+        self.__name = reference if type(reference) != list else name
         self.__cells = cells
         self.order = order
         self.__length = len(cells)
@@ -122,12 +131,11 @@ class RangeCore(dict):
         self.__sheet = sheet
         self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
-
         dict.__init__(self, result)
 
     @property
-    def address(self):
-        return self.__address
+    def name(self):
+        return self.__name
     @property
     def cells(self):
         return self.__cells
@@ -150,21 +158,27 @@ class RangeCore(dict):
     def start(self):
         return self.__start
     @property
-    def value(self):
-        return self.values()
-
     def values(self):
-        return map(lambda c: self[c], self.order)
+        if self.__cellmap:
+            values = []
+            for cell in self.cells:
+                values.append(self.__cellmap[cell].value)
+            return values
+        else:
+            return self.Cells
     
-    
-    @value.setter
-    def value(self, new_values):
-        for new_value, cell in zip(new_values, self.cells):
-            self[cell.address] = new_value
+    @values.setter
+    def values(self, new_values):
+        if self.__cellmap:
+            for index, cell in enumerate(self.Cells):
+                cell.value = new_values[index]
+        else:
+            for key, value in enumerate(self.order):
+                self[value] = new_values[key]
 
-    def reset(self):
-        for key in self.keys():
-            self[key] = None
+    @property
+    def Cells(self):
+        return map(lambda c: self[c], self.order)
 
     # def is_associated(self, other):
     #     if self.length != other.length:
@@ -193,14 +207,14 @@ class RangeCore(dict):
         nr = self.nrows
         nc = self.ncols
 
-        values = self.values()
+        values = self.values
         cells = self.cells
 
         if nr == 1 or nc == 1: # 1-dim range
             if col is not None:
                 raise Exception('Trying to access 1-dim range value with 2 coordinates')
             else:
-                return self.values()[row - 1]
+                return values[row - 1]
             
         else: # could be optimised
             indices = range(len(values))
@@ -234,17 +248,49 @@ class RangeCore(dict):
                 return new_value
 
     @staticmethod
+    def find_associated_cell(ref, range):
+        row, col = ref
+
+        # print 'REF', ref, range.order
+
+        if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+            return None
+        elif range.type == "vertical":
+            if (row, range.start[1]) in range.order:
+                return range.cells[range.order.index((row, range.start[1]))]
+            else:
+                return None
+        elif range.type == "horizontal":
+            if (range.start[0], col) in range.order:
+                return range.cells[range.order.index((range.start[0], col))]
+            else:
+                return None
+        else:
+            raise ExcelError('#VALUE!', 'cannot use find_associated_cell on %s' % range.type)
+
+    @staticmethod
     def find_associated_values(ref, first = None, second = None):
         row, col = ref
 
+        # This might be simpler with new RangeCore.apply() strategy
         if isinstance(first, RangeCore):
             try:
                 if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
                     first_value = 0
                 elif first.type == "vertical":
-                    first_value = first[(row, first.start[1])]
+                    if first.__cellmap is not None:
+                        first_value = first[(row, first.start[1])].value
+                    else:
+                        first_value = first[(row, first.start[1])]
                 elif first.type == "horizontal":
-                    first_value = first[(first.start[0], col)]
+                    if first.__cellmap is not None:
+                        try:
+                            first_value = first[(first.start[0], col)].value
+                        except:
+                            print 'WHAT', zip(first.order, first.values), (first.start[0], col)
+                            raise Exception
+                    else:
+                        first_value = first[(first.start[0], col)]
                 else:
                     raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % first.type)
             except ExcelError as e:
@@ -258,17 +304,41 @@ class RangeCore(dict):
                 if (second.length) == 0: # if a Range is empty, it means normally that all its cells are empty
                     second_value = 0
                 elif second.type == "vertical":
-                    second_value = second[(row, second.start[1])]
+                    if second.__cellmap is not None:
+                        second_value = second[(row, second.start[1])].value
+                    else:
+                        second_value = second[(row, second.start[1])]
                 elif second.type == "horizontal":
-                    second_value = second[(second.start[0], col)]
+                    if second.__cellmap is not None:
+                        second_value = second[(second.start[0], col)].value
+                    else:
+                        second_value = second[(second.start[0], col)]
                 else:
                     raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
-            except Exception as e:
+
+            except ExcelError as e:
                 raise Exception('Second argument of Range operation is not valid: ' + e)
         else:
             second_value = second
         
         return (first_value, second_value)
+
+    @staticmethod
+    def apply(func, self, other, ref = None):
+        if ref:
+            if isinstance(self, RangeCore) and self.length > 0:
+                cell = RangeCore.find_associated_cell(ref, self)
+            elif other is not None and isinstance(other, RangeCore) and other.length > 0:
+                cell = RangeCore.find_associated_cell(ref, other)
+            else:
+                cell = None
+
+            if cell is not None:
+                return RangeCore.apply_one(func, self, other, ref)
+            else:
+                return RangeCore.apply_all(func, self, other, ref)
+        else:
+            return RangeCore.apply_all(func, self, other, ref)
 
     @staticmethod
     def apply_one(func, self, other, ref = None):
@@ -290,15 +360,30 @@ class RangeCore(dict):
         if isinstance(self, RangeCore) and isinstance(other, RangeCore):
             if self.length != other.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-            vals = [function(x, y) for x,y in zip(self.values(), other.values())]
+            
+            vals = [function(
+                x.value if type(x) == Cell else x,
+                y.value if type(y) == Cell else y
+            ) for x,y in zip(self.Cells, other.Cells)]
+
+            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
+        
+        elif isinstance(self, RangeCore):
+            vals = [function(
+                x.value if type(x) == Cell else x,
+                other
+            ) for x in self.Cells]
+            
             return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
 
-        elif isinstance(self, RangeCore):
-            vals = [function(x, other) for x in self.values()]
-            return RangeCore(self.cells, vals, nrows = self.nrows, ncols = self.ncols)
         elif isinstance(other, RangeCore):
-            vals = [function(x, other) for x in other.values()]
+            vals = [function(
+                self,
+                x.value if type(x) == Cell else x
+            ) for x in other.Cells]
+
             return RangeCore(other.cells, vals, nrows = other.nrows, ncols = other.ncols)
+
         else:
             return function(self, other)
 
@@ -414,7 +499,7 @@ def RangeFactory(cellmap = None):
 
     class Range(RangeCore):
 
-        def __init__(self, address, values = None):
-            super(Range, self).__init__(address, values, cellmap = cellmap)       
+        def __init__(self, reference, values = None):
+            super(Range, self).__init__(reference, values, cellmap = cellmap)       
 
     return Range
