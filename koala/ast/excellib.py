@@ -712,7 +712,7 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
         if i is None:
             return ExcelError('#N/A', 'lookup_value smaller than all values of table_array')
 
-    return Range.find_associated_values(ref, result_column)[0]
+    return Range.find_associated_value(ref, result_column)
 
 if __name__ == '__main__':
     pass

@@ -54,6 +54,7 @@ class RangeCore(dict):
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         else:
+            print 'REF', reference
             reference = reference.replace('$','')
             try:
                 cells, nrows, ncols = resolve_range(reference)
@@ -248,64 +249,36 @@ class RangeCore(dict):
             raise ExcelError('#VALUE!', 'cannot use find_associated_cell on %s' % range.type)
 
     @staticmethod
-    def find_associated_values(ref, first = None, second = None):
-        # This function is equivalent to RangeCore.find_associated_values, but for up to 2 ranges, and retrieves the value and not the Cell.
-
-        # WARNING:
-        # This function might be deprecated in future evolutions since find_associated_cell might be more elegant
-        # combined with the RangeCore.apply() strategy
-
+    def find_associated_value(ref, item):
+        # This function is ALMOST equivalent to RangeCore.find_associated_cell, but retrieves the value and not the Cell.
         row, col = ref
 
-        if isinstance(first, RangeCore):
+        if isinstance(item, RangeCore):
             try:
-                if (first.length) == 0: # if a Range is empty, it means normally that all its cells are empty
-                    first_value = 0
-                elif first.type == "vertical":
-                    if first.__cellmap is not None:
-                        first_value = first[(row, first.start[1])].value
+                if (item.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                    item_value = 0
+                elif item.type == "vertical":
+                    if item.__cellmap is not None:
+                        item_value = item[(row, item.start[1])].value
                     else:
-                        first_value = first[(row, first.start[1])]
-                elif first.type == "horizontal":
-                    if first.__cellmap is not None:
+                        item_value = item[(row, item.start[1])]
+                elif item.type == "horizontal":
+                    if item.__cellmap is not None:
                         try:
-                            first_value = first[(first.start[0], col)].value
+                            item_value = item[(item.start[0], col)].value
                         except:
-                            print 'WHAT', zip(first.order, first.values), (first.start[0], col)
+                            print 'WHAT', zip(item.order, item.values), (item.start[0], col)
                             raise Exception
                     else:
-                        first_value = first[(first.start[0], col)]
+                        item_value = item[(item.start[0], col)]
                 else:
-                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % first.type)
+                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % item.type)
             except ExcelError as e:
                 raise Exception('First argument of Range operation is not valid: ' + e)
         else:
-            first_value = first
+            item_value = item
 
-
-        if isinstance(second, RangeCore):
-            try:
-                if (second.length) == 0: # if a Range is empty, it means normally that all its cells are empty
-                    second_value = 0
-                elif second.type == "vertical":
-                    if second.__cellmap is not None:
-                        second_value = second[(row, second.start[1])].value
-                    else:
-                        second_value = second[(row, second.start[1])]
-                elif second.type == "horizontal":
-                    if second.__cellmap is not None:
-                        second_value = second[(second.start[0], col)].value
-                    else:
-                        second_value = second[(second.start[0], col)]
-                else:
-                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % second.type)
-
-            except ExcelError as e:
-                raise Exception('Second argument of Range operation is not valid: ' + e)
-        else:
-            second_value = second
-        
-        return (first_value, second_value)
+        return item_value
 
     @staticmethod
     def apply(func, self, other, ref = None):
@@ -328,56 +301,57 @@ class RangeCore(dict):
             return RangeCore.apply_all(func, self, other, ref)
 
     @staticmethod
-    def apply_one(func, self, other, ref = None):
+    def apply_one(func, first, second, ref = None):
         # This function applies a function to range operands, only for the cells associated to ref
         # Note that non-range operands are supported by RangeCore.find_associated_values()
 
         function = func_dict[func]
 
         if ref is None:
-            first = self
-            second = other
+            first_value = self
+            second_value = other
         else:
-            first, second = RangeCore.find_associated_values(ref, self, other)
+            first_value = RangeCore.find_associated_value(ref, first)
+            second_value = RangeCore.find_associated_value(ref, second)
 
-        return function(first, second)
+        return function(first_value, second_value)
 
     @staticmethod
-    def apply_all(func, self, other, ref = None):
+    def apply_all(func, first, second, ref = None):
         # This function applies a function to range operands, for all the cells in the Ranges
 
         function = func_dict[func]
 
         # Here, the first arg of RangeCore() has little importance: TBC
-        if isinstance(self, RangeCore) and isinstance(other, RangeCore):
-            if self.length != other.length:
+        if isinstance(first, RangeCore) and isinstance(second, RangeCore):
+            if first.length != second.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
             
             vals = [function(
                 x.value if type(x) == Cell else x,
                 y.value if type(y) == Cell else y
-            ) for x,y in zip(self.cells, other.cells)]
+            ) for x,y in zip(first.cells, second.cells)]
 
-            return RangeCore(self.addresses, vals, nrows = self.nrows, ncols = self.ncols)
+            return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
         
-        elif isinstance(self, RangeCore):
+        elif isinstance(first, RangeCore):
             vals = [function(
                 x.value if type(x) == Cell else x,
-                other
-            ) for x in self.cells]
+                second
+            ) for x in first.cells]
             
-            return RangeCore(self.addresses, vals, nrows = self.nrows, ncols = self.ncols)
+            return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
 
-        elif isinstance(other, RangeCore):
+        elif isinstance(second, RangeCore):
             vals = [function(
-                self,
+                first,
                 x.value if type(x) == Cell else x
-            ) for x in other.cells]
+            ) for x in second.cells]
 
-            return RangeCore(other.addresses, vals, nrows = other.nrows, ncols = other.ncols)
+            return RangeCore(second.addresses, vals, nrows = second.nrows, ncols = second.ncols)
 
         else:
-            return function(self, other)
+            return function(first, second)
 
 
     @staticmethod
