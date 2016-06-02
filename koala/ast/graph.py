@@ -185,7 +185,7 @@ class Spreadsheet(object):
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
-                            print 'EXCEL ERROR ENCOUNTERED', repl["value"].value, repl["value"].info
+                            print 'EXCEL ERROR ENCOUNTERED'
                             repl["value"] = "#N/A"
 
                         if repl["expression_type"] == "value":
@@ -218,7 +218,7 @@ class Spreadsheet(object):
             #print self.print_value_ast(ast, node, 1)
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
-            #print expression
+            # print 'EXPR', expression
             #print '->', volatile_string
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
@@ -303,8 +303,6 @@ class Spreadsheet(object):
     def eval_ref(self, addr1, addr2 = None, ref = None):
         # print 'EVAL REF', addr1
         debug = False
-        if addr1 == "FA_ProfitShare_Liquids":
-            debug = True
 
         if isinstance(addr1, ExcelError):
             return addr1
@@ -318,7 +316,7 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
-
+                    
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
                     if associated_addr: # if range is associated to ref, no need to return/update all range
@@ -337,13 +335,13 @@ class Spreadsheet(object):
                                     break
 
                             cell1.need_update = range_need_update
-
                             return cell1.range
                         else:
                             return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    return self.evaluate(addr1)
+                    val = self.evaluate(addr1)
+                    return val
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     # if addr1 == "Cashflow!L39:L50":
                     addr1, addr2 = addr1.split(':')
@@ -488,6 +486,14 @@ class ASTNode(object):
 
         return found
 
+    def has_ind_func_parent(self, ast):     
+      
+        if self.parent(ast) is not None and self.parent(ast).tvalue in IND_FUN:       
+            return True       
+        else:     
+            return False      
+
+
     def emit(self,ast,context=None):
         """Emit code"""
         self.token.tvalue
@@ -602,8 +608,6 @@ class RangeNode(OperandNode):
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
-        has_operator_or_func_parent = self.has_operator_or_func_parent(ast)
-
         if is_a_named_range:
             my_str = "'" + str(self) + "'" 
         else:
@@ -644,30 +648,30 @@ class RangeNode(OperandNode):
             return my_str
 
         # OFFSET HANDLER
-        # elif (parent is not None and parent.tvalue == 'OFFSET' and
-        #      parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-        # elif (parent is not None and parent.tvalue == 'OFFSET' and
-        #      parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-        #     print 'YOUHOUH'
-        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        elif (parent is not None and parent.tvalue == 'OFFSET' and
+             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        elif (parent is not None and parent.tvalue == 'OFFSET' and
+             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
 
             if is_a_named_range:
-                return 'resolve_range(self.named_ranges[' + my_str + '])'
+                return 'resolve_range(self.named_ranges[%s])' % my_str
             else:
-                return 'resolve_range(' + my_str + ')'
-        # elif (parent is not None and parent.tvalue == 'INDEX' and
-        #      parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-        # elif (parent is not None and parent.tvalue == 'INDEX' and
-        #      parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-        # elif is_a_range:
-        #     return 'eval_range(' + str + ')'
+                return 'resolve_range(%s)' % my_str
+        
+        elif (parent is not None and parent.tvalue == 'INDEX' and
+             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        elif (parent is not None and parent.tvalue == 'INDEX' and
+             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
+            return 'self.eval_ref(%s)' % my_str
         else:
             # if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
             #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
