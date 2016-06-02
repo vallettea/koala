@@ -77,10 +77,9 @@ class Test_Excel(unittest.TestCase):
     #         Range('A3:A3', [1])
 
     def test_get_values(self):
-        range1 = Range('D4:D6', [1, 2, 3])
-        range2 = Range('F4:F6', [1, 2, 3])
+        range = Range('D4:D6', [1, 2, 3])
 
-    	self.assertEqual(Range.find_associated_values((4, 'C'), range1, range2), (1, 1))
+    	self.assertEqual(Range.find_associated_value((4, 'C'), range), 1)
 
     def test_get_values_raises_error(self):
         range1 = Range('A1:A3', [1, 2, 3])
