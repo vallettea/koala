@@ -226,7 +226,6 @@ class Spreadsheet(object):
                 expression_type = "formula"
             
             try:
-                # print 'EXPR', expression
                 volatile_value = eval(expression)
             except Exception as e:
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
@@ -432,6 +431,7 @@ class Spreadsheet(object):
             if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
+                # print 'PB', RangeCore.apply('substract',RangeCore.apply('divide',xsum(self.eval_ref("Calculations!L197:L197", ref = (198, 'L'))),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')),(0 if RangeCore.apply('is_strictly_inferior',self.eval_ref('CA_Periods', ref = (198, 'L')),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')) else RangeCore.apply('divide',xsum(self.eval_ref("L197:Calculations!B197", ref = (198, 'L'))),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L'))),(198, 'L'))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
@@ -495,8 +495,8 @@ class ASTNode(object):
 class OperatorNode(ASTNode):
     def __init__(self, args, ref):
         super(OperatorNode,self).__init__(args)
-        self.ref = ref
-
+        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+    
         # convert the operator to python equivalents
         self.opmap = {
                  "^":"**",
@@ -589,8 +589,8 @@ class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
     def __init__(self,args, ref):
         super(RangeNode,self).__init__(args)
-        self.ref = ref # ref is the address of the reference cell  
-    
+        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
     
@@ -637,19 +637,20 @@ class RangeNode(OperandNode):
              parent.children(ast)[0] == self))):
             to_eval = False
 
-        if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
                         
         if to_eval == False:
             return my_str
 
         # OFFSET HANDLER
-        elif (parent is not None and parent.tvalue == 'OFFSET' and
-             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-        elif (parent is not None and parent.tvalue == 'OFFSET' and
-             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # elif (parent is not None and parent.tvalue == 'OFFSET' and
+        #      parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # elif (parent is not None and parent.tvalue == 'OFFSET' and
+        #      parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+        #     print 'YOUHOUH'
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -659,27 +660,25 @@ class RangeNode(OperandNode):
                 return 'resolve_range(self.named_ranges[' + my_str + '])'
             else:
                 return 'resolve_range(' + my_str + ')'
-        elif (parent is not None and parent.tvalue == 'INDEX' and
-             parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-        elif (parent is not None and parent.tvalue == 'INDEX' and
-             parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # elif (parent is not None and parent.tvalue == 'INDEX' and
+        #      parent.children(ast)[1] == self and self.tsubtype == "named_range"):
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # elif (parent is not None and parent.tvalue == 'INDEX' and
+        #      parent.children(ast)[2] == self and self.tsubtype == "named_range"):
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
         # elif is_a_range:
         #     return 'eval_range(' + str + ')'
         else:
-            if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
+            # if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
+            #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            # else:
                 return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-            else:
-                return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-
-        return my_str
     
 class FunctionNode(ASTNode):
     """AST node representing a function call"""
     def __init__(self,args, ref):
         super(FunctionNode,self).__init__(args)
-        self.ref = ref # ref is the address of the reference cell 
+        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell
 
         # map  excel functions onto their python equivalents
         self.funmap = excelfun.FUNCTION_MAP
@@ -729,12 +728,12 @@ class FunctionNode(ASTNode):
             if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 return 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
-                return 'self.eval_ref(index(%s, ref = %s))' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
+                return 'self.eval_ref(index(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
         elif fun == "offset":
             if self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 return 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
-                return 'self.eval_ref(offset(%s, ref = %s))' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
+                return 'self.eval_ref(offset(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
         else:
             # map to the correct name
             f = self.funmap.get(fun,fun)
