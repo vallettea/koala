@@ -21,26 +21,26 @@ from koala.ast.Range import RangeCore
 if __name__ == '__main__':
 
     # file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
-    file = "../engie/data/input/100021237 - Latin America - Brazil - Marlim Sul Module 4 - Oil - New Project.xlsx"
+    file = "../engie/data/input/100021268 - North America - United States - Stampede (Pony-Knotty Head) - Oil - New Project.xlsx"
 
     print file
 
-    ### Graph Generation ###
-    startTime = datetime.now()
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=["outNPV_Proj"])
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # ### Graph Generation ###
+    # startTime = datetime.now()
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=["outNPV_Proj"])
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    ### Graph Pruning ###
-    startTime = datetime.now()
-    sp = sp.prune_graph(["IA_PriceExportGas"])
-    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # ### Graph Pruning ###
+    # startTime = datetime.now()
+    # sp = sp.prune_graph(["IA_PriceExportGas"])
+    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    ### Graph Serialization ###
-    print "Serializing to disk...", file
-    sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    # ### Graph Serialization ###
+    # print "Serializing to disk...", file
+    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
@@ -73,10 +73,12 @@ if __name__ == '__main__':
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-    saving = False
+    saving = True
 
     # saving differences
     if saving:
+        print 'Nb Different', sp.count
+        
         with open('history_dif_tot.json', 'w') as outfile:
             json.dump(sp.history, outfile)
 

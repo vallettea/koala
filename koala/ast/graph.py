@@ -215,11 +215,9 @@ class Spreadsheet(object):
 
         if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
             (node.token.tvalue == "OFFSET"):
-            #print self.print_value_ast(ast, node, 1)
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
-            # print 'EXPR', expression
-            #print '->', volatile_string
+
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
             else:
@@ -301,7 +299,6 @@ class Spreadsheet(object):
             self.print_value_tree(c.address(), indent+1)
 
     def eval_ref(self, addr1, addr2 = None, ref = None):
-        # print 'EVAL REF', addr1
         debug = False
 
         if isinstance(addr1, ExcelError):
@@ -325,8 +322,6 @@ class Spreadsheet(object):
                         range_name = cell1.address()
 
                         if cell1.need_update:
-                            # if debug:
-                            # cell1.need_update = False
                             self.update_range(cell1.range)
                             range_need_update = True
                             for c in self.G.successors_iter(cell1):
@@ -343,7 +338,6 @@ class Spreadsheet(object):
                     val = self.evaluate(addr1)
                     return val
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
-                    # if addr1 == "Cashflow!L39:L50":
                     addr1, addr2 = addr1.split(':')
                     if '!' in addr1:
                         sheet = addr1.split('!')[0]
@@ -353,7 +347,6 @@ class Spreadsheet(object):
                         addr2 = addr2.split('!')[1]
 
                     return self.Range('%s:%s' % (addr1, addr2))
-                    # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
             else:  # addr1 = Sheet1!A1, addr2 = Sheet1!A2
                 if '!' in addr1:
                     sheet = addr1.split('!')[0]
@@ -362,20 +355,12 @@ class Spreadsheet(object):
                 if '!' in addr2:
                     addr2 = addr2.split('!')[1]
                 return self.Range('%s:%s' % (addr1, addr2))
-                # return self.evaluate_range(CellRange('%s:%s' % (addr1, addr2),sheet), False)
 
     def update_range(self, range):
         # This function loops through its Cell references to evaluate the ones that need so
         # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
         
         debug = False
-        # if range.name.startswith('Calculations!K272'):
-        #     debug = True
-        #     self.debug = True
-        #     print 'UPDATING', range.name, ref
-
-        # if self.debug:
-        #     print 'UPDATING RANGE', range.name
 
         if range.name not in self.pending.keys():
             self.pending[range.name] = []
@@ -402,7 +387,6 @@ class Spreadsheet(object):
 
         # no formula, fixed value
         if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
-            # print "returning constant or cached value for ", cell.address()
             return cell.value
         try:
             if cell.compiled_expression != None:
@@ -429,7 +413,6 @@ class Spreadsheet(object):
             if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
-                # print 'PB', RangeCore.apply('substract',RangeCore.apply('divide',xsum(self.eval_ref("Calculations!L197:L197", ref = (198, 'L'))),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')),(0 if RangeCore.apply('is_strictly_inferior',self.eval_ref('CA_Periods', ref = (198, 'L')),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')) else RangeCore.apply('divide',xsum(self.eval_ref("L197:Calculations!B197", ref = (198, 'L'))),self.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L'))),(198, 'L'))
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
@@ -611,7 +594,6 @@ class RangeNode(OperandNode):
         if is_a_named_range:
             my_str = "'" + str(self) + "'" 
         else:
-            # print 'Parsing a range into cells', self
             rng = self.tvalue.replace('$','')
             sheet = context + "!" if context else ""
 
@@ -673,10 +655,7 @@ class RangeNode(OperandNode):
         elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
             return 'self.eval_ref(%s)' % my_str
         else:
-            # if (is_a_named_range or is_a_range) and not has_operator_or_func_parent:
-            #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-            # else:
-                return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
     
 class FunctionNode(ASTNode):
     """AST node representing a function call"""
@@ -957,7 +936,6 @@ def build_ast(expression):
                 try:
                     args.append(stack.pop())
                 except:
-                    print 'STACK', stack, n, expression
                     raise Exception()
             #try:
                 # args = [stack.pop() for _ in range(n.num_args)]

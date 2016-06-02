@@ -65,26 +65,6 @@ class RangeCore(dict):
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
 
-        # if len(cells) > 0 and cells[0] == cells[len(cells) - 1]:
-        #     print 'WARNING Range is a scalar', address, cells
-
-        # Fill the Range with cellmap values 
-        # if cellmap:
-        #     cells = [cell for cell in cells if cell in cellmap]
-
-        #     values = []
-
-        #     for cell in cells:
-        #         if cell in cellmap: # this is to avoid Sheet1!A5 and other empty cells due to A:A style named range
-        #             try:
-        #                 if isinstance(cellmap[cell].value, RangeCore):
-        #                     raise Exception('Range can\'t be values of Range')
-        #                 values.append(cellmap[cell].value)
-        #             except: # if cellmap is not filled with actual Cells (for tests for instance)
-        #                 if isinstance(cellmap[cell], RangeCore):
-        #                     raise Exception('Range can\'t be values of Range')
-        #                 values.append(cellmap[cell])
-
         if values:
             if len(cells) != len(values):
                 raise ValueError("cells and values in a Range must have the same size")
@@ -116,7 +96,7 @@ class RangeCore(dict):
         self.__cellmap = cellmap
         self.__name = reference if type(reference) != list else name
         self.__addresses = cells
-        self.order = order
+        self.__order = order
         self.__length = len(cells)
         self.__nrows = nrows
         self.__ncols = ncols
@@ -139,6 +119,9 @@ class RangeCore(dict):
     @property
     def addresses(self):
         return self.__addresses
+    @property
+    def order(self):
+        return self.__order
     @property
     def length(self):
         return self.__length
@@ -256,14 +239,10 @@ class RangeCore(dict):
                     return None
                 
             else:
-                # print 'Using find_associated_cell on bidimensional range'
-                # print 'TYPE', range.type, range.values, range.sheet
                 return None
         else:
             return None
             
-            # raise ExcelError('#VALUE!', 'cannot use find_associated_cell on %s' % range.type)
-
     @staticmethod
     def find_associated_value(ref, item):
         # This function is ALMOST equivalent to RangeCore.find_associated_cell, but retrieves the value and not the Cell.
@@ -283,12 +262,11 @@ class RangeCore(dict):
                         try:
                             item_value = item[(item.start[0], col)].value
                         except:
-                            print 'WHAT', zip(item.order, item.values), (item.start[0], col)
                             raise Exception
                     else:
                         item_value = item[(item.start[0], col)]
                 else:
-                    raise ExcelError('#VALUE!', 'cannot use find_associated_values on %s' % item.type)
+                    raise ExcelError('#VALUE!', 'cannot use find_associated_value on %s' % item.type)
             except ExcelError as e:
                 raise Exception('First argument of Range operation is not valid: ' + e)
         elif item is None:
@@ -329,7 +307,7 @@ class RangeCore(dict):
     @staticmethod
     def apply_one(func, first, second, ref = None):
         # This function applies a function to range operands, only for the cells associated to ref
-        # Note that non-range operands are supported by RangeCore.find_associated_values()
+        # Note that non-range operands are supported by RangeCore.find_associated_value()
 
         function = func_dict[func]
 
@@ -424,10 +402,6 @@ class RangeCore(dict):
                 a = check_value(a)
             if type(b) != str:
                 b = check_value(b)
-            # if a == 'David':
-            #     print 'Check value', check_value(a)
-
-
             return a == b
         except Exception as e:
             return ExcelError('#N/A', e)
