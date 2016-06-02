@@ -20,29 +20,27 @@ from koala.ast.Range import RangeCore
 
 if __name__ == '__main__':
 
-    # files = glob.glob("./data/*.xlsx")
-    # file = "./example/example.xlsx"
     # file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
     file = "../engie/data/input/100021237 - Latin America - Brazil - Marlim Sul Module 4 - Oil - New Project.xlsx"
 
     print file
 
-    # ### Graph Generation ###
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    ### Graph Generation ###
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # sp = sp.prune_graph(["IA_PriceExportGas"])
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph(["IA_PriceExportGas"])
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Serialization ###
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    ### Graph Serialization ###
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
@@ -72,42 +70,14 @@ if __name__ == '__main__':
 #     import cProfile
 #     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
 
-    # print 'TEST', RangeCore.apply('substract',RangeCore.apply('divide',xsum(sp.eval_ref("Calculations!L197:L197", ref = (198, 'L'))),sp.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')),(0 if RangeCore.apply('is_strictly_inferior',sp.eval_ref('CA_Periods', ref = (198, 'L')),sp.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L')) else RangeCore.apply('divide',xsum(sp.eval_ref("L197:Calculations!B197", ref = (198, 'L'))),sp.eval_ref('localTaxesDepreciation', ref = (198, 'L')),(198, 'L'))),(198, 'L'))
-
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-    # print 'CONV DOLLAR 2', sp.eval_ref('conv_Dollar_Real')
-    # print 'AC209', sp.eval_ref("Calculations!AC209")
-    # print 'AC219', sp.eval_ref("Calculations!AC219")
+    saving = False
 
-    # print 'Test', RangeCore.apply('divide',RangeCore.apply('multiply',sp.eval_ref("Calculations!AC209"),sp.eval_ref('conv_Dollar_Real'),(219, 'AC')),4,(219, 'AC'))
-
-    counting = False
-
-    # counting differences
-    if counting:
-        new_history = {}
-        mini = float("inf")
-
-        for addr, item in sp.history.items():
-            if 'new' in item and 'original' in item:
-
-                cell = sp.cellmap[addr]
-
-                ori_value = item['original']
-                new_value = item['new']
-
-                if is_number(ori_value) and is_number(new_value) and abs(float(ori_value) - float(new_value)) > 0.001:
-                    mini = min(sp.history[addr]["priority"], mini)
-                    new_history[addr] = sp.history[addr]
-
-        print 'NB different', len(new_history)
-        print 'Mini', mini
-
+    # saving differences
+    if saving:
         with open('history_dif_tot.json', 'w') as outfile:
             json.dump(sp.history, outfile)
-        with open('history_dif.json', 'w') as outfile:
-            json.dump(new_history, outfile)
 
     
