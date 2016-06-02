@@ -54,7 +54,6 @@ class RangeCore(dict):
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         else:
-            print 'REF', reference
             reference = reference.replace('$','')
             try:
                 cells, nrows, ncols = resolve_range(reference)
@@ -245,7 +244,10 @@ class RangeCore(dict):
                 return range.addresses[range.order.index((range.start[0], col))]
             else:
                 return None
+        elif range.type == "scalar":
+            return range.addresses[range.order.index((row, col))]
         else:
+            print 'TYPE', range.type, range.values, range.sheet
             raise ExcelError('#VALUE!', 'cannot use find_associated_cell on %s' % range.type)
 
     @staticmethod
