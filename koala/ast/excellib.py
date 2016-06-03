@@ -55,6 +55,23 @@ FUNCTION_MAP = {
       "round": "xround"
       }
 
+IND_FUN = [        
+    "SUM",        
+    "MIN",        
+    "MAX",        
+    "SUMPRODUCT",     
+    "IRR",        
+    "COUNT",      
+    "COUNTA",     
+    "COUNTIF",        
+    "COUNTIFS",       
+    "MATCH",      
+    "LOOKUP",     
+    "INDEX",      
+    "AVERAGE",        
+    "SUMIF"       
+]
+
 ######################################################################################
 # List of excel equivalent functions
 # TODO: needs unit testing
@@ -712,7 +729,7 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
         if i is None:
             return ExcelError('#N/A', 'lookup_value smaller than all values of table_array')
 
-    return Range.find_associated_values(ref, result_column)[0]
+    return Range.find_associated_value(ref, result_column)
 
 if __name__ == '__main__':
     pass
