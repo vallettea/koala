@@ -25,26 +25,31 @@ if __name__ == '__main__':
 
     print file
 
-    # ### Graph Generation ###
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    ### Graph Generation ###
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'])
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
     
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # sp = sp.prune_graph(["IA_PriceExportGas"])
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # import cProfile
+    # cProfile.run('sp = c.gen_graph(outputs=["outNPV_Proj"])', 'stats')
 
-    # ### Graph Serialization ###
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph(["IA_PriceExportGas"])
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+
+    ### Graph Serialization ###
+    startTime = datetime.now()
+    sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    print "___Timing___ Graph wrote in %s" % (str(datetime.now() - startTime))
 
     ### Graph Loading ###
     startTime = datetime.now()
-    print "Reading from disk...", file
     sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace("input", "graphs"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
@@ -67,19 +72,19 @@ if __name__ == '__main__':
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
 
-#     import cProfile
-#     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
+    # import cProfile
+    # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-    saving = True
+    # saving = True
 
-    # saving differences
-    if saving:
-        print 'Nb Different', sp.count
+    # # saving differences
+    # if saving:
+    #     print 'Nb Different', sp.count
         
-        with open('history_dif_tot.json', 'w') as outfile:
-            json.dump(sp.history, outfile)
+    #     with open('history_dif_tot.json', 'w') as outfile:
+    #         json.dump(sp.history, outfile)
 
     

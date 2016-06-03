@@ -1,3 +1,5 @@
+# cython: profile=True
+
 from __future__ import division
 from itertools import izip
 import collections
