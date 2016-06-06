@@ -366,11 +366,14 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     return total
 
 def counta(range):
-    if isinstance(value, ExcelError) or value in ErrorCodes:
+    if isinstance(range, ExcelError) or range in ErrorCodes:
+        print 'range', range, range.value, range.info
+
         if range.value == '#NULL':
             return 0
         else:
-            raise Exception('ExcelError other than #NULL passed to excellib.counta()')
+            return range # return the Excel Error
+            # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
         return len(filter(lambda x: x != None, range.values))
 
