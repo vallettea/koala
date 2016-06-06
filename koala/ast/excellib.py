@@ -367,8 +367,6 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
 def counta(range):
     if isinstance(range, ExcelError) or range in ErrorCodes:
-        print 'range', range, range.value, range.info
-
         if range.value == '#NULL':
             return 0
         else:
