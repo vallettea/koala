@@ -673,6 +673,12 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
+
+    for range in range_list:
+        for item in range.values:
+            # If there is an ExcelError inside a Range, sumproduct should output an ExcelError
+            if isinstance(item, ExcelError):
+                return ExcelError("#N/A", "ExcelErrors are present in the sumproduct items")
     
     reduce(check_length, range_list) # check that all ranges have the same size
 
