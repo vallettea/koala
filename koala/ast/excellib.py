@@ -177,7 +177,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     else:
         cells, nr, nc = my_range
         cells = list(flatten(cells))
-    
+
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
@@ -362,7 +362,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     return total
 
 def counta(range):
-    if isinstance(range, ExcelError):
+    if isinstance(value, ExcelError) or value in ErrorCodes:
         if range.value == '#NULL':
             return 0
         else:
@@ -623,8 +623,8 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
     # This function accepts a list of addresses
     # Maybe think of passing a Range as first argument
 
-    for i in [rows, cols, height, width]:
-        if type(i) == ExcelError:
+    for i in [reference, rows, cols, height, width]:
+        if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
 
     # get first cell address of reference
