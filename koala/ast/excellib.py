@@ -170,6 +170,10 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
+    for i in [my_range, row, col]:
+        if isinstance(i, ExcelError) or i in ErrorCodes:
+            return i
+
     if isinstance(my_range, Range):
         cells = my_range.addresses
         nr = my_range.nrows
