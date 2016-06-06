@@ -39,7 +39,7 @@ class Spreadsheet(object):
 
         addr_to_range = {}        
         for c in self.cellmap.values():
-            if c.is_range:
+            if c.is_range and len(c.range.keys()) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
                 for cell in c.range.addresses:
                     if cell not in addr_to_range:
@@ -167,7 +167,6 @@ class Spreadsheet(object):
         cache = {} # formula => new_formula
 
         for cell in all_volatiles:
-
             if cell["formula"] in cache:
                 new_formula = cache[cell["formula"]]
             else:
@@ -641,6 +640,9 @@ class RangeNode(OperandNode):
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
 
+            # return 'self.eval_ref(%s)' % my_str
+
+            # we don't use eval_ref here to avoid empty cells (which are not included in Ranges)
             if is_a_named_range:
                 return 'resolve_range(self.named_ranges[%s])' % my_str
             else:
@@ -1119,13 +1121,14 @@ class ExcelCompiler(object):
                     
                     rng = self.Range(reference)
 
-                    formulas_in_dep = []
-                    for c in rng.addresses:
-                        if c in self.cells:
-                            formulas_in_dep.append(self.cells[c].formula)
-                        else:
-                            # raise Exception( '%s unavailable' % c)
-                            formulas_in_dep.append(None)
+                    if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
+                        formulas_in_dep = []
+                        for c in rng.addresses:
+                            if c in self.cells:
+                                formulas_in_dep.append(self.cells[c].formula)
+                            else:
+                                # raise Exception( '%s unavailable' % c)
+                                formulas_in_dep.append(None)
                 
                     virtual_cell = Cell(dep, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
@@ -1138,13 +1141,14 @@ class ExcelCompiler(object):
                     # cells in the range should point to the range as their parent
                     target = virtual_cell 
                     origins = []
-                    # for (child, value, formula) in zip(rng.addresses, rng.value, formulas_in_dep):
-                    for child in rng.addresses:
-                        if child not in cellmap:
-                            # cell_is_range = isinstance(value, RangeCore)
-                            origins.append(self.cells[child])  
-                        else:
-                            origins.append(cellmap[child])   
+
+                    if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
+                        for child in rng.addresses:
+                            if child not in cellmap:
+                                # cell_is_range = isinstance(value, RangeCore)
+                                origins.append(self.cells[child])  
+                            else:
+                                origins.append(cellmap[child])   
                 else:
                     # not a range 
                     if dep in self.named_ranges:

@@ -46,7 +46,6 @@ def check_value(a):
     except:
         return 0
 
-
 class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
@@ -58,7 +57,7 @@ class RangeCore(dict):
             try:
                 cells, nrows, ncols = resolve_range(reference)
             except:
-                raise ValueError('Range must not be a scalar')
+                return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
         cells = list(flatten(cells))
 
