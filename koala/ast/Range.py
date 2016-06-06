@@ -393,7 +393,7 @@ class RangeCore(dict):
         try:
             return float(check_value(a)) / float(check_value(b))
         except Exception as e:
-            return ExcelError('#N/A', e)
+            return ExcelError('#DIV/0!', e)
 
     @staticmethod
     def is_equal(a, b):
