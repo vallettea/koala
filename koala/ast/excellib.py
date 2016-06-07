@@ -151,7 +151,7 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     indexes = find_corresponding_index(range.values, criteria)
 
     if sum_range:
-        if isinstance(sum_range, Range):
+        if not isinstance(sum_range, Range):
             return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
@@ -315,21 +315,25 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         return value;
 
     lookup_value = type_convert(lookup_value)
-    range_length = lookup_range.length
-    range_values = lookup_range.values
+    
+    range_values = filter(lambda x: x is not None, lookup_range.values) # filter None values to avoid asc/desc order errors
+    range_length = len(range_values)
 
     if match_type == 1:
         # Verify ascending sort
+
         posMax = -1
         for i in range(range_length):
             current = type_convert(range_values[i])
 
+
+
             if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                return ExcelError('#VALUE!', 'for match_type 0, lookup_range must be sorted ascending')
+                return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            return ('no result in lookup_range for match_type 0')
+            return ('no result in lookup_range for match_type 1')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
@@ -346,11 +350,11 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
-               return ('for match_type 0, lookup_range must be sorted descending')
+               return ('for match_type -1, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
-            return ExcelError('#VALUE!', 'no result in lookup_range for match_type 0')
+            return ExcelError('#VALUE!', 'no result in lookup_range for match_type -1')
         return posMin +1 #Excel starts at 1
 
 
