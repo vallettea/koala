@@ -14,6 +14,8 @@ from .tokenizer import Tokenizer, Token
 from .utils import (coordinate_from_string, column_index_from_string,
                             get_column_letter)
 
+from ..ast.excelutils import CELL_REF_RE, ROW_RANGE_RE, COL_RANGE_RE
+
 class TranslatorError(Exception):
     """
     Raised when a formula can't be translated across cells.
@@ -53,10 +55,6 @@ class Translator(object):
         "Returns a list with the tokens comprising the formula."
         self.tokenizer.parse()
         return self.tokenizer.items
-
-    ROW_RANGE_RE = re.compile(r"(\$?[1-9][0-9]{0,6}):(\$?[1-9][0-9]{0,6})$")
-    COL_RANGE_RE = re.compile(r"(\$?[A-Za-z]{1,3}):(\$?[A-Za-z]{1,3})$")
-    CELL_REF_RE = re.compile(r"(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
     @staticmethod
     def translate_row(row_str, rdelta):
@@ -111,11 +109,11 @@ class Translator(object):
 
         """
         ws_part, range_str = cls.strip_ws_name(range_str)
-        match = cls.ROW_RANGE_RE.match(range_str)  # e.g. `3:4`
+        match = ROW_RANGE_RE.match(range_str)  # e.g. `3:4`
         if match is not None:
             return (ws_part + cls.translate_row(match.group(1), rdelta) + ":"
                     + cls.translate_row(match.group(2), rdelta))
-        match = cls.COL_RANGE_RE.match(range_str)  # e.g. `A:BC`
+        match = COL_RANGE_RE.match(range_str)  # e.g. `A:BC`
         if match is not None:
             return (ws_part + cls.translate_col(match.group(1), cdelta) + ':'
                     + cls.translate_col(match.group(2), cdelta))
@@ -128,7 +126,7 @@ class Translator(object):
             return ws_part + ":".join(
                 cls.translate_range(piece, rdelta, cdelta)
                 for piece in range_str.split(':'))
-        match = cls.CELL_REF_RE.match(range_str)
+        match = CELL_REF_RE.match(range_str)
         if match is None:  # Must be a named range
             return range_str
         return (ws_part + cls.translate_col(match.group(1), cdelta)

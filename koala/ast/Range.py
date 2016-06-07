@@ -7,8 +7,6 @@ from excelutils import *
 
 ### Range Utils ###
 
-CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
-
 cache = {}
 
 def parse_cell_address(ref):

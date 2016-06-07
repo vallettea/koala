@@ -25,13 +25,12 @@ from excelutils import (
     find_corresponding_index,
     check_length,
     extract_numeric_values,
-    resolve_range
+    resolve_range,
+    CELL_REF_RE
 )
 
 from ..ast.Range import RangeCore as Range
 from ExcelError import ExcelError, ErrorCodes
-
-CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
