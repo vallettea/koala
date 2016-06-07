@@ -26,7 +26,7 @@ from inout import *
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = []):
+    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -56,7 +56,7 @@ class Spreadsheet(object):
         self.volatile_to_remove = ["INDEX", "OFFSET"]
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
-        self.debug = True
+        self.debug = debug
         self.pending = {}
 
     def prune_graph(self, inputs):
@@ -128,7 +128,7 @@ class Spreadsheet(object):
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs, debug = self.debug)
 
     def clean_volatile(self):
 
@@ -184,7 +184,8 @@ class Spreadsheet(object):
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
-                            print 'EXCEL ERROR ENCOUNTERED'
+                            if self.debug:
+                                print 'WARNING: Excel error found => replacing with #N/A'
                             repl["value"] = "#N/A"
 
                         if repl["expression_type"] == "value":
@@ -225,6 +226,8 @@ class Spreadsheet(object):
             try:
                 volatile_value = eval(expression)
             except Exception as e:
+                if self.debug:
+                    print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
 
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
@@ -308,7 +311,8 @@ class Spreadsheet(object):
             try:
                 cell1 = self.cellmap[addr1]
             except:
-                print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
+                if self.debug:
+                    print 'WARNING in eval_ref: address %s not found in cellmap, returning #NULL' % addr1
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
@@ -381,7 +385,8 @@ class Spreadsheet(object):
             try:
                 cell = self.cellmap[cell]
             except:
-                print 'Empty cell at '+ cell
+                if self.debug:
+                    print 'WARNING: Empty cell at ' + cell
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)    
 
         # no formula, fixed value
@@ -420,9 +425,10 @@ class Spreadsheet(object):
 class ASTNode(object):
     """A generic node in the AST"""
     
-    def __init__(self,token):
+    def __init__(self,token, debug = False):
         super(ASTNode,self).__init__()
         self.token = token
+        self.debug = debug
     def __str__(self):
         return self.token.tvalue
     def __getattr__(self,name):
@@ -481,10 +487,10 @@ class ASTNode(object):
         self.token.tvalue
     
 class OperatorNode(ASTNode):
-    def __init__(self, args, ref):
+    def __init__(self, args, ref, debug = False):
         super(OperatorNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
-    
+        self.debug = debug
         # convert the operator to python equivalents
         self.opmap = {
                  "^":"**",
@@ -575,16 +581,18 @@ class OperandNode(ASTNode):
 
 class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
-    def __init__(self,args, ref):
+    def __init__(self,args, ref, debug = False):
         super(RangeNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+        self.debug = debug
 
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
         if isinstance(self.tvalue, ExcelError):
-            print 'Excel Error Code found', self.tvalue
+            if self.debug:
+                print 'WARNING: Excel Error Code found', self.tvalue
             return self.tvalue
 
         is_a_range = False
@@ -604,7 +612,8 @@ class RangeNode(OperandNode):
                 try:
                     sh,col,row = split_address(rng)
                 except:
-                    print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
+                    if self.debug:
+                        print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
                     sh = None
 
             if sh:
@@ -661,10 +670,10 @@ class RangeNode(OperandNode):
     
 class FunctionNode(ASTNode):
     """AST node representing a function call"""
-    def __init__(self,args, ref):
+    def __init__(self,args, ref, debug = False):
         super(FunctionNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell
-
+        self.debug = False
         # map  excel functions onto their python equivalents
         self.funmap = excelfun.FUNCTION_MAP
         
@@ -724,19 +733,19 @@ class FunctionNode(ASTNode):
             f = self.funmap.get(fun,fun)
             return f + "(" + ",".join([n.emit(ast,context=context) for n in args]) + ")"
 
-def create_node(t, ref):
+def create_node(t, ref, debug = False):
     """Simple factory function"""
     if t.ttype == "operand":
         if t.tsubtype == "range" or t.tsubtype == "named_range":
-            return RangeNode(t, ref)
+            return RangeNode(t, ref, debug = debug)
         else:
             return OperandNode(t)
     elif t.ttype == "function":
-        return FunctionNode(t, ref)
+        return FunctionNode(t, ref, debug = debug)
     elif t.ttype.startswith("operator"):
-        return OperatorNode(t, ref)
+        return OperatorNode(t, ref, debug = debug)
     else:
-        return ASTNode(t)
+        return ASTNode(t, debug = debug)
 
 class Operator:
     """Small wrapper class to manage operators during shunting yard"""
@@ -994,23 +1003,24 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, file, ignore_sheets = []):
+    def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
         print "___### Initializing Excel Compiler ###___"
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
         archive = read_archive(file_name)
         # Parse cells
-        self.cells = read_cells(archive, ignore_sheets)
+        self.cells = read_cells(archive, ignore_sheets, ignore_hidden)
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
+        self.debug = debug
 
 
     def clean_volatile(self):
         print '___### Cleaning volatiles ###___'
 
-        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
+        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
 
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
@@ -1199,7 +1209,7 @@ class ExcelCompiler(object):
         undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs)
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug)
 
 
 
