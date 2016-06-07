@@ -144,7 +144,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                     else:
                         cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
 
-        if ignore_hidden:
+        if hidden_cols:
             print 'Ignored %i hidden cells in sheet %s' % (nb_hidden, sheet_name)
 
     return cells
