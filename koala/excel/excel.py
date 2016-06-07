@@ -1,5 +1,6 @@
 
 from io import BytesIO
+import re
 
 from koala.xml.constants import (
     SHEET_MAIN_NS,
@@ -10,12 +11,12 @@ from koala.xml.constants import (
     ARC_WORKBOOK,
     ARC_WORKBOOK_RELS,
     WORKSHEET_TYPE,
-    SHARED_STRINGS,
+    SHARED_STRINGS
 )
 
 from koala.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
 from koala.openpyxl.translate import Translator 
-from koala.ast.excelutils import Cell, flatten, resolve_range
+from koala.ast.excelutils import Cell, flatten, resolve_range, CELL_REF_RE, col2num
 
 from koala.openpyxl.text import Text
 from koala.openpyxl.utils import IndexedList
@@ -42,8 +43,10 @@ def read_named_ranges(archive):
     #     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
     # }
 
-def read_cells(archive, ignore_sheets = []):
+def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     global debug
+
+    print '___### Reading Cells from XLSX ###___'
 
     cells = {}
 
@@ -66,56 +69,83 @@ def read_cells(archive, ignore_sheets = []):
         
         root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
+        hidden_cols = False
+
+        if ignore_hidden:
+            hidden_col_min = None
+            hidden_col_max = None
+            nb_hidden = 0
+
+            for col in root.findall('.//{%s}cols/*' % SHEET_MAIN_NS):
+                if 'hidden' in col.attrib and col.attrib['hidden'] == '1':
+                    hidden_cols = True
+                    hidden_col_min = int(col.attrib['min'])
+                    hidden_col_max = int(col.attrib['max'])
+
         for c in root.findall('.//{%s}c/*/..' % SHEET_MAIN_NS):
             cell_data_type = c.get('t', 'n') # if no type assigned, assign 'number'
             cell_address = c.attrib['r']
 
-            cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None}
-            if debug: print 'Cell', cell['a']
-            for child in c:
-                child_data_type = child.get('t', 'n') # if no type assigned, assign 'number'
+            skip = False
 
-                if child.tag == '{%s}f' % SHEET_MAIN_NS :
-                    if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
-                        if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
-                        if "si" in child.attrib:
-                            function_map[child.attrib['si']] = (child.attrib['ref'], Translator(unicode('=' + child.text), cell_address)) # translator of openpyxl needs a unicode argument that starts with '='
-                        # else:
-                        #     print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
-                    if child_data_type == 'shared':
-                        if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si']) 
-                        
-                        ref = function_map[child.attrib['si']][0]
-                        formula = function_map[child.attrib['si']][1]
+            if hidden_cols:
+                found = re.search(CELL_REF_RE, cell_address)
+                col = col2num(found.group(1)) 
 
-                        translated = formula.translate_formula(cell_address)
-                        cell['f'] = translated[1:] # we need to get rid of the '='
+                if col >= hidden_col_min and col <= hidden_col_max:
+                    nb_hidden += 1
+                    skip = True
 
+            if not skip:
+                cell = {'a': '%s!%s' % (sheet_name, cell_address), 'f': None, 'v': None}
+                if debug: print 'Cell', cell['a']
+                for child in c:
+                    child_data_type = child.get('t', 'n') # if no type assigned, assign 'number'
+
+                    if child.tag == '{%s}f' % SHEET_MAIN_NS :
+                        if 'ref' in child.attrib: # the first cell of a shared formula has a 'ref' attribute
+                            if debug: print '*** Found definition of shared formula ***', child.text, child.attrib['ref']
+                            if "si" in child.attrib:
+                                function_map[child.attrib['si']] = (child.attrib['ref'], Translator(unicode('=' + child.text), cell_address)) # translator of openpyxl needs a unicode argument that starts with '='
+                            # else:
+                            #     print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
+                        if child_data_type == 'shared':
+                            if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si']) 
+                            
+                            ref = function_map[child.attrib['si']][0]
+                            formula = function_map[child.attrib['si']][1]
+
+                            translated = formula.translate_formula(cell_address)
+                            cell['f'] = translated[1:] # we need to get rid of the '='
+
+                        else:
+                            cell['f'] = child.text
+
+                    elif child.tag == '{%s}v' % SHEET_MAIN_NS :
+                        if cell_data_type == 's' or cell_data_type == 'str': # value is a string
+                            try: # if it fails, it means that cell content is a string calculated from a formula
+                                cell['v'] = shared_strings[int(child.text)]
+                            except:
+                                cell['v'] = child.text
+                        elif cell_data_type == 'b':
+                            cell['v'] = bool(int(child.text))
+                        elif cell_data_type == 'n':
+                            cell['v'] = _cast_number(child.text)
+
+                    elif child.text is None:
+                        continue
+
+                if cell['f'] is not None or cell['v'] is not None:
+                    always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
+                    
+                    cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
+                    if "!" in cell_address:
+                        cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
                     else:
-                        cell['f'] = child.text
+                        cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
 
-                elif child.tag == '{%s}v' % SHEET_MAIN_NS :
-                    if cell_data_type == 's' or cell_data_type == 'str': # value is a string
-                        try: # if it fails, it means that cell content is a string calculated from a formula
-                            cell['v'] = shared_strings[int(child.text)]
-                        except:
-                            cell['v'] = child.text
-                    elif cell_data_type == 'b':
-                        cell['v'] = bool(int(child.text))
-                    elif cell_data_type == 'n':
-                        cell['v'] = _cast_number(child.text)
-
-                elif child.text is None:
-                    continue
-
-            if cell['f'] is not None or cell['v'] is not None:
-                always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
-                
-                cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
-                if "!" in cell_address:
-                    cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
-                else:
-                    cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
+        if ignore_hidden:
+            print 'Ignored %i hidden cells in sheet %s' % (nb_hidden, sheet_name)
 
     return cells
 
