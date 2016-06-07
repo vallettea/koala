@@ -124,6 +124,18 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
     else:
         return sum(values)
 
+def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
+    
+    index = int(index_num)
+
+    if index <= 0 or index > 254:
+        return ExcelError('#VALUE!', '%s must be between 1 and 254' % str(index_num))
+    elif index > len(values):
+        return ExcelError('#VALUE!', '%s must not be larger than the number of values: %s' % (str(index_num), len(values)))
+    else:
+        return values[index - 1]
+    
+
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 
     # WARNING: 
