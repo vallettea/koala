@@ -627,8 +627,8 @@ class RangeNode(OperandNode):
         # for OFFSET, it will also depends on the position in the formula (1st position required)
         if (parent is not None and
             (parent.tvalue == ':' or
-            (parent.tvalue == 'OFFSET' and 
-             parent.children(ast)[0] == self))):
+            (parent.tvalue == 'OFFSET' and parent.children(ast)[0] == self) or
+            (parent.tvalue == 'CHOOSE' and parent.children(ast)[0] != self and self.tsubtype == "named_range"))):
             to_eval = False
 
         # if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation

@@ -17,7 +17,7 @@ class Test_Excel(unittest.TestCase):
         # This needs to be in setup so that further tests begin from scratch
         file_name = "./tests/ast/basic_evaluation.xlsx"
 
-        c = ExcelCompiler(file_name)
+        c = ExcelCompiler(file_name, debug = True)
         c.clean_volatile()
         self.sp = c.gen_graph()
         
@@ -63,6 +63,8 @@ class Test_Excel(unittest.TestCase):
 
     def test_B17(self):
         self.sp.set_value('Sheet1!A17', 40)
+
+        print 'python', self.sp.cellmap["Sheet1!C17"].python_expression
         self.assertEqual(self.sp.evaluate('Sheet1!C17'), 80)
 
     def test_I17(self):
@@ -136,6 +138,10 @@ class Test_Excel(unittest.TestCase):
     def test_Vlookup_Range_Lookup_is_False_Value_not_Found(self):
         self.sp.set_value('Sheet1!H22', 5)
         self.assertEqual(self.sp.evaluate('Sheet1!P22').value, '#N/A')
+
+    def test_Choose(self):
+        self.sp.set_value('Sheet1!A1', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!A41'), 'George')
 
 if __name__ == '__main__':
     unittest.main()
