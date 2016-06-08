@@ -370,7 +370,6 @@ class Spreadsheet(object):
 
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
-
             if addr not in self.pending[range.name]:
                 self.pending[range.name].append(addr)
 
@@ -400,7 +399,7 @@ class Spreadsheet(object):
             cell.value = vv
             cell.need_update = False
             
-            # DEBUG: saving differences
+            # # DEBUG: saving differences
             # if cell.address() in self.history:
             #     ori_value = self.history[cell.address()]['original']
             #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
@@ -1089,8 +1088,7 @@ class ExcelCompiler(object):
             deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
             # remove dupes
             deps = uniqueify(deps)
-
-
+            
             ###### 2) connect dependencies in cells in graph ####################
 
             # ### LOG
@@ -1113,6 +1111,10 @@ class ExcelCompiler(object):
             #     print logStep, "done"
             
             for dep in deps:
+                # this is to avoid :A1 or A1: dep due to clean_volatiles() returning an ExcelError
+                if dep.startswith(':') or dep.endswith(':'):
+                    dep = dep.replace(':', '')
+
                 # we need an absolute address
                 if dep not in self.named_ranges and "!" not in dep and cursheet != None:
                     dep = cursheet + "!" + dep
