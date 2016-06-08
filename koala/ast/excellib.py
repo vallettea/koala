@@ -79,6 +79,9 @@ def value(text):
     # make the distinction for naca numbers
     if text.find('.') > 0:
         return float(text)
+    elif text.endswith('%'):
+        text = text.replace('%', '')
+        return float(text) / 100
     else:
         return int(text)
 
