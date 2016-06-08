@@ -994,7 +994,7 @@ def cell2code(named_ranges, cell, sheet):
         code = root.emit(ast, context=sheet)
     else:
         ast = None
-        code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
+        code = str('"' + cell.value.encode('utf-8') + '"' if isinstance(cell.value,unicode) else cell.value)
     return code,ast
 
 class ExcelCompiler(object):
@@ -1088,7 +1088,7 @@ class ExcelCompiler(object):
             deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
             # remove dupes
             deps = uniqueify(deps)
-            
+
             ###### 2) connect dependencies in cells in graph ####################
 
             # ### LOG
