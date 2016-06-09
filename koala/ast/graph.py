@@ -668,8 +668,8 @@ class RangeNode(OperandNode):
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
             return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
         # MATCH HANDLER
-        elif (parent is not None and parent.tvalue == 'MATCH' and
-             (parent.children(ast)[0] == self or parent.children(ast)[2] == self)):
+        elif parent is not None and parent.tvalue == 'MATCH' \
+             and (parent.children(ast)[0] == self or len(parent.children(ast)) == 3 and parent.children(ast)[2] == self):
             return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
         elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
             return 'self.eval_ref(%s)' % my_str
