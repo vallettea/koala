@@ -694,6 +694,20 @@ class FunctionNode(ASTNode):
             return "pi"
         elif fun == "if":
             # inline the if
+
+            # check if the 'if' is concerning a Range
+            is_range = False
+            range = None
+            childs = args[0].children(ast)
+
+            for child in childs:
+                if ':' in child.tvalue and child.tvalue != ':':
+                    is_range = True
+                    range = child.tvalue
+                    break
+
+            if is_range: # hack to filter Ranges when necessary,for instance situations like {=IF(A1:A3 > 0; A1:A3; 0)}
+                return 'RangeCore.filter(self.eval_ref("%s"), %s)' % (range, args[0].emit(ast,context=context))
             if len(args) == 2:
                 return "%s if %s else 0" %(args[1].emit(ast,context=context),args[0].emit(ast,context=context))
             elif len(args) == 3:

@@ -205,6 +205,35 @@ class RangeCore(dict):
                 return new_value
 
     @staticmethod
+    def filter(range, bool_range):
+
+        if range.type == 'bidimensional':
+            raise Exception('Cant use filter on bidimensional Ranges')
+
+        filtered_addresses = []
+        filtered_values = []
+
+        for index, value in enumerate(range.values):
+            test_value = bool_range.values[index]
+
+            if type(test_value) != bool:
+                raise Exception('RangeCore.filter must be used with bool Range as a second argument')
+
+            if test_value:
+                filtered_addresses.append(range.addresses[index])
+                filtered_values.append(value)
+
+        ncols = 1
+        nrows = 1
+
+        if range.type == 'vertical':
+            nrows = len(filtered_values)
+        elif range.type == 'horizontal':
+            ncols = len(filtered_values)
+
+        return RangeCore(filtered_addresses, filtered_values, nrows = nrows, ncols = ncols)
+
+    @staticmethod
     def find_associated_cell(ref, range):
         # This function retrieves the cell associated to ref in a Range
         # For instance, in the range [A1, B1, C1], the cell associated to B2 is B1
@@ -340,7 +369,7 @@ class RangeCore(dict):
                 x.value if type(x) == Cell else x,
                 second
             ) for x in first.cells]
-            
+
             return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
 
         elif isinstance(second, RangeCore):
@@ -353,7 +382,6 @@ class RangeCore(dict):
 
         else:
             return function(first, second)
-
 
     @staticmethod
     def add(a, b):
