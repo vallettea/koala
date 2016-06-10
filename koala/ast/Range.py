@@ -42,7 +42,12 @@ def check_value(a):
         else:
             return 0
     except:
-        return 0
+        if a == 'True':
+            return True
+        elif a == 'False':
+            return False
+        else:
+            return 0
 
 class RangeCore(dict):
 
