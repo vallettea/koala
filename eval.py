@@ -1,5 +1,7 @@
 import pyximport; pyximport.install()
 
+import resource
+
 import glob
 import sys
 from datetime import datetime
@@ -20,38 +22,41 @@ from koala.ast.Range import RangeCore
 
 if __name__ == '__main__':
 
-    # file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
-    file = "../engie/data/input/100021268 - North America - United States - Stampede (Pony-Knotty Head) - Oil - New Project.xlsx"
+    folder = 'error_files'
+
+    file = "../engie/data/%s/100021720 - Europe - Norway - Visund Nord - Oil - Producing.xlsx" % folder
 
     print file
 
-    # ### Graph Generation ###
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'])
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=["outNPV_Proj"])
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    ### Graph Generation ###
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = False)
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=["outNPV_Proj"])
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # sp = sp.prune_graph(["IA_PriceExportGas"])
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph(["IA_PriceExportGas"])
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Serialization ###
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    ### Graph Serialization ###
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     # import cProfile
     # cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
 
-    sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(30000)
+    limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
+    resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
 
     ### Graph Evaluation ###
     print 'First evaluation', sp.evaluate('outNPV_Proj')
@@ -79,7 +84,7 @@ if __name__ == '__main__':
     if saving:
         print 'Nb Different', sp.count
         
-        with open('history_dif_tot.json', 'w') as outfile:
+        with open('history_dif.json', 'w') as outfile:
             json.dump(sp.history, outfile)
 
     

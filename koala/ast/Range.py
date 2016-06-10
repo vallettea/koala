@@ -7,8 +7,6 @@ from excelutils import *
 
 ### Range Utils ###
 
-CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
-
 cache = {}
 
 def parse_cell_address(ref):
@@ -46,7 +44,6 @@ def check_value(a):
     except:
         return 0
 
-
 class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
@@ -58,7 +55,7 @@ class RangeCore(dict):
             try:
                 cells, nrows, ncols = resolve_range(reference)
             except:
-                raise ValueError('Range must not be a scalar')
+                return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
         cells = list(flatten(cells))
 
@@ -393,7 +390,7 @@ class RangeCore(dict):
         try:
             return float(check_value(a)) / float(check_value(b))
         except Exception as e:
-            return ExcelError('#N/A', e)
+            return ExcelError('#DIV/0!', e)
 
     @staticmethod
     def is_equal(a, b):
