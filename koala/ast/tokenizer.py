@@ -55,6 +55,7 @@ class ExcelParserTokens:
     TOK_SUBTYPE_CONCAT      = "concatenate";
     TOK_SUBTYPE_INTERSECT   = "intersect";
     TOK_SUBTYPE_UNION       = "union";
+    TOK_SUBTYPE_NONE        = "none";
 
 
 def reverse_rpn(node, ast):
@@ -249,7 +250,6 @@ class ExcelParser(ExcelParserTokens):
     
         # state-dependent character evaluation (order is important)
         while not EOF():
-               
             # double-quoted strings
             # embeds are doubled
             # end marks token
@@ -368,6 +368,7 @@ class ExcelParser(ExcelParserTokens):
                 tokens.add(",", self.TOK_TYPE_ARGUMENT)
                 tokenStack.push(tokens.add("ARRAYROW", self.TOK_TYPE_FUNCTION, self.TOK_SUBTYPE_START))
                 offset += 1
+
                 continue
     
             if (currentChar() == "}"):
@@ -437,6 +438,9 @@ class ExcelParser(ExcelParserTokens):
                 else:
                     tokens.add(currentChar(), self.TOK_TYPE_ARGUMENT)
                 offset += 1
+                if (currentChar() == ","):
+                    tokens.add('None', self.TOK_TYPE_OPERAND, self.TOK_SUBTYPE_NONE)
+                    token = ""
                 continue
     
             # stop subexpression
