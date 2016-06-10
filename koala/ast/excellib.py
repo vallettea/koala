@@ -199,13 +199,13 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
-    if not is_number(row):
+    if row is not None and not is_number(row):
         return ExcelError('#VALUE!', '%s must be a number' % str(row))
 
     if row == 0 and col == 0:
         return ExcelError('#VALUE!', 'No index asked for Range')
 
-    if row > nr:
+    if row is not None and row > nr:
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
     if nr == 1:
@@ -215,8 +215,8 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         return cells[row - 1]
         
     else: # could be optimised
-        if col is None:
-            return ExcelError('#VALUE!', 'Range is 2 dimensional, can not reach value with col = None')
+        if col is None or row is None:
+            return ExcelError('#VALUE!', 'Range is 2 dimensional, can not reach value with 1 arg as None')
 
         if not is_number(col):
             return ExcelError('#VALUE!', '%s must be a number' % str(col))
