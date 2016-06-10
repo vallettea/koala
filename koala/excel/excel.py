@@ -138,7 +138,8 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                 if cell['f'] is not None or cell['v'] is not None:
                     always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
                     
-                    cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
+                    cleaned_formula = cell['f']
+                    # cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
                     if "!" in cell_address:
                         cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
                     else:
