@@ -314,11 +314,13 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             value = value.lower()
         elif type(value) == int:
             value = float(value)
+        elif value is None:
+            value = 0
 
         return value;
 
     lookup_value = type_convert(lookup_value)
-    
+
     range_values = filter(lambda x: x is not None, lookup_range.values) # filter None values to avoid asc/desc order errors
     range_length = len(range_values)
 
