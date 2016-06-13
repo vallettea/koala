@@ -34,7 +34,7 @@ def get_cell_address(sheet, tuple):
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
-        if float(a):
+        if float(a) or isinstance(a, (unicode, str)):
             return a
         else:
             return 0
@@ -425,10 +425,11 @@ class RangeCore(dict):
     @staticmethod
     def is_equal(a, b):
         try:            
-            if type(a) != str:
+            if not isinstance(a, (str, unicode)):
                 a = check_value(a)
-            if type(b) != str:
+            if not isinstance(b, (str, unicode)):
                 b = check_value(b)
+
             return a == b
         except Exception as e:
             return ExcelError('#N/A', e)
@@ -436,9 +437,9 @@ class RangeCore(dict):
     @staticmethod
     def is_not_equal(a, b):
         try:
-            if type(a) != str:
+            if not isinstance(a, (str, unicode)):
                 a = check_value(a)
-            if type(b) != str:
+            if not isinstance(a, (str, unicode)):
                 b = check_value(b)
 
             return a != b
