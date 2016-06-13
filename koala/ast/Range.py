@@ -35,10 +35,7 @@ def get_cell_address(sheet, tuple):
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
         if float(a):
-            if type(a) == float:
-                return round(a, 10)
-            else:
-                return a
+            return a
         else:
             return 0
     except:
