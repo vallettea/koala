@@ -51,6 +51,7 @@ class Spreadsheet(object):
 
         self.outputs = outputs
         self.inputs = inputs
+        self.save_history = False
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
@@ -58,6 +59,9 @@ class Spreadsheet(object):
         self.reset_buffer = set()
         self.debug = debug
         self.pending = {}
+
+    def activate_history(self):
+        self.save_history = True
 
     def prune_graph(self, inputs):
         print '___### Pruning Graph ###___'
@@ -400,21 +404,22 @@ class Spreadsheet(object):
             cell.need_update = False
             
             # DEBUG: saving differences
-            if cell.address() in self.history:
-                ori_value = self.history[cell.address()]['original']
-                if 'new' not in self.history[cell.address()].keys() \
-                    and is_number(ori_value) and is_number(cell.value) \
-                    and abs(float(ori_value) - float(cell.value)) > 0.001:
+            if self.save_history:
+                if cell.address() in self.history:
+                    ori_value = self.history[cell.address()]['original']
+                    if 'new' not in self.history[cell.address()].keys() \
+                        and is_number(ori_value) and is_number(cell.value) \
+                        and abs(float(ori_value) - float(cell.value)) > 0.001:
 
-                    # print 'DIF', cell.address(), cell.value, ori_value, self.count
-                    self.count += 1
-                    self.history[cell.address()]['formula'] = str(cell.formula)
-                    self.history[cell.address()]['priority'] = self.count
-                    self.history[cell.address()]['python'] = str(cell.python_expression)
+                        # print 'DIF', cell.address(), cell.value, ori_value, self.count
+                        self.count += 1
+                        self.history[cell.address()]['formula'] = str(cell.formula)
+                        self.history[cell.address()]['priority'] = self.count
+                        self.history[cell.address()]['python'] = str(cell.python_expression)
 
-                self.history[cell.address()]['new'] = str(cell.value)
-            else:
-                self.history[cell.address()] = {'new': str(cell.value)}
+                    self.history[cell.address()]['new'] = str(cell.value)
+                else:
+                    self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if e.message is not None and e.message.startswith("Problem evalling"):

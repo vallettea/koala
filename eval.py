@@ -22,28 +22,28 @@ from koala.ast.Range import RangeCore
 
 if __name__ == '__main__':
 
-    folder = 'error_files'
+    folder = 'bad_files'
 
-    file = "../engie/data/%s/100021720 - Europe - Norway - Visund Nord - Oil - Producing.xlsx" % folder
+    file = "../engie/data/%s/100021649 - C.I.S. - Kazakhstan - Kashagan (Phase 2) - Oil - New Project.xlsx" % folder
 
     print file
 
-    ### Graph Generation ###
-    startTime = datetime.now()
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = False)
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=["outNPV_Proj"])
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # ### Graph Generation ###
+    # startTime = datetime.now()
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = False)
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=["outNPV_Proj"])
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
-    ### Graph Pruning ###
-    startTime = datetime.now()
-    sp = sp.prune_graph(["IA_PriceExportGas"])
-    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # ### Graph Pruning ###
+    # startTime = datetime.now()
+    # sp = sp.prune_graph(["IA_PriceExportGas"])
+    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    ### Graph Serialization ###
-    print "Serializing to disk...", file
-    sp.dump2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
+    # ### Graph Serialization ###
+    # print "Serializing to disk...", file
+    # sp.dump2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
@@ -63,8 +63,12 @@ if __name__ == '__main__':
 
     tmp = sp.evaluate('IA_PriceExportGas')
 
-    for addr, cell in sp.cellmap.items():
-        sp.history[addr] = {'original': str(cell.value)}
+    history = True
+
+    if history:
+        sp.activate_history();
+        for addr, cell in sp.cellmap.items():
+            sp.history[addr] = {'original': str(cell.value)}
 
     startTime = datetime.now()
     sp.set_value('IA_PriceExportGas', 0)
@@ -78,10 +82,8 @@ if __name__ == '__main__':
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
 
-    saving = True
-
     # saving differences
-    if saving:
+    if history:
         print 'Nb Different', sp.count
         
         with open('history_dif.json', 'w') as outfile:
