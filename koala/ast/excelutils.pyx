@@ -11,6 +11,11 @@ import string
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
+
+ROW_RANGE_RE = re.compile(r"(\$?[1-9][0-9]{0,6}):(\$?[1-9][0-9]{0,6})$")
+COL_RANGE_RE = re.compile(r"(\$?[A-Za-z]{1,3}):(\$?[A-Za-z]{1,3})$")
+CELL_REF_RE = re.compile(r"(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
+
 # We might need to test these util functions
 
 #TODO: only supports rectangular ranges

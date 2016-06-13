@@ -1,5 +1,7 @@
 import pyximport; pyximport.install()
 
+import resource
+
 import glob
 import sys
 from datetime import datetime
@@ -20,8 +22,9 @@ from koala.ast.Range import RangeCore
 
 if __name__ == '__main__':
 
-    # file = "../engie/data/input/100021224 - Far East - Indonesia - Abadi Gas (Phase 1) - Gas - New Project.xlsx"
-    file = "../engie/data/input/100021268 - North America - United States - Stampede (Pony-Knotty Head) - Oil - New Project.xlsx"
+    folder = 'error_files'
+
+    file = "../engie/data/%s/100021720 - Europe - Norway - Visund Nord - Oil - Producing.xlsx" % folder
 
     print file
 
@@ -34,7 +37,6 @@ if __name__ == '__main__':
     # import cProfile
     # cProfile.run('sp = c.gen_graph(outputs=["outNPV_Proj"])', 'stats')
 
-
     sp = c.gen_graph(outputs=["outNPV_Proj"])
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
@@ -44,19 +46,21 @@ if __name__ == '__main__':
     print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
     ### Graph Serialization ###
-    startTime = datetime.now()
-    sp.dump2(file.replace("xlsx", "gzip").replace("input", "graphs"))
-    print "___Timing___ Graph wrote in %s" % (str(datetime.now() - startTime))
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace("input", "graphs"))
+    print "Reading from disk...", file
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     # import cProfile
     # cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
 
-    sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(30000)
+    limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
+    resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
 
     ### Graph Evaluation ###
     print 'First evaluation', sp.evaluate('outNPV_Proj')
@@ -83,8 +87,8 @@ if __name__ == '__main__':
     # # saving differences
     # if saving:
     #     print 'Nb Different', sp.count
-        
-    #     with open('history_dif_tot.json', 'w') as outfile:
-    #         json.dump(sp.history, outfile)
+
+        with open('history_dif.json', 'w') as outfile:
+            json.dump(sp.history, outfile)
 
     

@@ -27,13 +27,12 @@ from excelutils import (
     find_corresponding_index,
     check_length,
     extract_numeric_values,
-    resolve_range
+    resolve_range,
+    CELL_REF_RE
 )
 
 from ..ast.Range import RangeCore as Range
 from ExcelError import ExcelError, ErrorCodes
-
-CELL_REF_RE = re.compile(r"\!?(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
@@ -82,6 +81,9 @@ def value(text):
     # make the distinction for naca numbers
     if text.find('.') > 0:
         return float(text)
+    elif text.endswith('%'):
+        text = text.replace('%', '')
+        return float(text) / 100
     else:
         return int(text)
 
@@ -127,6 +129,18 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
     else:
         return sum(values)
 
+def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
+    
+    index = int(index_num)
+
+    if index <= 0 or index > 254:
+        return ExcelError('#VALUE!', '%s must be between 1 and 254' % str(index_num))
+    elif index > len(values):
+        return ExcelError('#VALUE!', '%s must not be larger than the number of values: %s' % (str(index_num), len(values)))
+    else:
+        return values[index - 1]
+    
+
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 
     # WARNING: 
@@ -142,7 +156,7 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
     indexes = find_corresponding_index(range.values, criteria)
 
     if sum_range:
-        if isinstance(sum_range, Range):
+        if not isinstance(sum_range, Range):
             return TypeError('%s must be a Range' % str(sum_range))
 
         def f(x):
@@ -172,6 +186,10 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
+    for i in [my_range, row, col]:
+        if isinstance(i, ExcelError) or i in ErrorCodes:
+            return i
+
     if isinstance(my_range, Range):
         cells = my_range.addresses
         nr = my_range.nrows
@@ -179,7 +197,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     else:
         cells, nr, nc = my_range
         cells = list(flatten(cells))
-    
+
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
@@ -302,21 +320,25 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         return value;
 
     lookup_value = type_convert(lookup_value)
-    range_length = lookup_range.length
-    range_values = lookup_range.values
+    
+    range_values = filter(lambda x: x is not None, lookup_range.values) # filter None values to avoid asc/desc order errors
+    range_length = len(range_values)
 
     if match_type == 1:
         # Verify ascending sort
+
         posMax = -1
         for i in range(range_length):
             current = type_convert(range_values[i])
 
+
+
             if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                return ExcelError('#VALUE!', 'for match_type 0, lookup_range must be sorted ascending')
+                return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            return ('no result in lookup_range for match_type 0')
+            return ('no result in lookup_range for match_type 1')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
@@ -333,11 +355,11 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
-               return ('for match_type 0, lookup_range must be sorted descending')
+               return ('for match_type -1, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
-            return ExcelError('#VALUE!', 'no result in lookup_range for match_type 0')
+            return ExcelError('#VALUE!', 'no result in lookup_range for match_type -1')
         return posMin +1 #Excel starts at 1
 
 
@@ -364,11 +386,12 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
     return total
 
 def counta(range):
-    if isinstance(range, ExcelError):
+    if isinstance(range, ExcelError) or range in ErrorCodes:
         if range.value == '#NULL':
             return 0
         else:
-            raise Exception('ExcelError other than #NULL passed to excellib.counta()')
+            return range # return the Excel Error
+            # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
         return len(filter(lambda x: x != None, range.values))
 
@@ -625,8 +648,8 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
     # This function accepts a list of addresses
     # Maybe think of passing a Range as first argument
 
-    for i in [rows, cols, height, width]:
-        if type(i) == ExcelError:
+    for i in [reference, rows, cols, height, width]:
+        if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
 
     # get first cell address of reference
@@ -675,6 +698,12 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
+
+    for range in range_list:
+        for item in range.values:
+            # If there is an ExcelError inside a Range, sumproduct should output an ExcelError
+            if isinstance(item, ExcelError):
+                return ExcelError("#N/A", "ExcelErrors are present in the sumproduct items")
     
     reduce(check_length, range_list) # check that all ranges have the same size
 

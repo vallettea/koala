@@ -28,7 +28,7 @@ from inout import *
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = []):
+    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -41,7 +41,7 @@ class Spreadsheet(object):
 
         addr_to_range = {}        
         for c in self.cellmap.values():
-            if c.is_range:
+            if c.is_range and len(c.range.keys()) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
                 for cell in c.range.addresses:
                     if cell not in addr_to_range:
@@ -58,7 +58,7 @@ class Spreadsheet(object):
         self.volatile_to_remove = ["INDEX", "OFFSET"]
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
-        self.debug = True
+        self.debug = debug
         self.pending = {}
 
     def prune_graph(self, inputs):
@@ -130,7 +130,7 @@ class Spreadsheet(object):
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs, debug = self.debug)
 
     def clean_volatile(self):
 
@@ -169,7 +169,6 @@ class Spreadsheet(object):
         cache = {} # formula => new_formula
 
         for cell in all_volatiles:
-
             if cell["formula"] in cache:
                 new_formula = cache[cell["formula"]]
             else:
@@ -187,7 +186,8 @@ class Spreadsheet(object):
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
-                            print 'EXCEL ERROR ENCOUNTERED'
+                            if self.debug:
+                                print 'WARNING: Excel error found => replacing with #N/A'
                             repl["value"] = "#N/A"
 
                         if repl["expression_type"] == "value":
@@ -228,6 +228,8 @@ class Spreadsheet(object):
             try:
                 volatile_value = eval(expression)
             except Exception as e:
+                if self.debug:
+                    print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
 
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
@@ -311,7 +313,8 @@ class Spreadsheet(object):
             try:
                 cell1 = self.cellmap[addr1]
             except:
-                print 'Eval_ref Warning: address %s not found in cellmap, returning #NULL' % addr1
+                if self.debug:
+                    print 'WARNING in eval_ref: address %s not found in cellmap, returning #NULL' % addr1
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
@@ -369,7 +372,6 @@ class Spreadsheet(object):
 
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
-
             if addr not in self.pending[range.name]:
                 self.pending[range.name].append(addr)
 
@@ -384,7 +386,8 @@ class Spreadsheet(object):
             try:
                 cell = self.cellmap[cell]
             except:
-                print 'Empty cell at '+ cell
+                if self.debug:
+                    print 'WARNING: Empty cell at ' + cell
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)    
 
         # no formula, fixed value
@@ -398,7 +401,7 @@ class Spreadsheet(object):
             cell.value = vv
             cell.need_update = False
             
-            # DEBUG: saving differences
+            # # DEBUG: saving differences
             # if cell.address() in self.history:
             #     ori_value = self.history[cell.address()]['original']
             #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
@@ -423,9 +426,10 @@ class Spreadsheet(object):
 class ASTNode(object):
     """A generic node in the AST"""
     
-    def __init__(self,token):
+    def __init__(self,token, debug = False):
         super(ASTNode,self).__init__()
         self.token = token
+        self.debug = debug
     def __str__(self):
         return self.token.tvalue
     def __getattr__(self,name):
@@ -484,10 +488,10 @@ class ASTNode(object):
         self.token.tvalue
     
 class OperatorNode(ASTNode):
-    def __init__(self, args, ref):
+    def __init__(self, args, ref, debug = False):
         super(OperatorNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
-    
+        self.debug = debug
         # convert the operator to python equivalents
         self.opmap = {
                  "^":"**",
@@ -578,16 +582,18 @@ class OperandNode(ASTNode):
 
 class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
-    def __init__(self,args, ref):
+    def __init__(self,args, ref, debug = False):
         super(RangeNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+        self.debug = debug
 
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
     
     def emit(self,ast,context=None):
         if isinstance(self.tvalue, ExcelError):
-            print 'Excel Error Code found', self.tvalue
+            if self.debug:
+                print 'WARNING: Excel Error Code found', self.tvalue
             return self.tvalue
 
         is_a_range = False
@@ -607,7 +613,8 @@ class RangeNode(OperandNode):
                 try:
                     sh,col,row = split_address(rng)
                 except:
-                    print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
+                    if self.debug:
+                        print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
                     sh = None
 
             if sh:
@@ -621,8 +628,8 @@ class RangeNode(OperandNode):
         # for OFFSET, it will also depends on the position in the formula (1st position required)
         if (parent is not None and
             (parent.tvalue == ':' or
-            (parent.tvalue == 'OFFSET' and 
-             parent.children(ast)[0] == self))):
+            (parent.tvalue == 'OFFSET' and parent.children(ast)[0] == self) or
+            (parent.tvalue == 'CHOOSE' and parent.children(ast)[0] != self and self.tsubtype == "named_range"))):
             to_eval = False
 
         # if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
@@ -643,6 +650,9 @@ class RangeNode(OperandNode):
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
 
+            # return 'self.eval_ref(%s)' % my_str
+
+            # we don't use eval_ref here to avoid empty cells (which are not included in Ranges)
             if is_a_named_range:
                 return 'resolve_range(self.named_ranges[%s])' % my_str
             else:
@@ -661,10 +671,10 @@ class RangeNode(OperandNode):
     
 class FunctionNode(ASTNode):
     """AST node representing a function call"""
-    def __init__(self,args, ref):
+    def __init__(self,args, ref, debug = False):
         super(FunctionNode,self).__init__(args)
         self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell
-
+        self.debug = False
         # map  excel functions onto their python equivalents
         self.funmap = excelfun.FUNCTION_MAP
         
@@ -724,19 +734,19 @@ class FunctionNode(ASTNode):
             f = self.funmap.get(fun,fun)
             return f + "(" + ",".join([n.emit(ast,context=context) for n in args]) + ")"
 
-def create_node(t, ref):
+def create_node(t, ref, debug = False):
     """Simple factory function"""
     if t.ttype == "operand":
         if t.tsubtype == "range" or t.tsubtype == "named_range":
-            return RangeNode(t, ref)
+            return RangeNode(t, ref, debug = debug)
         else:
             return OperandNode(t)
     elif t.ttype == "function":
-        return FunctionNode(t, ref)
+        return FunctionNode(t, ref, debug = debug)
     elif t.ttype.startswith("operator"):
-        return OperatorNode(t, ref)
+        return OperatorNode(t, ref, debug = debug)
     else:
-        return ASTNode(t)
+        return ASTNode(t, debug = debug)
 
 class Operator:
     """Small wrapper class to manage operators during shunting yard"""
@@ -986,7 +996,7 @@ def cell2code(named_ranges, cell, sheet):
         code = root.emit(ast, context=sheet)
     else:
         ast = None
-        code = str('"' + cell.value + '"' if isinstance(cell.value,unicode) else cell.value)
+        code = str('"' + cell.value.encode('utf-8') + '"' if isinstance(cell.value,unicode) else cell.value)
     return code,ast
 
 class ExcelCompiler(object):
@@ -994,23 +1004,24 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
-    def __init__(self, file, ignore_sheets = []):
+    def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
         print "___### Initializing Excel Compiler ###___"
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
         archive = read_archive(file_name)
         # Parse cells
-        self.cells = read_cells(archive, ignore_sheets)
+        self.cells = read_cells(archive, ignore_sheets, ignore_hidden)
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
+        self.debug = debug
 
 
     def clean_volatile(self):
         print '___### Cleaning volatiles ###___'
 
-        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges)
+        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
 
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
@@ -1080,7 +1091,6 @@ class ExcelCompiler(object):
             # remove dupes
             deps = uniqueify(deps)
 
-
             ###### 2) connect dependencies in cells in graph ####################
 
             # ### LOG
@@ -1103,6 +1113,10 @@ class ExcelCompiler(object):
             #     print logStep, "done"
             
             for dep in deps:
+                # this is to avoid :A1 or A1: dep due to clean_volatiles() returning an ExcelError
+                if dep.startswith(':') or dep.endswith(':'):
+                    dep = dep.replace(':', '')
+
                 # we need an absolute address
                 if dep not in self.named_ranges and "!" not in dep and cursheet != None:
                     dep = cursheet + "!" + dep
@@ -1121,13 +1135,14 @@ class ExcelCompiler(object):
                     
                     rng = self.Range(reference)
 
-                    formulas_in_dep = []
-                    for c in rng.addresses:
-                        if c in self.cells:
-                            formulas_in_dep.append(self.cells[c].formula)
-                        else:
-                            # raise Exception( '%s unavailable' % c)
-                            formulas_in_dep.append(None)
+                    if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
+                        formulas_in_dep = []
+                        for c in rng.addresses:
+                            if c in self.cells:
+                                formulas_in_dep.append(self.cells[c].formula)
+                            else:
+                                # raise Exception( '%s unavailable' % c)
+                                formulas_in_dep.append(None)
                 
                     virtual_cell = Cell(dep, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
@@ -1140,13 +1155,14 @@ class ExcelCompiler(object):
                     # cells in the range should point to the range as their parent
                     target = virtual_cell 
                     origins = []
-                    # for (child, value, formula) in zip(rng.addresses, rng.value, formulas_in_dep):
-                    for child in rng.addresses:
-                        if child not in cellmap:
-                            # cell_is_range = isinstance(value, RangeCore)
-                            origins.append(self.cells[child])  
-                        else:
-                            origins.append(cellmap[child])   
+
+                    if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
+                        for child in rng.addresses:
+                            if child not in cellmap:
+                                # cell_is_range = isinstance(value, RangeCore)
+                                origins.append(self.cells[child])  
+                            else:
+                                origins.append(cellmap[child])   
                 else:
                     # not a range 
                     if dep in self.named_ranges:
@@ -1197,7 +1213,7 @@ class ExcelCompiler(object):
         undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs)
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug)
 
 
 
