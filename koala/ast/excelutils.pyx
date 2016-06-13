@@ -183,6 +183,10 @@ class Cell(object):
     def compiled_expression(self):
         return self.__compiled_expression
 
+    @compiled_expression.setter
+    def compiled_expression(self, ce):
+        self.__compiled_expression = ce
+
     # code objects are not serializable
     def __getstate__(self):
         d = dict(self.__dict__)
