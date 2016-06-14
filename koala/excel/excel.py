@@ -28,20 +28,26 @@ debug = False
 def read_named_ranges(archive):
 
     root = fromstring(archive.read(ARC_WORKBOOK))
+    sheets = list(detect_worksheets(archive))
 
     dict = {}
 
     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS):
-        if name_node.get('name') == 'tR':
-            dict[name_node.get('name')] = 'Depreciation!A1:A1000'
+        name = name_node.get('name')
+        sheetId = name_node.get('localSheetId')
+
+        if sheetId is not None:
+            sheetId = int(sheetId)
+            key = '%s!%s' % (sheets[sheetId]["title"], name)
         else:
-            dict[name_node.get('name')] = name_node.text.replace('$','').replace(" ","")
+            key = name
+
+        if name == 'tR':
+            dict[key] = 'Depreciation!A1:A1000'
+        else:
+            dict[key] = name_node.text.replace('$','').replace(" ","")
 
     return dict
-    # return {
-    #     name_node.get('name') : name_node.text.replace('$','')
-    #     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
-    # }
 
 def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     global debug
@@ -136,6 +142,9 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                         continue
 
                 if cell['f'] is not None or cell['v'] is not None:
+                    # print 'CELL', '%s!%s' % (sheet_name, cell_address)
+                    # if '%s!%s' % (sheet_name, cell_address) == 'Calculations!L186':
+                    #     print 'Calculations!L186', cell['f']
                     always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
                     
                     cleaned_formula = cell['f']
@@ -144,6 +153,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                         cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
                     else:
                         cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
+
 
         if nb_hidden > 0:
             print 'Ignored %i hidden cells in sheet %s' % (nb_hidden, sheet_name)
