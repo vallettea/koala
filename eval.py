@@ -22,9 +22,9 @@ from koala.ast.Range import RangeCore
 
 if __name__ == '__main__':
 
-    folder = 'bad_files'
+    folder = 'error_files'
 
-    file = "../engie/data/%s/100021649 - C.I.S. - Kazakhstan - Kashagan (Phase 2) - Oil - New Project.xlsx" % folder
+    file = "../engie/data/%s/100032845 - Middle East - Saudi Arabia - Kahla 1 - Gas - New Project.xlsx" % folder
 
     print file
 
@@ -36,19 +36,21 @@ if __name__ == '__main__':
     # sp = c.gen_graph(outputs=["outNPV_Proj"])
     # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
     
+    # print 'Calculations!L186', sp.cellmap['Calculations!L186']
+
     # ### Graph Pruning ###
     # startTime = datetime.now()
     # sp = sp.prune_graph(["IA_PriceExportGas"])
     # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Serialization ###
+    # ## Graph Serialization ###
     # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
+    # sp.dump2(file.replace("xlsx", "gzip").replace(folder, "temp_graphs"))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(folder, "graphs"))
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(folder, "temp_graphs"))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     # import cProfile
@@ -64,7 +66,6 @@ if __name__ == '__main__':
     tmp = sp.evaluate('IA_PriceExportGas')
 
     history = True
-
     if history:
         sp.activate_history();
         for addr, cell in sp.cellmap.items():
