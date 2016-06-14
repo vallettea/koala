@@ -414,6 +414,9 @@ class ExcelParser(ExcelParserTokens):
                 if (len(token) > 0):
                     tokens.add(float(token) / 100, self.TOK_TYPE_OPERAND)
                     token = ""
+                else:
+                    tokens.add('*', self.TOK_TYPE_OP_IN)
+                    tokens.add(0.01, self.TOK_TYPE_OPERAND)
                 # tokens.add(currentChar(), self.TOK_TYPE_OP_POST)
                 offset += 1
                 continue
