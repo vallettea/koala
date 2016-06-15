@@ -113,7 +113,7 @@ class Spreadsheet(object):
                                 done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
+                            const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = isinstance(pred.range, RangeCore), is_named_range=pred.is_named_range, always_eval=pred.always_eval)
                             # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                             # const_node.python_expression = pystr
                             # const_node.compile()
@@ -125,7 +125,7 @@ class Spreadsheet(object):
                 else:
                     # case of range independant of input, we add all children as const
                     if pred.address() not in new_cellmap:
-                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
+                        const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = pred.is_range, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
                         # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                         # const_node.python_expression = pystr
                         # const_node.compile()
