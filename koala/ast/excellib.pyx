@@ -201,13 +201,13 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
-    if not is_number(row):
+    if row is not None and not is_number(row):
         return ExcelError('#VALUE!', '%s must be a number' % str(row))
 
     if row == 0 and col == 0:
         return ExcelError('#VALUE!', 'No index asked for Range')
 
-    if row > nr:
+    if row is not None and row > nr:
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
     if nr == 1:
@@ -217,8 +217,8 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         return cells[row - 1]
         
     else: # could be optimised
-        if col is None:
-            return ExcelError('#VALUE!', 'Range is 2 dimensional, can not reach value with col = None')
+        if col is None or row is None:
+            return ExcelError('#VALUE!', 'Range is 2 dimensional, can not reach value with 1 arg as None')
 
         if not is_number(col):
             return ExcelError('#VALUE!', '%s must be a number' % str(col))
@@ -316,11 +316,13 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             value = value.lower()
         elif type(value) == int:
             value = float(value)
+        elif value is None:
+            value = 0
 
         return value;
 
     lookup_value = type_convert(lookup_value)
-    
+
     range_values = filter(lambda x: x is not None, lookup_range.values) # filter None values to avoid asc/desc order errors
     range_length = len(range_values)
 
@@ -698,6 +700,10 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
+
+    for r in range_list: # if a range has no values (i.e if it's empty)
+        if len(r.values) == 0:
+            return 0
 
     for range in range_list:
         for item in range.values:

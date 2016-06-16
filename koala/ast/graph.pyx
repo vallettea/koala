@@ -34,6 +34,14 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.named_ranges = named_ranges
 
+        local_named_ranges = {}
+
+        for n in named_ranges:
+            if n.find('!') > 0:
+                local_named_ranges[n.split('!')[1]] = n
+
+        self.local_named_ranges = local_named_ranges
+
         addr_to_name = {}
         for name in named_ranges:
             addr_to_name[named_ranges[name]] = name
@@ -53,6 +61,7 @@ class Spreadsheet(object):
 
         self.outputs = outputs
         self.inputs = inputs
+        self.save_history = False
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
@@ -60,6 +69,9 @@ class Spreadsheet(object):
         self.reset_buffer = set()
         self.debug = debug
         self.pending = {}
+
+    def activate_history(self):
+        self.save_history = True
 
     def prune_graph(self, inputs):
         print '___### Pruning Graph ###___'
@@ -176,20 +188,24 @@ class Spreadsheet(object):
                     parsed = parse_cell_address(cell["address"])
                 else:
                     parsed = ""
-                e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
+                e = shunting_yard(cell["formula"], self.named_ranges, sheet = cell["sheet"], ref=parsed, tokenize_range = True)
                 ast,root = build_ast(e)
-                code = root.emit(ast)
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
                 new_formula = cell["formula"]
+
+                # Replace named_ranges by their local equivalent in the Excel formula, only when necessary
+                if cell['sheet'] is not None:
+                    for n in self.local_named_ranges:
+                        new_formula = new_formula.replace(n, self.local_named_ranges[n])
+
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
                             if self.debug:
                                 print 'WARNING: Excel error found => replacing with #N/A'
                             repl["value"] = "#N/A"
-
                         if repl["expression_type"] == "value":
                             new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
                         else:
@@ -401,18 +417,23 @@ class Spreadsheet(object):
             cell.value = vv
             cell.need_update = False
             
-            # # DEBUG: saving differences
-            # if cell.address() in self.history:
-            #     ori_value = self.history[cell.address()]['original']
-            #     if is_number(ori_value) and is_number(cell.value) and abs(float(ori_value) - float(cell.value)) > 0.001:
-            #         self.count += 1
-            #         self.history[cell.address()]['formula'] = str(cell.formula)
-            #         self.history[cell.address()]['priority'] = self.count
-            #         self.history[cell.address()]['python'] = str(cell.python_expression)
+            # DEBUG: saving differences
+            if self.save_history:
+                if cell.address() in self.history:
+                    ori_value = self.history[cell.address()]['original']
+                    if 'new' not in self.history[cell.address()].keys() \
+                        and is_number(ori_value) and is_number(cell.value) \
+                        and abs(float(ori_value) - float(cell.value)) > 0.001:
 
-            #     self.history[cell.address()]['new'] = str(cell.value)
-            # else:
-            #     self.history[cell.address()] = {'new': str(cell.value)}
+                        # print 'DIF', cell.address(), cell.value, ori_value, self.count
+                        self.count += 1
+                        self.history[cell.address()]['formula'] = str(cell.formula)
+                        self.history[cell.address()]['priority'] = self.count
+                        self.history[cell.address()]['python'] = str(cell.python_expression)
+
+                    self.history[cell.address()]['new'] = str(cell.value)
+                else:
+                    self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if e.message is not None and e.message.startswith("Problem evalling"):
@@ -448,7 +469,8 @@ class ASTNode(object):
         found = False
         current = self
 
-        special_functions = ['sumproduct', 'match']
+        special_functions = ['sumproduct']
+        # special_functions = ['sumproduct', 'match']
         break_functions = ['index']
 
         while current is not None:
@@ -664,6 +686,10 @@ class RangeNode(OperandNode):
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
             return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+        # MATCH HANDLER
+        elif parent is not None and parent.tvalue == 'MATCH' \
+             and (parent.children(ast)[0] == self or len(parent.children(ast)) == 3 and parent.children(ast)[2] == self):
+            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
         elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
             return 'self.eval_ref(%s)' % my_str
         else:
@@ -692,6 +718,20 @@ class FunctionNode(ASTNode):
             return "pi"
         elif fun == "if":
             # inline the if
+
+            # check if the 'if' is concerning a Range
+            is_range = False
+            range = None
+            childs = args[0].children(ast)
+
+            for child in childs:
+                if ':' in child.tvalue and child.tvalue != ':':
+                    is_range = True
+                    range = child.tvalue
+                    break
+
+            if is_range: # hack to filter Ranges when necessary,for instance situations like {=IF(A1:A3 > 0; A1:A3; 0)}
+                return 'RangeCore.filter(self.eval_ref("%s"), %s)' % (range, args[0].emit(ast,context=context))
             if len(args) == 2:
                 return "%s if %s else 0" %(args[1].emit(ast,context=context),args[0].emit(ast,context=context))
             elif len(args) == 3:
@@ -755,7 +795,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
+def shunting_yard(expression, named_ranges, sheet = None, ref = '', tokenize_range = False):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -772,6 +812,10 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
     Example:
     Cell C2 has the following formula 'A1:A3 + B1:B3'.
     The output will actually be A2 + B2, because the formula is relative to cell C2.
+    
+    The sheet is necessary to handle local named_ranges.
+    We need to sheet to check if the named_range ahs a local version, in which this version will be used.
+
     """
 
     #remove leading =
@@ -796,9 +840,16 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
         elif t.ttype == "subexpression" and t.tsubtype == "stop":
             t.tvalue = ')'
             tokens.append(t)
-        elif t.ttype == "operand" and t.tsubtype == "range" and t.tvalue in named_ranges:
-            t.tsubtype = "named_range"
-            tokens.append(t)
+        elif t.ttype == "operand" and t.tsubtype == "range":
+            if sheet is not None and '%s!%s' % (sheet, t.tvalue) in named_ranges: # handles local named_ranges when necessary
+                t.tvalue = '%s!%s' % (sheet, t.tvalue)
+                t.tsubtype = "named_range"
+                tokens.append(t)
+            elif t.tvalue in named_ranges:
+                t.tsubtype = "named_range"
+                tokens.append(t)
+            else:
+                tokens.append(t)
         else:
             tokens.append(t)
 
@@ -991,7 +1042,7 @@ def cell2code(named_ranges, cell, sheet):
     """Generate python code for the given cell"""
     if cell.formula:
         ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-        e = shunting_yard(cell.formula or str(cell.value), named_ranges, ref=ref)
+        e = shunting_yard(cell.formula or str(cell.value), named_ranges, sheet = sheet, ref=ref)
         ast,root = build_ast(e)
         code = root.emit(ast, context=sheet)
     else:
