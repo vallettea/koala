@@ -418,6 +418,10 @@ class Spreadsheet(object):
                         self.history[cell.address()]['priority'] = self.count
                         self.history[cell.address()]['python'] = str(cell.python_expression)
 
+                        if self.count == 1:
+                            self.history['ROOT_DIFF'] = self.history[cell.address()]
+                            self.history['ROOT_DIFF']['cell'] = cell.address()
+
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:
                     self.history[cell.address()] = {'new': str(cell.value)}
