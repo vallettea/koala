@@ -100,8 +100,12 @@ def load2(fname):
     edges = []
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
-    infile2 = open(fname + "_marshal", "rb")
-    compiled_expressions = marshal.load(infile2)
+    try:
+        infile2 = open(fname + "_marshal", "rb")
+        compiled_expressions = marshal.load(infile2)
+        marshaled_file = True
+    except:
+        marshaled_file = False
     for line in infile.read().splitlines():
 
         if line == "====":
@@ -146,8 +150,11 @@ def load2(fname):
                 cell = Cell(address, None, value, formula, is_range, is_named_range, always_eval)
                 cell.python_expression = python_expression
                 if formula:
-                    ce = compiled_expressions[address]
-                    cell.compiled_expression = ce                   
+                    if marshaled_file:
+                        ce = compiled_expressions[address]
+                        cell.compiled_expression = ce
+                    else:
+                        cell.compile()               
                 nodes.append(cell)
         elif mode == "edges":
             source, target = line.split(SEP)
