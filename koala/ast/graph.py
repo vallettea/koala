@@ -1059,6 +1059,8 @@ class ExcelCompiler(object):
     def gen_graph(self, outputs = None):
         print '___### Generating Graph ###___'
 
+        outputs = list(outputs) # creates a copy
+
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
         else:
