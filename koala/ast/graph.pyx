@@ -1,3 +1,5 @@
+# cython: profile=True
+
 import os.path
 import textwrap
 import koala.ast.excellib as excelfun

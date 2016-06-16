@@ -100,8 +100,8 @@ if __name__ == '__main__':
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
 
-#     import cProfile
-#     cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
+    # import cProfile
+    # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))

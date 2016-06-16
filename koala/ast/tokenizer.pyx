@@ -1,3 +1,5 @@
+# cython: profile=True
+
 #========================================================================
 # Description: Tokenise an Excel formula using an implementation of
 #              E. W. Bachtal's algorithm, found here:

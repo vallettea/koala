@@ -1,3 +1,5 @@
+# cython: profile=True
+
 from __future__ import division
 from itertools import izip
 import collections
@@ -185,6 +187,10 @@ class Cell(object):
     @property
     def compiled_expression(self):
         return self.__compiled_expression
+
+    @compiled_expression.setter
+    def compiled_expression(self, ce):
+        self.__compiled_expression = ce
 
     # code objects are not serializable
     def __getstate__(self):

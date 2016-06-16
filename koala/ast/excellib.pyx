@@ -1,3 +1,5 @@
+# cython: profile=True
+
 '''
 Python equivalents of various excel functions
 '''

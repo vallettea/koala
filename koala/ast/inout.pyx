@@ -10,16 +10,19 @@ from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
+import marshal
 
 SEP = ";;"
 
 ########### based on custom format #################
 def dump2(self, fname):
     outfile = gzip.GzipFile(fname, 'w')
+    outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
     simple_cells = filter(lambda cell: cell.is_range == False, self.G.nodes())
     range_cells = filter(lambda cell: cell.is_range, self.G.nodes())
+    compiled_expressions = {}
 
     def parse_cell_info(cell):
         formula = cell.formula if cell.formula else "0"
@@ -28,6 +31,8 @@ def dump2(self, fname):
         is_range = "1" if cell.is_range else "0"
         is_named_range = "1" if cell.is_named_range else "0"
         always_eval = "1" if cell.always_eval else "0"
+
+        compiled_expressions[cell.address()] = cell.compiled_expression
 
         # write common attributes
         outfile.write(SEP.join([
@@ -51,6 +56,8 @@ def dump2(self, fname):
         outfile.write(cell.range.name + "\n")
         outfile.write("====" + "\n")
 
+    marshal.dump(compiled_expressions, outfile2)
+    
     # writing the edges
     outfile.write("edges" + "\n")
     for source, target in self.G.edges():
@@ -93,6 +100,12 @@ def load2(fname):
     edges = []
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
+    try:
+        infile2 = open(fname + "_marshal", "rb")
+        compiled_expressions = marshal.load(infile2)
+        marshaled_file = True
+    except:
+        marshaled_file = False
     for line in infile.read().splitlines():
 
         if line == "====":
@@ -131,13 +144,17 @@ def load2(fname):
                 vv = Range(name)
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
                 cell.python_expression = python_expression
-                cell.compile() 
                 nodes.append(cell)
             else:
                 value = to_float(line)
                 cell = Cell(address, None, value, formula, is_range, is_named_range, always_eval)
                 cell.python_expression = python_expression
-                cell.compile()                    
+                if formula:
+                    if marshaled_file:
+                        ce = compiled_expressions[address]
+                        cell.compiled_expression = ce
+                    else:
+                        cell.compile()               
                 nodes.append(cell)
         elif mode == "edges":
             source, target = line.split(SEP)
