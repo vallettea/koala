@@ -1069,6 +1069,8 @@ class ExcelCompiler(object):
                     if is_range(reference):
 
                         rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            outputs.append(address)
                         virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                         seeds.append(virtual_cell)
                     else:
