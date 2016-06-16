@@ -84,6 +84,7 @@ class Spreadsheet(object):
         subgraph = networkx.DiGraph()
         new_cellmap = {}
         for output_address in self.outputs:
+            new_cellmap[output_address] = self.cellmap[output_address]
             seed = self.cellmap[output_address]
             todo = map(lambda n: (seed,n), G.predecessors(seed))
             done = set(todo)
