@@ -32,6 +32,10 @@ def read_named_ranges(archive):
     dict = {}
 
     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS):
+        name = name_node.get('name')
+        if name in dict:
+            raise Exception('Named_range %s is defined in multiple sheets' % name)
+
         if name_node.get('name') == 'tR':
             dict[name_node.get('name')] = 'Depreciation!A1:A1000'
         else:
