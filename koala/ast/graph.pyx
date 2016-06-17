@@ -34,14 +34,6 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.named_ranges = named_ranges
 
-        local_named_ranges = {}
-
-        for n in named_ranges:
-            if n.find('!') > 0:
-                local_named_ranges[n.split('!')[1]] = n
-
-        self.local_named_ranges = local_named_ranges
-
         addr_to_name = {}
         for name in named_ranges:
             addr_to_name[named_ranges[name]] = name
@@ -94,6 +86,7 @@ class Spreadsheet(object):
         subgraph = networkx.DiGraph()
         new_cellmap = {}
         for output_address in self.outputs:
+            new_cellmap[output_address] = self.cellmap[output_address]
             seed = self.cellmap[output_address]
             todo = map(lambda n: (seed,n), G.predecessors(seed))
             done = set(todo)
@@ -115,7 +108,7 @@ class Spreadsheet(object):
                                 done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
+                            const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = isinstance(pred.range, RangeCore), is_named_range=pred.is_named_range, always_eval=pred.always_eval)
                             # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                             # const_node.python_expression = pystr
                             # const_node.compile()
@@ -127,7 +120,7 @@ class Spreadsheet(object):
                 else:
                     # case of range independant of input, we add all children as const
                     if pred.address() not in new_cellmap:
-                        const_node = Cell(pred.address(), pred.sheet, value=pred.value, formula=None, is_range = isinstance(pred.value, RangeCore), is_named_range=False, always_eval=False)
+                        const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = pred.is_range, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
                         # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                         # const_node.python_expression = pystr
                         # const_node.compile()
@@ -188,24 +181,20 @@ class Spreadsheet(object):
                     parsed = parse_cell_address(cell["address"])
                 else:
                     parsed = ""
-                e = shunting_yard(cell["formula"], self.named_ranges, sheet = cell["sheet"], ref=parsed, tokenize_range = True)
+                e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
                 ast,root = build_ast(e)
+                code = root.emit(ast)
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
                 new_formula = cell["formula"]
-
-                # Replace named_ranges by their local equivalent in the Excel formula, only when necessary
-                if cell['sheet'] is not None:
-                    for n in self.local_named_ranges:
-                        new_formula = new_formula.replace(n, self.local_named_ranges[n])
-
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
                             if self.debug:
                                 print 'WARNING: Excel error found => replacing with #N/A'
                             repl["value"] = "#N/A"
+
                         if repl["expression_type"] == "value":
                             new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
                         else:
@@ -430,6 +419,10 @@ class Spreadsheet(object):
                         self.history[cell.address()]['formula'] = str(cell.formula)
                         self.history[cell.address()]['priority'] = self.count
                         self.history[cell.address()]['python'] = str(cell.python_expression)
+
+                        if self.count == 1:
+                            self.history['ROOT_DIFF'] = self.history[cell.address()]
+                            self.history['ROOT_DIFF']['cell'] = cell.address()
 
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:
@@ -795,7 +788,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges, sheet = None, ref = '', tokenize_range = False):
+def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -812,10 +805,6 @@ def shunting_yard(expression, named_ranges, sheet = None, ref = '', tokenize_ran
     Example:
     Cell C2 has the following formula 'A1:A3 + B1:B3'.
     The output will actually be A2 + B2, because the formula is relative to cell C2.
-    
-    The sheet is necessary to handle local named_ranges.
-    We need to sheet to check if the named_range ahs a local version, in which this version will be used.
-
     """
 
     #remove leading =
@@ -840,16 +829,9 @@ def shunting_yard(expression, named_ranges, sheet = None, ref = '', tokenize_ran
         elif t.ttype == "subexpression" and t.tsubtype == "stop":
             t.tvalue = ')'
             tokens.append(t)
-        elif t.ttype == "operand" and t.tsubtype == "range":
-            if sheet is not None and '%s!%s' % (sheet, t.tvalue) in named_ranges: # handles local named_ranges when necessary
-                t.tvalue = '%s!%s' % (sheet, t.tvalue)
-                t.tsubtype = "named_range"
-                tokens.append(t)
-            elif t.tvalue in named_ranges:
-                t.tsubtype = "named_range"
-                tokens.append(t)
-            else:
-                tokens.append(t)
+        elif t.ttype == "operand" and t.tsubtype == "range" and t.tvalue in named_ranges:
+            t.tsubtype = "named_range"
+            tokens.append(t)
         else:
             tokens.append(t)
 
@@ -1042,7 +1024,7 @@ def cell2code(named_ranges, cell, sheet):
     """Generate python code for the given cell"""
     if cell.formula:
         ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-        e = shunting_yard(cell.formula or str(cell.value), named_ranges, sheet = sheet, ref=ref)
+        e = shunting_yard(cell.formula or str(cell.value), named_ranges, ref=ref)
         ast,root = build_ast(e)
         code = root.emit(ast, context=sheet)
     else:
@@ -1084,6 +1066,8 @@ class ExcelCompiler(object):
     def gen_graph(self, outputs = None):
         print '___### Generating Graph ###___'
 
+        outputs = list(outputs) # creates a copy
+
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
         else:
@@ -1094,6 +1078,8 @@ class ExcelCompiler(object):
                     if is_range(reference):
 
                         rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            outputs.append(address)
                         virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                         seeds.append(virtual_cell)
                     else:
