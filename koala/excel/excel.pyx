@@ -1,4 +1,3 @@
-
 from io import BytesIO
 import re
 
@@ -74,11 +73,11 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
         root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
         hidden_cols = False
+        nb_hidden = 0
 
         if ignore_hidden:
             hidden_col_min = None
             hidden_col_max = None
-            nb_hidden = 0
 
             for col in root.findall('.//{%s}cols/*' % SHEET_MAIN_NS):
                 if 'hidden' in col.attrib and col.attrib['hidden'] == '1':
