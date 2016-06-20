@@ -646,6 +646,9 @@ def isNa(value):
 def isblank(value):
     return value is None
 
+def istext(value):
+    return type(value) == str
+
 def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     # This function accepts a list of addresses
     # Maybe think of passing a Range as first argument
