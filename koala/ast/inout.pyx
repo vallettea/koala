@@ -27,10 +27,9 @@ def dump2(self, fname):
     def parse_cell_info(cell):
         formula = cell.formula if cell.formula else "0"
         python_expression = cell.python_expression if cell.python_expression else "0"
-        always_eval = "1" if cell.always_eval else "0"
+        should_eval = cell.should_eval
         is_range = "1" if cell.is_range else "0"
         is_named_range = "1" if cell.is_named_range else "0"
-        always_eval = "1" if cell.always_eval else "0"
 
         compiled_expressions[cell.address()] = cell.compiled_expression
 
@@ -41,7 +40,7 @@ def dump2(self, fname):
             python_expression,
             is_range,
             is_named_range,
-            always_eval
+            should_eval
         ]) + "\n")
 
     for cell in simple_cells:
@@ -131,23 +130,23 @@ def load2(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, always_eval] = line.split(SEP)
+            [address, formula, python_expression, is_range, is_named_range, should_eval] = line.split(SEP)
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
-            always_eval = to_bool(always_eval)
+            should_eval = should_eval
             mode = "node1"
         elif mode == "node1":
             if is_range:
                 name = line
                 vv = Range(name)
-                cell = Cell(address, None, vv, formula, is_range, is_named_range, always_eval)
+                cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 nodes.append(cell)
             else:
                 value = to_float(line)
-                cell = Cell(address, None, value, formula, is_range, is_named_range, always_eval)
+                cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 if formula:
                     if marshaled_file:
@@ -199,7 +198,7 @@ def dump(self, fname):
             "value": value,
             "python_expression": cell.python_expression,
             "is_named_range": cell.is_named_range,
-            "always_eval": cell.always_eval
+            "should_eval": cell.should_eval
         }]
     data["nodes"] = nodes
     data["outputs"] = self.outputs
@@ -247,7 +246,7 @@ def load(fname):
             value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
         else:
             value = d["value"]
-        new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], always_eval=d["always_eval"])
+        new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], should_eval=d["should_eval"])
         new_cell.python_expression = d["python_expression"]
         new_cell.compile()
         return {"id": new_cell}

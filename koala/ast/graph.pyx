@@ -61,6 +61,7 @@ class Spreadsheet(object):
         self.reset_buffer = set()
         self.debug = debug
         self.pending = {}
+        self.fixed_cells = {}
 
     def activate_history(self):
         self.save_history = True
@@ -108,7 +109,7 @@ class Spreadsheet(object):
                                 done.add((pred,n))
                     else:
                         if pred.address() not in new_cellmap:
-                            const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = isinstance(pred.range, RangeCore), is_named_range=pred.is_named_range, always_eval=pred.always_eval)
+                            const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = isinstance(pred.range, RangeCore), is_named_range=pred.is_named_range, should_eval=pred.should_eval)
                             # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                             # const_node.python_expression = pystr
                             # const_node.compile()
@@ -120,7 +121,7 @@ class Spreadsheet(object):
                 else:
                     # case of range independant of input, we add all children as const
                     if pred.address() not in new_cellmap:
-                        const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = pred.is_range, is_named_range=pred.is_named_range, always_eval=pred.always_eval)
+                        const_node = Cell(pred.address(), pred.sheet, value = pred.range if pred.is_range else pred.value, formula=None, is_range = pred.is_range, is_named_range=pred.is_named_range, should_eval=pred.should_eval)
                         # pystr,ast = cell2code(self.named_ranges, const_node, pred.sheet)
                         # const_node.python_expression = pystr
                         # const_node.compile()
@@ -207,7 +208,7 @@ class Spreadsheet(object):
                 new_named_ranges[cell["address"]] = new_formula
             else: 
                 old_cell = self.cellmap[cell["address"]]
-                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, always_eval=old_cell.always_eval)
+                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
             
         return new_cells, new_named_ranges
 
@@ -266,6 +267,12 @@ class Spreadsheet(object):
             raise Exception("Address not present in graph.")
 
         cell = self.cellmap[address]
+
+        # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
+        if address not in self.fixed_cells:
+            self.fixed_cells[address] = cell.should_eval
+            cell.should_eval = 'never'
+
         # case where the address refers to a range
         if self.cellmap[address].range: 
 
@@ -291,15 +298,35 @@ class Spreadsheet(object):
         if cell.value is None and addr not in self.named_ranges: return
 
         # update cells
-        if not cell.is_range:
-            cell.value = None
+        if cell.should_eval != 'never':
+            if not cell.is_range:
+                cell.value = None
 
-        self.reset_buffer.add(cell)
-        cell.need_update = True
+            self.reset_buffer.add(cell)
+            cell.need_update = True
 
         for child in self.G.successors_iter(cell):
             if child not in self.reset_buffer:
                 self.reset(child)
+
+    def fix_cell(self, address):
+        if address in self.cellmap:
+            cell = self.cellmap[address]
+            self.fixed_cells[address] = cell.should_eval
+            cell.should_eval = 'never'
+        else:
+            raise Exception('Cell %s not in cellmap' % address)
+
+    def free_cell(self, address = None):
+        if address is None:
+            for addr in self.fixed_cells:
+                self.cellmap[addr].should_eval = self.fixed_cells[addr]
+            self.fixed_cells = {}
+        elif address in self.cellmap:
+            self.cellmap[address].should_eval = self.fixed_cells[address]
+            self.fixed_cells.pop(address, None)
+        else:
+            raise Exception('Cell %s not in cellmap' % address)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
@@ -396,7 +423,7 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)    
 
         # no formula, fixed value
-        if not cell.formula or not cell.always_eval and not cell.need_update and cell.value is not None:
+        if not cell.formula or cell.should_eval == 'never' or cell.should_eval == 'normal' and not cell.need_update and cell.value is not None:
             return cell.value
         try:
             if cell.compiled_expression != None:
