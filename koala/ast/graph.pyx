@@ -342,9 +342,9 @@ class Spreadsheet(object):
         elif isinstance(addr2, ExcelError):
             return addr2
         else:
-            try:
+            if addr1 in self.cellmap:
                 cell1 = self.cellmap[addr1]
-            except:
+            else:
                 if self.debug:
                     print 'WARNING in eval_ref: address %s not found in cellmap, returning #NULL' % addr1
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
