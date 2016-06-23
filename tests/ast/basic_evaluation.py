@@ -1,3 +1,5 @@
+import pyximport; pyximport.install()
+
 import unittest
 import os
 import sys
@@ -10,6 +12,7 @@ sys.path.insert(0, path)
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.graph import ExcelCompiler
+from koala.ast.excelutils import Cell
 
 class Test_Excel(unittest.TestCase):
     
@@ -142,6 +145,11 @@ class Test_Excel(unittest.TestCase):
     def test_Choose(self):
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!A41'), 'George')
+
+    def test_Modify_graph(self):
+        self.sp.add_cell(Cell('Sheet1!A4', formula = 'A1 + 10'))
+        self.sp.set_value('Sheet1!A1', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!A4'), 13)
 
 if __name__ == '__main__':
     unittest.main()
