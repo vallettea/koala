@@ -176,6 +176,11 @@ class Cell(object):
     def formula(self):
         return self.__formula
 
+    @formula.setter
+    def formula(self, new_formula):
+        # maybe some kind of check is necessary
+        self.__formula = new_formula
+
     @property
     def id(self):
         return self.__id

@@ -24,6 +24,8 @@ from koala.excel.excel import read_named_ranges, read_cells
 from ..excel.utils import rows_from_range
 from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
+from koala.openpyxl.translate import Translator
+
 from inout import *
 
 
@@ -76,6 +78,35 @@ class Spreadsheet(object):
         self.G = G
 
         print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+
+    def set_formula(self, addr, formula):
+        if addr in self.cellmap:
+            cell = self.cellmap[addr]
+        else:
+            raise Exception('Cell %s not in cellmap' % addr)
+
+        seeds = [cell]
+
+        if cell.is_range:
+            for index, c in enumerate(cell.range.cells): # for each cell of the range, translate the formula
+                if index == 0:
+                    c.formula = formula
+                    translator = Translator(unicode('=' + formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
+                else:
+                    translated = translator.translate_formula(c.address().split('!')[1]) # the Translator needs a reference without sheet
+                    c.formula = translated[1:] # to get rid of the '='
+
+                seeds.append(c)
+        else:
+            cell.formula = formula
+
+        cellmap, G = graph_from_seeds(seeds, self)
+
+        self.cellmap = cellmap
+        self.G = G
+
+        print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+
 
     def prune_graph(self, inputs):
         print '___### Pruning Graph ###___'
@@ -299,6 +330,8 @@ class Spreadsheet(object):
             address = address.replace('$','')
             cell = self.cellmap[address]
             if cell.value != val:
+                if cell.value is None:
+                    cell.value = 'notNone' # hack to avoid the direct return in reset() when value is None
                 # reset the node + its dependencies
                 self.reset(cell)
                 # set the value
@@ -441,7 +474,10 @@ class Spreadsheet(object):
                 vv = eval(cell.compiled_expression)
             else:
                 vv = 0
-            cell.value = vv
+            if cell.is_range:
+                cell.value = vv.values
+            else:
+                cell.value = vv
             cell.need_update = False
             
             # DEBUG: saving differences
@@ -470,7 +506,7 @@ class Spreadsheet(object):
             if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
-                raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
+                raise Exception("Problem evalling: %s for %s, %s" % (e.value,cell.address(),cell.python_expression)) 
 
         return cell.value
 
@@ -1073,6 +1109,12 @@ def cell2code(named_ranges, cell, sheet):
 
 
 def graph_from_seeds(seeds, graph_holder):
+    """
+    This creates/updates a networkx graph from a list of cells.
+
+    The graph is created when the graph_holder is an instance of ExcelCompiler
+    The graph is updated when the graph_holder is an instance of Spreadsheet
+    """
 
     # when called from Spreadsheet instance, use the Spreadsheet cellmap and graph 
     if isinstance(graph_holder, Spreadsheet):
