@@ -320,11 +320,11 @@ class Spreadsheet(object):
             cells_to_set = []
             for a in self.cellmap[address].range.addresses:
                 if a in self.cellmap:
-                    cell_to_set.append(self.cellmap[a])
+                    cells_to_set.append(self.cellmap[a])
                     self.fix_cell(a)
 
             if type(val) != list:
-                val = [val]*len(cell_to_set)
+                val = [val]*len(cells_to_set)
 
             self.reset(cell)
             cell.range.values = val

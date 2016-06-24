@@ -153,10 +153,12 @@ class RangeCore(dict):
     def values(self, new_values):
         if self.__cellmap:
             for index, cell in enumerate(self.cells):
-                cell.value = new_values[index]
+                if index < len(new_values):
+                    cell.value = new_values[index]
         else:
-            for key, value in enumerate(self.order):
-                self[value] = new_values[key]
+            for index, value in enumerate(self.order):
+                if index < len(new_values):
+                    self[value] = new_values[index]
 
     @property
     def cells(self):
