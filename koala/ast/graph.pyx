@@ -308,17 +308,21 @@ class Spreadsheet(object):
         if address not in self.cellmap:
             raise Exception("Address not present in graph.")
 
+        address = address.replace('$','')
         cell = self.cellmap[address]
 
         # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
-        if address not in self.fixed_cells:
-            self.fixed_cells[address] = cell.should_eval
-            cell.should_eval = 'never'
+        self.fix_cell(address)
 
         # case where the address refers to a range
         if self.cellmap[address].range: 
 
-            cell_to_set = [self.cellmap[a] for a in self.cellmap[address].range.addresses if a in self.cellmap]
+            cells_to_set = []
+            for a in self.cellmap[address].range.addresses:
+                if a in self.cellmap:
+                    cell_to_set.append(self.cellmap[a])
+                    self.fix_cell(a)
+
             if type(val) != list:
                 val = [val]*len(cell_to_set)
 
@@ -327,8 +331,12 @@ class Spreadsheet(object):
 
         # case where the address refers to a single value
         else:
-            address = address.replace('$','')
-            cell = self.cellmap[address]
+            if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
+                ref_address = self.named_ranges[address]
+                ref_cell = self.cellmap[ref_address]
+                self.fix_cell(ref_address)
+                ref_cell.value = val
+
             if cell.value != val:
                 if cell.value is None:
                     cell.value = 'notNone' # hack to avoid the direct return in reset() when value is None
@@ -355,9 +363,10 @@ class Spreadsheet(object):
 
     def fix_cell(self, address):
         if address in self.cellmap:
-            cell = self.cellmap[address]
-            self.fixed_cells[address] = cell.should_eval
-            cell.should_eval = 'never'
+            if address not in self.fixed_cells:
+                cell = self.cellmap[address]
+                self.fixed_cells[address] = cell.should_eval
+                cell.should_eval = 'never'
         else:
             raise Exception('Cell %s not in cellmap' % address)
 
