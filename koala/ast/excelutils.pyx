@@ -77,7 +77,7 @@ class Cell(object):
         return cls.ctr
     
 
-    def __init__(self, address, sheet, value=None, formula=None, is_range = False, is_named_range=False, always_eval=False ):
+    def __init__(self, address, sheet = None, value=None, formula=None, is_range = False, is_named_range=False, should_eval='normal'):
         super(Cell,self).__init__()
 
         if is_named_range == False:
@@ -117,7 +117,7 @@ class Cell(object):
         self.__value = value
         self.python_expression = None
         self.need_update = False
-        self.always_eval = always_eval
+        self.should_eval = should_eval
         self.__compiled_expression = None
         self.__is_range = is_range
         
@@ -175,6 +175,11 @@ class Cell(object):
     @property
     def formula(self):
         return self.__formula
+
+    @formula.setter
+    def formula(self, new_formula):
+        # maybe some kind of check is necessary
+        self.__formula = new_formula
 
     @property
     def id(self):

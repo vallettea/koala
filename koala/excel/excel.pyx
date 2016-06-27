@@ -139,14 +139,14 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                         continue
 
                 if cell['f'] is not None or cell['v'] is not None:
-                    always_eval = True if cell['f'] is not None and 'OFFSET' in cell['f'] else False
+                    should_eval = 'always' if cell['f'] is not None and 'OFFSET' in cell['f'] else 'normal'
                     
                     cleaned_formula = cell['f']
                     # cleaned_formula = cell['f'].replace(" ", "") if cell['f'] is not None else None
                     if "!" in cell_address:
-                        cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
+                        cells[cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, should_eval=should_eval)
                     else:
-                        cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, always_eval=always_eval)
+                        cells[sheet_name + "!" + cell_address] = Cell(cell_address, sheet_name, value = cell['v'], formula = cleaned_formula, should_eval=should_eval)
 
         if nb_hidden > 0:
             print 'Ignored %i hidden cells in sheet %s' % (nb_hidden, sheet_name)
