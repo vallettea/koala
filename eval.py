@@ -19,6 +19,10 @@ from koala.ast.excellib import *
 
 from koala.ast.Range import RangeCore
 
+sys.setrecursionlimit(30000)
+limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
+resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
+
 personalized_names = {
     "Dev_Fwd": "Cashflow!H81",
     "Pnt_Fwd": "Cashflow!I81",
@@ -30,6 +34,7 @@ personalized_names = {
 }
 
 inputs = [
+    "Cashflow!K81",
     "gen_discountRate", 
     "IA_PriceExportOil", 
     "IA_PriceExportGas",
@@ -40,51 +45,48 @@ outputs = [
     "CA_Years", 
     "outNPV_Proj", 
     "Dev_Fwd", # Cashflow!H81  
-    "Pnt_Fwd" # Cashflow!I81
+    "Pnt_Fwd", # Cashflow!I81
+    "year_FID"
 ]
 
 if __name__ == '__main__':
 
-    folder = 'error_files'
+    input_folder = 'input'
+    # input_folder = 'other/Norway_Output'
+    graph_folder = 'graphs'
+    # graph_folder = 'temp_graphs'
 
-    file = "../engie/data/%s/100062954 - Middle East - Iraq - Taq Taq - Oil - Producing.xlsx" % folder
+    file = "../engie/data/%s/100021256 - North America - United States - Tubular Bells - Oil - Producing.xlsx" % input_folder
 
     print file
 
-    ### Graph Generation ###
-    startTime = datetime.now()
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
-    for name, reference in personalized_names.items():
-        c.named_ranges[name] = reference
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=outputs)
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # ### Graph Generation ###
+    # startTime = datetime.now()
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
+    # for name, reference in personalized_names.items():
+    #     c.named_ranges[name] = reference
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=outputs)
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    ### Graph Pruning ###
-    startTime = datetime.now()
-    sp = sp.prune_graph(inputs)
-    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # ### Graph Pruning ###
+    # startTime = datetime.now()
+    # sp = sp.prune_graph(inputs)
+    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    ## Graph Serialization ###
-    print "Serializing to disk...", file
-    sp.dump2(file.replace("xlsx", "gzip").replace(folder, "temp_graphs"))
+    # ## Graph Serialization ###
+    # print "Serializing to disk...", file
+    # sp.dump2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(folder, "temp_graphs"))
+    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
-    # import cProfile
-    # cProfile.run('Spreadsheet.load2(file.replace("xlsx", "txt"))', 'stats')
-
-    sys.setrecursionlimit(30000)
-    limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
-    resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
-
     ### Graph Evaluation ###
-    print 'First evaluation', sp.evaluate('outNPV_Proj')
+    print 'First evaluation: outNPV_Proj', sp.evaluate('outNPV_Proj')
 
     tmp = sp.evaluate('IA_PriceExportGas')
 
@@ -112,5 +114,3 @@ if __name__ == '__main__':
         
         with open('history_dif.json', 'w') as outfile:
             json.dump(sp.history, outfile)
-
-    
