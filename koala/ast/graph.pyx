@@ -515,7 +515,7 @@ class Spreadsheet(object):
             if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
-                raise Exception("Problem evalling: %s for %s, %s" % (e.value,cell.address(),cell.python_expression)) 
+                raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
 

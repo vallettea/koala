@@ -61,6 +61,8 @@ class RangeCore(dict):
 
         cells = list(flatten(cells))
 
+        origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
+
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
 
@@ -94,6 +96,7 @@ class RangeCore(dict):
         # dont allow messing with these params
         self.__cellmap = cellmap
         self.__name = reference if type(reference) != list else name
+        self.__origin = origin
         self.__addresses = cells
         self.__order = order
         self.__length = len(cells)
@@ -108,13 +111,15 @@ class RangeCore(dict):
         else:
             self.__type = 'bidimensional'
         self.__sheet = sheet
-        self.__start = parse_cell_address(cells[0]) if len(cells) > 0 else None
 
         dict.__init__(self, result)
 
     @property
     def name(self):
         return self.__name
+    @property
+    def origin(self):
+        return self.__origin
     @property
     def addresses(self):
         return self.__addresses
@@ -136,9 +141,6 @@ class RangeCore(dict):
     @property
     def sheet(self):
         return self.__sheet
-    @property
-    def start(self):
-        return self.__start
     @property
     def values(self):
         if self.__cellmap:
@@ -178,28 +180,44 @@ class RangeCore(dict):
                 return values[row - 1]
             
         else: # could be optimised
-            indices = range(len(values))
+            origin_col = col2num(self.origin[1])
+            origin_row = self.origin[0]
 
             if row == 0: # get column
-                filtered_indices = filter(lambda x: x % nc == col - 1, indices)
 
-                filtered_values = map(lambda i: values[i], filtered_indices)
-                filtered_cells = map(lambda i: cells[i], filtered_indices)
+                out_col = num2col(int(col2num(self.origin[1]) + col - 1))
 
-                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+                tuples = [(r, out_col) for r in range(origin_row, origin_row + self.nrows)]
 
-                return RangeCore(new_address, filtered_values)
+                cells = []
+                values = []
+
+                for t in tuples:
+                    if t in self:
+                        values.append(self[t].value)
+                    else:
+                        values.append(None)
+                    cells.append(get_cell_address(self.sheet, t))
+
+                return RangeCore(cells, values = values, nrows = 1, ncols = len(cells))
 
             elif col == 0: # get row
 
-                filtered_indices = filter(lambda x: (x / nc) == row - 1, indices)
+                out_row = self.origin[0] + row - 1
 
-                filtered_values = map(lambda i: values[i], filtered_indices)
-                filtered_cells = map(lambda i: cells[i], filtered_indices)
+                tuples = [(out_row, c) for c in range(origin_col, origin_col + self.ncols)]
 
-                new_address = str(filtered_cells[0]) + ':' + str(filtered_cells[len(filtered_cells)-1])
+                cells = []
+                values = []
 
-                return RangeCore(new_address, filtered_values)
+                for t in tuples:
+                    if t in self:
+                        values.append(self[t].value)
+                    else:
+                        values.append(None)
+                    cells.append(get_cell_address(self.sheet, t))
+
+                return RangeCore(cells, values = values, nrows = len(cells), ncols = 1)
 
             else:
                 base_col_number = col2num(cells[0][0])
@@ -249,20 +267,20 @@ class RangeCore(dict):
             if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
                 return None
             elif range.type == "vertical":
-                if (row, range.start[1]) in range.order:
-                    return range.addresses[range.order.index((row, range.start[1]))]
+                if (row, range.origin[1]) in range.order:
+                    return range.addresses[range.order.index((row, range.origin[1]))]
                 else:
                     return None
             elif range.type == "horizontal":
-                if (range.start[0], col) in range.order:
-                    return range.addresses[range.order.index((range.start[0], col))]
+                if (range.origin[0], col) in range.order:
+                    return range.addresses[range.order.index((range.origin[0], col))]
                 else:
                     return None
             elif range.type == "scalar":
-                if (row, range.start[1]) in range.order:
-                    return range.addresses[range.order.index((row, range.start[1]))]
-                elif (range.start[0], col) in range.order:
-                    return range.addresses[range.order.index((range.start[0], col))]
+                if (row, range.origin[1]) in range.order:
+                    return range.addresses[range.order.index((row, range.origin[1]))]
+                elif (range.origin[0], col) in range.order:
+                    return range.addresses[range.order.index((range.origin[0], col))]
                 elif (row, col) in range.order:
                     return range.addresses[range.order.index((row, col))]
                 else:
@@ -284,21 +302,21 @@ class RangeCore(dict):
                     item_value = 0
                 elif item.type == "vertical":
                     if item.__cellmap is not None:
-                        item_value = item[(row, item.start[1])].value
+                        item_value = item[(row, item.origin[1])].value if (row, item.origin[1]) in item else None
                     else:
-                        item_value = item[(row, item.start[1])]
+                        item_value = item[(row, item.origin[1])] if (row, item.origin[1]) in item else None
                 elif item.type == "horizontal":
                     if item.__cellmap is not None:
                         try:
-                            item_value = item[(item.start[0], col)].value
+                            item_value = item[(item.origin[0], col)].value if (item.origin[0], col) in item else None
                         except:
                             raise Exception
                     else:
-                        item_value = item[(item.start[0], col)]
+                        item_value = item[(item.origin[0], col)] if (item.origin[0], col) in item else None
                 else:
                     raise ExcelError('#VALUE!', 'cannot use find_associated_value on %s' % item.type)
             except ExcelError as e:
-                raise Exception('First argument of Range operation is not valid: ' + e)
+                raise Exception('First argument of Range operation is not valid: ' + e.value)
         elif item is None:
             item_value = 0
         else:
