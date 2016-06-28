@@ -82,10 +82,12 @@ def load2(fname):
             return string
 
     def to_bool(string):
-        if string == "1":
+        if string == "1" or string == "True":
             return True
-        else:
+        elif string == "0" or string == "False":
             return False
+        else:
+            return string
     def to_float(string):
         if string == "None":
             return None
@@ -145,7 +147,7 @@ def load2(fname):
                 cell.python_expression = python_expression
                 nodes.append(cell)
             else:
-                value = to_float(line)
+                value = to_bool(to_float(line))
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 if formula:
