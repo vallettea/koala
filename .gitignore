@@ -4,3 +4,4 @@ original
 *.pyc
 ~*.xlsx
 *.pickle
+history_dif.json
