@@ -1,3 +1,7 @@
+#
+# source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/formula/translate.py?at=default&fileviewer=file-view-default
+#___________________________________________________________________________________________________________________________________________________________________
+
 from __future__ import absolute_import
 
 """
@@ -11,10 +15,10 @@ to identify the parts of the formula that need to change.
 
 import re
 from .tokenizer import Tokenizer, Token
-from .utils import (coordinate_from_string, column_index_from_string,
+from ..utils import (coordinate_from_string, column_index_from_string,
                             get_column_letter)
 
-from ..ast.excelutils import CELL_REF_RE, ROW_RANGE_RE, COL_RANGE_RE
+from ...ast.excelutils import CELL_REF_RE, ROW_RANGE_RE, COL_RANGE_RE
 
 class TranslatorError(Exception):
     """

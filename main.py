@@ -9,8 +9,6 @@ import warnings
 from io import BytesIO
 from multiprocessing import Pool
 
-
-from koala.xml.functions import fromstring, safe_iterator
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
 from koala.ast.tokenizer import ExcelParser

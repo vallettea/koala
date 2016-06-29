@@ -1,7 +1,13 @@
 from io import BytesIO
 import re
 
-from koala.xml.constants import (
+from koala.ast.excelutils import Cell, CELL_REF_RE, col2num
+
+from ..openpyxl.formula.translate import Translator 
+from ..openpyxl.cell.text import Text
+from ..openpyxl.utils.indexed_list import IndexedList
+from ..openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
+from ..openpyxl.xml.constants import (
     SHEET_MAIN_NS,
     REL_NS,
     PKG_REL_NS,
@@ -13,14 +19,16 @@ from koala.xml.constants import (
     SHARED_STRINGS
 )
 
-from koala.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
-from koala.openpyxl.translate import Translator 
-from koala.ast.excelutils import Cell, flatten, resolve_range, CELL_REF_RE, col2num
 
-from koala.openpyxl.text import Text
-from koala.openpyxl.utils import IndexedList
+FLOAT_REGEX = re.compile(r"\.|[E-e]")
 
-from koala.excel.utils import _cast_number
+def _cast_number(value):
+    "Convert numbers as string to an int or float"
+    m = FLOAT_REGEX.search(value)
+    if m is not None:
+        return float(value)
+    return long(value)
+
 
 debug = False
 

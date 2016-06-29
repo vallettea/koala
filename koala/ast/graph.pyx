@@ -21,10 +21,10 @@ import json
 
 from koala.unzip import read_archive
 from koala.excel.excel import read_named_ranges, read_cells
-from ..excel.utils import rows_from_range
 from ExcelError import ExcelError, EmptyCellError, ErrorCodes
 
-from koala.openpyxl.translate import Translator
+from ..openpyxl.utils import rows_from_range
+from ..openpyxl.formula.translate import Translator
 
 from inout import *
 
