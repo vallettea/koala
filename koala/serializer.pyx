@@ -2,15 +2,15 @@ import json
 import gzip
 import networkx
 
-from koala.ast.excelutils import Cell
-from Range import RangeCore, RangeFactory
-
 from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 import marshal
+
+from Cell import Cell
+from Range import RangeCore, RangeFactory
 
 SEP = ";;"
 

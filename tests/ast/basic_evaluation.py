@@ -9,10 +9,9 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
-from koala.unzip import read_archive
-from koala.excel.excel import read_named_ranges, read_cells
-from koala.ast.graph import ExcelCompiler
-from koala.ast.excelutils import Cell
+from koala.reader import read_archive, read_named_ranges, read_cells
+from koala import ExcelCompiler
+from koala.utils import Cell
 
 class Test_Excel(unittest.TestCase):
     

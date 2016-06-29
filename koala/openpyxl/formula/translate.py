@@ -18,7 +18,7 @@ from .tokenizer import Tokenizer, Token
 from ..utils import (coordinate_from_string, column_index_from_string,
                             get_column_letter)
 
-from ...ast.excelutils import CELL_REF_RE, ROW_RANGE_RE, COL_RANGE_RE
+from ...utils import CELL_REF_RE, ROW_RANGE_RE, COL_RANGE_RE
 
 class TranslatorError(Exception):
     """

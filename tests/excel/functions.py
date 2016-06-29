@@ -8,12 +8,10 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
-from koala.ast.excelutils import resolve_range
-from koala.ast.ExcelError import ExcelError
-
-from koala.ast.excellib import *
-
-from koala.ast.Range import RangeCore as Range
+from koala.utils import resolve_range
+from koala.ExcelError import ExcelError
+from koala.excellib import *
+from koala.Range import RangeCore as Range
 
 class Test_Choose(unittest.TestCase):
     def setup(self):

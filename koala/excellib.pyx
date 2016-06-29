@@ -12,27 +12,10 @@ from datetime import datetime
 from math import log
 from decimal import Decimal, ROUND_HALF_UP
 import re
-from excelutils import (
-    flatten, 
-    split_address, 
-    col2num, 
-    num2col,
-    index2addres,
-    is_number,
-    is_range,
-    date_from_int,
-    normalize_year,
-    is_leap_year,
-    get_max_days_in_month,
-    find_corresponding_index,
-    check_length,
-    extract_numeric_values,
-    resolve_range,
-    CELL_REF_RE
-)
 
-from ..ast.Range import RangeCore as Range
-from ExcelError import ExcelError, ErrorCodes
+from utils import *
+from Range import RangeCore as Range
+from ExcelError import *
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
@@ -47,14 +30,14 @@ from ExcelError import ExcelError, ErrorCodes
 # Note: some functions (if, pi, atan2, and, or, array, ...) are already taken care of
 # in the FunctionNode code, so adding them here will have no effect.
 FUNCTION_MAP = {
-      "ln":"xlog",
-      "min":"xmin",
-      "min":"xmin",
-      "max":"xmax",
-      "sum":"xsum",
-      "gammaln":"lgamma",
-      "round": "xround"
-      }
+    "ln":"xlog",
+    "min":"xmin",
+    "min":"xmin",
+    "max":"xmax",
+    "sum":"xsum",
+    "gammaln":"lgamma",
+    "round": "xround"
+}
 
 IND_FUN = [        
     "SUM",        

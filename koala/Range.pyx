@@ -1,7 +1,9 @@
 import re
 import string
+
 from ExcelError import ExcelError
-from excelutils import *
+from utils import *
+from Cell import Cell
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
 

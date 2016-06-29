@@ -10,13 +10,15 @@ import json
 import warnings
 from io import BytesIO
 
-from koala.ast.tokenizer import ExcelParser
-from koala.ast.graph import ExcelCompiler, Spreadsheet
-from koala.ast.excelutils import Cell
-from koala.ast.astutils import *
-from koala.ast.excellib import *
+from koala.tokenizer import ExcelParser
+from koala.ExcelCompiler import ExcelCompiler
+from koala.Spreadsheet import Spreadsheet
+from koala.Cell import Cell
+from koala.Range import RangeCore
+from koala.ast import *
+from koala.excellib import *
 
-from koala.ast.Range import RangeCore
+
 
 sys.setrecursionlimit(30000)
 limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
