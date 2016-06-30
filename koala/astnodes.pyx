@@ -5,7 +5,7 @@ import os.path
 # import networkx
 
 from excellib import FUNCTION_MAP, IND_FUN
-from utils import is_range, split_range
+from utils import is_range, split_range, split_address
 from ExcelError import *
 
 class ASTNode(object):
