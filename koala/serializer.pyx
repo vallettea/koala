@@ -15,7 +15,7 @@ from Range import RangeCore, RangeFactory
 SEP = ";;"
 
 ########### based on custom format #################
-def dump2(self, fname):
+def dump(self, fname):
     outfile = gzip.GzipFile(fname, 'w')
     outfile2 = open(fname + "_marshal", 'wb')
 
@@ -63,17 +63,19 @@ def dump2(self, fname):
         outfile.write(source.address() + SEP + target.address() + "\n")
 
     # writing the rest
-    outfile.write("outputs" + "\n")
-    outfile.write(SEP.join(self.outputs) + "\n")
-    outfile.write("inputs" + "\n")
-    outfile.write(SEP.join(self.inputs) + "\n")
+    if self.outputs is not None:
+        outfile.write("outputs" + "\n")
+        outfile.write(SEP.join(self.outputs) + "\n")
+    if self.inputs is not None:
+        outfile.write("inputs" + "\n")
+        outfile.write(SEP.join(self.inputs) + "\n")
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write(k + SEP + self.named_ranges[k] + "\n")
     
     outfile.close()
 
-def load2(fname):
+def load(fname):
 
     def clean_bool(string):
         if string == "0":
@@ -99,6 +101,8 @@ def load2(fname):
     mode = "node0"
     nodes = []
     edges = []
+    outputs = None
+    inputs = None
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
     try:
@@ -176,7 +180,7 @@ def load2(fname):
     return (G, cellmap, named_ranges, outputs, inputs)
 
 ########### based on json #################
-def dump(self, fname):
+def dump_json(self, fname):
     data = json_graph.node_link_data(self.G)
     # save nodes as simple objects
     nodes = []
@@ -210,7 +214,7 @@ def dump(self, fname):
         outfile.write(json.dumps(data))
 
 
-def load(fname):
+def load_json(fname):
 
     def _decode_list(data):
         rv = []

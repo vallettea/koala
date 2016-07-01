@@ -277,19 +277,19 @@ class Spreadsheet(object):
         return list(flatten(results, only_lists = True))
 
 
+    def dump_json(self, fname):
+        dump_json(self, fname)
+
     def dump(self, fname):
         dump(self, fname)
-
-    def dump2(self, fname):
-        dump2(self, fname)
-
-    @staticmethod
-    def load2(fname):
-        return Spreadsheet(*load2(fname))
 
     @staticmethod
     def load(fname):
         return Spreadsheet(*load(fname))
+
+    @staticmethod
+    def load_json(fname):
+        return Spreadsheet(*load_json(fname))
     
     def set_value(self, address, val):
 
