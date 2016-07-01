@@ -22,8 +22,8 @@ def dump(self, fname, marshal = False):
         outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
-    simple_cells = filter(lambda cell: cell.is_range == False, self.G.nodes())
-    range_cells = filter(lambda cell: cell.is_range, self.G.nodes())
+    simple_cells = filter(lambda cell: cell.is_range == False, self.cellmap.values())
+    range_cells = filter(lambda cell: cell.is_range, self.cellmap.values())
     compiled_expressions = {}
 
     def parse_cell_info(cell):
