@@ -95,6 +95,11 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.G = G
 
+        should_eval = self.cellmap[addr].should_eval
+        self.cellmap[addr].should_eval = 'always'
+        self.evaluate(addr)
+        self.cellmap[addr].should_eval = should_eval
+
         print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
 
@@ -363,11 +368,15 @@ class Spreadsheet(object):
     def free_cell(self, address = None):
         if address is None:
             for addr in self.fixed_cells:
+                self.cellmap[addr].should_eval = 'always'
+                self.evaluate(addr)
                 self.cellmap[addr].should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
         elif address in self.cellmap:
-            self.cellmap[address].should_eval = self.fixed_cells[address]
+            self.cellmap[address].should_eval = 'always'
             self.fixed_cells.pop(address, None)
+            self.evaluate(address)
+            self.cellmap[address].should_eval = self.fixed_cells[address]
         else:
             raise Exception('Cell %s not in cellmap' % address)
 
