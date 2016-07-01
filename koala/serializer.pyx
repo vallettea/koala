@@ -15,9 +15,11 @@ from Range import RangeCore, RangeFactory
 SEP = ";;"
 
 ########### based on custom format #################
-def dump(self, fname):
+def dump(self, fname, marshal = False):
     outfile = gzip.GzipFile(fname, 'w')
-    outfile2 = open(fname + "_marshal", 'wb')
+
+    if marshal:
+        outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
     simple_cells = filter(lambda cell: cell.is_range == False, self.G.nodes())
@@ -55,7 +57,8 @@ def dump(self, fname):
         outfile.write(cell.range.name + "\n")
         outfile.write("====" + "\n")
 
-    marshal.dump(compiled_expressions, outfile2)
+    if marshal:
+        marshal.dump(compiled_expressions, outfile2)
     
     # writing the edges
     outfile.write("edges" + "\n")
