@@ -69,7 +69,11 @@ class ExcelCompiler(object):
                         seeds.append(virtual_cell)
                 else:
                     if is_range(o):
-                        raise Exception("Your want a output range ?")
+                        rng = self.Range(o)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            outputs.append(address)
+                        virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                        seeds.append(virtual_cell)
                     else:
                         seeds.append(self.cells[o])
 
