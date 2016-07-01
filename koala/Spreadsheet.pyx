@@ -393,7 +393,7 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
-                    
+
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
                     if associated_addr: # if range is associated to ref, no need to return/update all range
@@ -404,7 +404,8 @@ class Spreadsheet(object):
                         if cell1.need_update:
                             self.update_range(cell1.range)
                             range_need_update = True
-                            for c in self.G.successors_iter(cell1):
+                            
+                            for c in self.G.successors_iter(cell1): # if a parent doesnt need update, then cell1 doesnt need update
                                 if not c.need_update:
                                     range_need_update = False
                                     break
@@ -466,7 +467,7 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)    
 
         # no formula, fixed value
-        if not cell.formula or cell.should_eval == 'never' or cell.should_eval == 'normal' and not cell.need_update and cell.value is not None:
+        if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
             return cell.value
         try:
             if cell.compiled_expression != None:
@@ -483,11 +484,11 @@ class Spreadsheet(object):
             if self.save_history:
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
+                    
                     if 'new' not in self.history[cell.address()].keys() \
                         and is_number(ori_value) and is_number(cell.value) \
                         and abs(float(ori_value) - float(cell.value)) > 0.001:
 
-                        # print 'DIF', cell.address(), cell.value, ori_value, self.count
                         self.count += 1
                         self.history[cell.address()]['formula'] = str(cell.formula)
                         self.history[cell.address()]['priority'] = self.count
