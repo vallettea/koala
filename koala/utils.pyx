@@ -385,10 +385,10 @@ def extract_numeric_values(*args):
     values = []
 
     for arg in args:
-        if isinstance(arg, collections.Iterable): # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
             temp = [x for x in arg.values if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
-        elif type(arg) is tuple:
+        elif type(arg) is tuple or type(arg) is list:
             temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
             values.append(temp)
         elif is_number(arg):
