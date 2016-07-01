@@ -5,3 +5,4 @@ original
 ~*.xlsx
 *.pickle
 history_dif.json
+profiling
