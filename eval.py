@@ -10,14 +10,15 @@ import json
 import warnings
 from io import BytesIO
 
-from koala.xml.functions import fromstring, safe_iterator
-from koala.ast.tokenizer import ExcelParser
-from koala.ast.graph import ExcelCompiler, Spreadsheet
-from koala.ast.excelutils import Cell
-from koala.ast.astutils import *
-from koala.ast.excellib import *
+from koala.tokenizer import ExcelParser
+from koala.ExcelCompiler import ExcelCompiler
+from koala.Spreadsheet import Spreadsheet
+from koala.Cell import Cell
+from koala.Range import RangeCore
+from koala.ast import *
+from koala.excellib import *
 
-from koala.ast.Range import RangeCore
+
 
 sys.setrecursionlimit(30000)
 limit = 67104768 # maximum stack limit on my machine => use 'ulimit -Ha' on a shell terminal
@@ -34,7 +35,6 @@ personalized_names = {
 }
 
 inputs = [
-    "Cashflow!K81",
     "gen_discountRate", 
     "IA_PriceExportOil", 
     "IA_PriceExportGas",
@@ -60,24 +60,24 @@ if __name__ == '__main__':
 
     print file
 
-    # ### Graph Generation ###
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
-    # for name, reference in personalized_names.items():
-    #     c.named_ranges[name] = reference
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=outputs)
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    ### Graph Generation ###
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
+    for name, reference in personalized_names.items():
+        c.named_ranges[name] = reference
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    sp = c.gen_graph(outputs=outputs)
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # sp = sp.prune_graph(inputs)
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph(inputs)
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    # ## Graph Serialization ###
-    # print "Serializing to disk...", file
-    # sp.dump2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    ## Graph Serialization ###
+    print "Serializing to disk...", file
+    sp.dump2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()

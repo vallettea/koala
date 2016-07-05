@@ -1,3 +1,7 @@
+#
+# source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/formula/tokenizer.py?at=default&fileviewer=file-view-default
+#___________________________________________________________________________________________________________________________________________________________________
+
 """
 This module contains a tokenizer for Excel formulae.
 

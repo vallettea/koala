@@ -6,7 +6,7 @@ dir = os.path.dirname(__file__)
 path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
-from koala.ast.Range import RangeFactory
+from koala.Range import RangeFactory
 
 Range = RangeFactory()
 

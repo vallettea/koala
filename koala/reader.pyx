@@ -1,7 +1,11 @@
 from io import BytesIO
 import re
 
-from koala.xml.constants import (
+from openpyxl.formula.translate import Translator 
+from openpyxl.cell.text import Text
+from openpyxl.utils.indexed_list import IndexedList
+from openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
+from openpyxl.xml.constants import (
     SHEET_MAIN_NS,
     REL_NS,
     PKG_REL_NS,
@@ -13,14 +17,53 @@ from koala.xml.constants import (
     SHARED_STRINGS
 )
 
-from koala.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
-from koala.openpyxl.translate import Translator 
-from koala.ast.excelutils import Cell, flatten, resolve_range, CELL_REF_RE, col2num
+from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
-from koala.openpyxl.text import Text
-from koala.openpyxl.utils import IndexedList
+from Cell import Cell
+from utils import CELL_REF_RE, col2num
 
-from koala.excel.utils import _cast_number
+FLOAT_REGEX = re.compile(r"\.|[E-e]")
+CENTRAL_DIRECTORY_SIGNATURE = b'\x50\x4b\x05\x06'
+
+def repair_central_directory(zipFile, is_file_instance): # source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/reader/excel.py?at=default&fileviewer=file-view-default 
+    ''' trims trailing data from the central directory
+    code taken from http://stackoverflow.com/a/7457686/570216, courtesy of Uri Cohen
+    '''
+    f = zipFile if is_file_instance else open(zipFile, 'rb+')
+    data = f.read()
+    pos = data.find(CENTRAL_DIRECTORY_SIGNATURE)  # End of central directory signature
+    if (pos > 0):
+        sio = BytesIO(data)
+        sio.seek(pos + 22)  # size of 'ZIP end of central directory record'
+        sio.truncate()
+        sio.seek(0)
+        return sio
+
+    f.seek(0)
+    return f
+
+def read_archive(file_name):
+    is_file_like = hasattr(file_name, 'read')
+    if is_file_like:
+        # fileobject must have been opened with 'rb' flag
+        # it is required by zipfile
+        if getattr(file_name, 'encoding', None) is not None:
+            raise IOError("File-object must be opened in binary mode")
+
+    try:
+        archive = ZipFile(file_name, 'r', ZIP_DEFLATED)
+    except BadZipfile as e:
+        f = repair_central_directory(file_name, is_file_like)
+        archive = ZipFile(f, 'r', ZIP_DEFLATED)
+
+    return archive
+
+def _cast_number(value): # source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/cell/read_only.py?at=default&fileviewer=file-view-default
+    "Convert numbers as string to an int or float"
+    m = FLOAT_REGEX.search(value)
+    if m is not None:
+        return float(value)
+    return long(value)
 
 debug = False
 

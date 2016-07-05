@@ -1,4 +1,9 @@
+#
+# source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/xml/functions.py?at=default&fileviewer=file-view-default
+#_______________________________________________________________________________________________________________________________________________________________
+
 from __future__ import absolute_import
+# Copyright (c) 2010-2016 openpyxl
 
 """
 XML compatability functions
@@ -6,12 +11,14 @@ XML compatability functions
 
 # Python stdlib imports
 import re
-import os
-import string
-from numpy import array
 from functools import partial
+# compatibility
 
-from lxml.etree import (
+# package imports
+from openpyxl import LXML
+
+if LXML is True:
+    from lxml.etree import (
     Element,
     ElementTree,
     SubElement,
@@ -21,14 +28,35 @@ from lxml.etree import (
     iterparse,
     QName,
     xmlfile
-)
+    )
+    # from xml.etree.cElementTree import iterparse
+    from xml.etree import cElementTree
+else:
+    try:
+        from xml.etree.cElementTree import (
+        ElementTree,
+        Element,
+        SubElement,
+        fromstring,
+        tostring,
+        iterparse,
+        QName
+        )
+    except ImportError:
+        from xml.etree.ElementTree import (
+        ElementTree,
+        Element,
+        SubElement,
+        fromstring,
+        tostring,
+        iterparse,
+        QName
+        )
+    from .namespace import register_namespace
+    from et_xmlfile import xmlfile
 
-from xml.etree import (
-    cElementTree
-)
-   
 
-from koala.xml.constants import (
+from openpyxl.xml.constants import (
     CHART_NS,
     DRAWING_NS,
     SHEET_DRAWING_NS,
@@ -95,41 +123,3 @@ NS_REGEX = re.compile("({(?P<namespace>.*)})?(?P<localname>.*)")
 def localname(node):
     m = NS_REGEX.match(node.tag)
     return m.group('localname')
-
-def col2num(col): # http://stackoverflow.com/questions/7261936/convert-an-excel-or-spreadsheet-column-letter-to-its-number-in-pythonic-fashion
-    num = 0
-    for c in col:
-        if c in string.ascii_letters:
-            num = num * 26 + (ord(c.upper()) - ord('A')) + 1
-    return num
-
-
-def num2col(num): # http://stackoverflow.com/questions/23861680/convert-spreadsheet-number-to-column-letter
-    div = num
-    string = ""
-
-    while div > 0:
-        module = (div - 1) % 26
-        string = chr(65 + module) + string
-        div = int((div - module) / 26)
-
-    return string
-
-
-def cell2vec(cell):
-    # need to verify match exists
-
-    found = re.search("\$?([A-Za-z]{1,3})\$?([1-9][0-9]{0,6})$", cell).group
-
-    row = int(found(2))
-    col = int(col2num(found(1)))
-
-    return array([row, col])
-
-
-def vec2cell(vector):
-    # need to verify type(vector) == numpy.ndarray or list
-
-    return num2col(vector[1]) + str(vector[0])
-
-

@@ -19,7 +19,7 @@ sys.path.insert(0, path)
 #           \ /          /
 #           C6__________/
 #      
-from koala.ast.graph import ExcelCompiler
+from koala import ExcelCompiler
 
 
 class Test_without_range(unittest.TestCase):

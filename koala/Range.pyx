@@ -1,7 +1,9 @@
 import re
 import string
+
 from ExcelError import ExcelError
-from excelutils import *
+from utils import *
+from Cell import Cell
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
 
@@ -102,6 +104,7 @@ class RangeCore(dict):
         self.__length = len(cells)
         self.__nrows = nrows
         self.__ncols = ncols
+
         if ncols == 1 and nrows == 1:
             self.__type = 'scalar'
         elif ncols == 1:
@@ -199,7 +202,7 @@ class RangeCore(dict):
                         values.append(None)
                     cells.append(get_cell_address(self.sheet, t))
 
-                return RangeCore(cells, values = values, nrows = 1, ncols = len(cells))
+                return RangeCore(cells, values = values, nrows = len(cells), ncols = 1)
 
             elif col == 0: # get row
 
@@ -217,7 +220,7 @@ class RangeCore(dict):
                         values.append(None)
                     cells.append(get_cell_address(self.sheet, t))
 
-                return RangeCore(cells, values = values, nrows = len(cells), ncols = 1)
+                return RangeCore(cells, values = values, nrows = 1, ncols = len(cells))
 
             else:
                 base_col_number = col2num(cells[0][0])
@@ -306,6 +309,7 @@ class RangeCore(dict):
                     else:
                         item_value = item[(row, item.origin[1])] if (row, item.origin[1]) in item else None
                 elif item.type == "horizontal":
+                    
                     if item.__cellmap is not None:
                         try:
                             item_value = item[(item.origin[0], col)].value if (item.origin[0], col) in item else None

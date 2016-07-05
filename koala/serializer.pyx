@@ -2,9 +2,6 @@ import json
 import gzip
 import networkx
 
-from koala.ast.excelutils import Cell
-from Range import RangeCore, RangeFactory
-
 from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
@@ -12,16 +9,21 @@ from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 import marshal
 
+from Cell import Cell
+from Range import RangeCore, RangeFactory
+
 SEP = ";;"
 
 ########### based on custom format #################
-def dump2(self, fname):
+def dump(self, fname, marshal = False):
     outfile = gzip.GzipFile(fname, 'w')
-    outfile2 = open(fname + "_marshal", 'wb')
+
+    if marshal:
+        outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
-    simple_cells = filter(lambda cell: cell.is_range == False, self.G.nodes())
-    range_cells = filter(lambda cell: cell.is_range, self.G.nodes())
+    simple_cells = filter(lambda cell: cell.is_range == False, self.cellmap.values())
+    range_cells = filter(lambda cell: cell.is_range, self.cellmap.values())
     compiled_expressions = {}
 
     def parse_cell_info(cell):
@@ -55,7 +57,8 @@ def dump2(self, fname):
         outfile.write(cell.range.name + "\n")
         outfile.write("====" + "\n")
 
-    marshal.dump(compiled_expressions, outfile2)
+    if marshal:
+        marshal.dump(compiled_expressions, outfile2)
     
     # writing the edges
     outfile.write("edges" + "\n")
@@ -63,17 +66,19 @@ def dump2(self, fname):
         outfile.write(source.address() + SEP + target.address() + "\n")
 
     # writing the rest
-    outfile.write("outputs" + "\n")
-    outfile.write(SEP.join(self.outputs) + "\n")
-    outfile.write("inputs" + "\n")
-    outfile.write(SEP.join(self.inputs) + "\n")
+    if self.outputs is not None:
+        outfile.write("outputs" + "\n")
+        outfile.write(SEP.join(self.outputs) + "\n")
+    if self.inputs is not None:
+        outfile.write("inputs" + "\n")
+        outfile.write(SEP.join(self.inputs) + "\n")
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write(k + SEP + self.named_ranges[k] + "\n")
     
     outfile.close()
 
-def load2(fname):
+def load(fname):
 
     def clean_bool(string):
         if string == "0":
@@ -99,6 +104,8 @@ def load2(fname):
     mode = "node0"
     nodes = []
     edges = []
+    outputs = None
+    inputs = None
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
     try:
@@ -176,7 +183,7 @@ def load2(fname):
     return (G, cellmap, named_ranges, outputs, inputs)
 
 ########### based on json #################
-def dump(self, fname):
+def dump_json(self, fname):
     data = json_graph.node_link_data(self.G)
     # save nodes as simple objects
     nodes = []
@@ -210,7 +217,7 @@ def dump(self, fname):
         outfile.write(json.dumps(data))
 
 
-def load(fname):
+def load_json(fname):
 
     def _decode_list(data):
         rv = []
