@@ -323,7 +323,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            return ('no result in lookup_range for match_type 1')
+            return ExcelError('#VALUE!','no result in lookup_range for match_type 1')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
@@ -340,7 +340,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
-               return ('for match_type -1, lookup_range must be sorted descending')
+               return ExcelError('#VALUE!','for match_type -1, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
