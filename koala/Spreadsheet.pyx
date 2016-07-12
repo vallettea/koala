@@ -58,9 +58,14 @@ class Spreadsheet(object):
     def activate_history(self):
         self.save_history = True
 
-    def add_cell(self, cell):
-        if cell.address() in self.cellmap:
-            raise Exception('Cell %s already in cellmap' % cell.address())
+    def add_cell(self, cell, value = None):
+        
+        if type(cell) != Cell:
+            cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
+        
+        addr = cell.address()
+        if addr in self.cellmap:
+            raise Exception('Cell %s already in cellmap' % addr)
 
         cellmap, G = graph_from_seeds([cell], self)
 
