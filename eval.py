@@ -10,7 +10,6 @@ import json
 import warnings
 from io import BytesIO
 
-from koala.tokenizer import ExcelParser
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
 from koala.Cell import Cell
@@ -77,12 +76,12 @@ if __name__ == '__main__':
 
     ## Graph Serialization ###
     print "Serializing to disk...", file
-    sp.dump2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    sp.dump(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    sp = Spreadsheet.load(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     ### Graph Evaluation ###
@@ -101,7 +100,7 @@ if __name__ == '__main__':
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
-
+    
     # import cProfile
     # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
 
