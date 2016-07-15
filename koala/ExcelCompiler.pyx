@@ -61,8 +61,29 @@ class ExcelCompiler(object):
                 reference = self.named_ranges[o]
 
                 if is_range(reference):
-                    
-                    rng = self.Range(reference)
+                    if 'OFFSET' in reference or 'INDEX' in reference:
+                        print 'REF', reference
+                        start, end = reference.split(':')
+                        print 'Start', start, 'End', end
+
+                        def build_code(formula):
+                            e = shunting_yard(formula, self.named_ranges, tokenize_range = False)
+                            debug = True
+                            ast,root = build_ast(e, debug = debug)
+                            code = root.emit(ast)
+
+                            print 'Code', code
+
+                        [start_code, end_code] = map(build_code, [start, end])
+
+                        start_end = {
+                            "start": start_code,
+                            "end": end_code
+                        }
+
+                        rng = self.Range(start_end)
+                    else:
+                        rng = self.Range(reference)
 
                     # rng = self.Range(reference)
                     for address in rng.addresses: # this is avoid pruning deletion

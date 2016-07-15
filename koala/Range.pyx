@@ -12,6 +12,7 @@ from Cell import Cell
 cache = {}
 
 def parse_cell_address(ref):
+    # A1 => (1, 'A')
     try:
         if ref not in cache:
             found = re.search(CELL_REF_RE, ref)
@@ -26,6 +27,7 @@ def parse_cell_address(ref):
         raise Exception('Couldn\'t find match in cell ref')
     
 def get_cell_address(sheet, tuple):
+    # Sheet1, (1, 'A') => Sheet1!A1
     row = tuple[0]
     col = tuple[1]
 
@@ -52,70 +54,41 @@ class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
+        volatile = False
+
+        # Needed for RangeCore.build()
+        # self.__cellmap = cellmap
+        # self.__values = values
+        self.__stem_cells = None # cells from which RangeCore will be built
+
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
-            cells = reference
+            self.__stem_cells = reference
+        elif type(reference) == dict:
+            volatile = True
         else:
             reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(reference)
+                self.__stem_cells, nrows, ncols = resolve_range(reference)
             except:
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
-        cells = list(flatten(cells))
+        self.__reference = reference
+        self.__volatile = volatile
 
-        origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
-
-        if cellmap:
-            cells = [cell for cell in cells if cell in cellmap]
-
-        if values:
-            if len(cells) != len(values):
-                raise ValueError("cells and values in a Range must have the same size")
-
-        try:
-            sheet = cells[0].split('!')[0]
-        except:
-            sheet = None
-
-        result = []
-        order = []
-
-        for index, cell in enumerate(cells):
-            row,col = parse_cell_address(cell)
-            order.append((row, col))
-            try:
-                if cellmap:
-                    result.append(((row, col), cellmap[cell]))
-
-                else:
-                    if isinstance(values[index], RangeCore):
-                        raise Exception('Range can\'t be values of Range', reference)
-                    result.append(((row, col), values[index]))
-
-            except: # when you don't provide any values
-                result.append(((row, col), None))
-
-        # dont allow messing with these params
-        self.__cellmap = cellmap
-        self.__name = reference if type(reference) != list else name
-        self.__origin = origin
-        self.__addresses = cells
-        self.__order = order
-        self.__length = len(cells)
-        self.__nrows = nrows
-        self.__ncols = ncols
-
-        if ncols == 1 and nrows == 1:
-            self.__type = 'scalar'
-        elif ncols == 1:
-            self.__type = 'vertical'
-        elif nrows == 1:
-            self.__type = 'horizontal'
+        if not volatile:
+            result = self.build(values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
         else:
-            self.__type = 'bidimensional'
-        self.__sheet = sheet
+            self.__name = None
+            self.__cellmap = None
+            self.__origin = None
+            self.__addresses = []
+            self.__order = None
+            self.__length = None
+            self.__nrows = None
+            self.__ncols = None
+            self.__type = None
+            self.__sheet = None
 
-        dict.__init__(self, result)
 
     @property
     def name(self):
@@ -132,6 +105,9 @@ class RangeCore(dict):
     @property
     def length(self):
         return self.__length
+    @property
+    def volatile(self):
+        return self.__volatile
     @property
     def nrows(self):
         return self.__nrows
@@ -168,6 +144,73 @@ class RangeCore(dict):
     @property
     def cells(self):
         return map(lambda c: self[c], self.order)
+
+    def build(self, values = None, cellmap = None, nrows = None, ncols = None, name = None):
+        
+        reference = self.__reference
+        cells = list(flatten(self.__stem_cells))
+
+        origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
+
+        if cellmap:
+            cells = [cell for cell in cells if cell in cellmap]
+
+        if values:
+            if len(cells) != len(values):
+                raise ValueError("cells and values in a Range must have the same size")
+
+        result = []
+        order = []
+
+        for index, cell in enumerate(cells):
+            row,col = parse_cell_address(cell)
+            order.append((row, col))
+            try:
+                if cellmap:
+                    result.append(((row, col), cellmap[cell]))
+
+                else:
+                    if isinstance(values[index], RangeCore):
+                        raise Exception('Range can\'t be values of Range', reference)
+                    result.append(((row, col), values[index]))
+
+            except: # when you don't provide any values
+                result.append(((row, col), None))
+
+        try:
+            sheet = cells[0].split('!')[0]
+        except:
+            sheet = None
+
+        # dont allow messing with these params
+        if type(reference) == list:
+            self.__name = name
+        elif type(reference) == dict:
+            self.__name = ':'.join([str(reference["start"]), str(reference["end"])])
+        else:
+            self.__name = reference
+        # self.__name = reference if type(reference) != list else name
+        self.__cellmap = cellmap
+        self.__origin = origin
+        self.__addresses = cells
+        self.__order = order
+        self.__length = len(cells)
+        self.__nrows = nrows
+        self.__ncols = ncols
+
+        if ncols == 1 and nrows == 1:
+            self.__type = 'scalar'
+        elif ncols == 1:
+            self.__type = 'vertical'
+        elif nrows == 1:
+            self.__type = 'horizontal'
+        else:
+            self.__type = 'bidimensional'
+        self.__sheet = sheet
+
+        dict.__init__(self, result)
+        # return result
+
 
     def get(self, row, col = None):
         nr = self.nrows
