@@ -10,7 +10,7 @@ from networkx.algorithms import number_connected_components
 from reader import read_archive, read_named_ranges, read_cells
 from excellib import *
 from utils import *
-from ast import graph_from_seeds
+from ast import graph_from_seeds, shunting_yard, build_ast
 from ExcelError import *
 from Cell import Cell
 from Range import RangeFactory
@@ -49,41 +49,41 @@ class ExcelCompiler(object):
         print '___### Generating Graph ###___'
 
         if outputs is None:
-            seeds = list(flatten(self.cells.values()))
-
-            for name in self.named_ranges:
-                reference = self.named_ranges[name]
-                rng = self.Range(reference)
-                virtual_cell = Cell(name, None, value = rng, formula = reference, is_range = True, is_named_range = True )
-                seeds.append(virtual_cell)
+            outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys())
         else:
-            outputs = list(outputs) # creates a copy
-            seeds = []
-            for o in outputs:
-                if o in self.named_ranges:
-                    reference = self.named_ranges[o]
-                    if is_range(reference):
+            outputs = set(list(outputs)) # creates a copy
+        
+        # print 'OUTPUTS', outputs
 
-                        rng = self.Range(reference)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            outputs.append(address)
-                        virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
-                        seeds.append(virtual_cell)
-                    else:
-                        # might need to be changed to actual self.cells Cell, not a copy
-                        virtual_cell = Cell(o, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
-                        seeds.append(virtual_cell)
+        seeds = []
+        for o in outputs:
+            if o in self.named_ranges:
+                reference = self.named_ranges[o]
+
+                if is_range(reference):
+                    
+                    rng = self.Range(reference)
+
+                    # rng = self.Range(reference)
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        outputs.add(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
                 else:
-                    if is_range(o):
-                        rng = self.Range(o)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            outputs.append(address)
-                        virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
-                        seeds.append(virtual_cell)
-                    else:
-                        seeds.append(self.cells[o])
+                    # might need to be changed to actual self.cells Cell, not a copy
+                    virtual_cell = Cell(o, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                    seeds.append(virtual_cell)
+            else:
+                if is_range(o):
+                    rng = self.Range(o)
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        outputs.add(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
+                else:
+                    seeds.append(self.cells[o])
 
-        # print "Seeds %s cells" % len(seeds)
+        print "Seeds %s cells" % len(seeds)
 
         # print "%s cells on the todo list" % len(todo)
 
