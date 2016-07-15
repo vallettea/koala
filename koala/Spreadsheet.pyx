@@ -180,7 +180,7 @@ class Spreadsheet(object):
 
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs, debug = self.debug)
 
-    def clean_volatile(self):
+    def clean_volatile(self, with_cache = True):
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -214,10 +214,12 @@ class Spreadsheet(object):
             # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         ### 3) evaluate all volatiles
-        cache = {} # formula => new_formula
+        if with_cache:
+            cache = {} # formula => new_formula
 
         for cell in all_volatiles:
-            if cell["formula"] in cache:
+            if with_cache and cell["formula"] in cache:
+                # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
                 new_formula = cache[cell["formula"]]
             else:
                 if cell["sheet"]:
@@ -244,7 +246,10 @@ class Spreadsheet(object):
                             new_formula = new_formula.replace(repl["formula"], repl["value"])
                 else:
                     new_formula = None
-                cache[cell["formula"]] = new_formula
+                
+                if with_cache:
+                    # print 'Caching', cell["address"], cell["formula"], new_formula
+                    cache[cell["formula"]] = new_formula
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["address"]] = new_formula
