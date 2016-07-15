@@ -50,6 +50,12 @@ class ExcelCompiler(object):
 
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
+
+            for name in self.named_ranges:
+                reference = self.named_ranges[name]
+                rng = self.Range(reference)
+                virtual_cell = Cell(name, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                seeds.append(virtual_cell)
         else:
             outputs = list(outputs) # creates a copy
             seeds = []
