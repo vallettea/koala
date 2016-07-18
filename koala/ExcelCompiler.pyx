@@ -10,7 +10,7 @@ from networkx.algorithms import number_connected_components
 from reader import read_archive, read_named_ranges, read_cells
 from excellib import *
 from utils import *
-from ast import graph_from_seeds, shunting_yard, build_ast
+from ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatiles
 from ExcelError import *
 from Cell import Cell
 from Range import RangeFactory
@@ -33,6 +33,7 @@ class ExcelCompiler(object):
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
+        self.volatile_ranges = []
         self.debug = debug
 
     def clean_volatile(self):
@@ -62,26 +63,10 @@ class ExcelCompiler(object):
 
                 if is_range(reference):
                     if 'OFFSET' in reference or 'INDEX' in reference:
-                        print 'REF', reference
-                        start, end = reference.split(':')
-                        print 'Start', start, 'End', end
-
-                        def build_code(formula):
-                            e = shunting_yard(formula, self.named_ranges, tokenize_range = False)
-                            debug = True
-                            ast,root = build_ast(e, debug = debug)
-                            code = root.emit(ast)
-
-                            print 'Code', code
-
-                        [start_code, end_code] = map(build_code, [start, end])
-
-                        start_end = {
-                            "start": start_code,
-                            "end": end_code
-                        }
-
+                        start_end = prepare_volatiles(reference, self.named_ranges)
                         rng = self.Range(start_end)
+
+                        self.volatile_ranges.append(rng)
                     else:
                         rng = self.Range(reference)
 
@@ -92,7 +77,8 @@ class ExcelCompiler(object):
                     seeds.append(virtual_cell)
                 else:
                     # might need to be changed to actual self.cells Cell, not a copy
-                    virtual_cell = Cell(o, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                    value = self.cells[reference].value if reference in self.cells else None
+                    virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
                     seeds.append(virtual_cell)
             else:
                 if is_range(o):
@@ -114,7 +100,7 @@ class ExcelCompiler(object):
         undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug, volatile_ranges = self.volatile_ranges)
 
 
 

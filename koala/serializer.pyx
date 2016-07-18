@@ -54,7 +54,11 @@ def dump(self, fname, marshal = False):
 
     for cell in range_cells:
         parse_cell_info(cell)
-        outfile.write(cell.range.name + "\n")
+        try:
+            outfile.write(cell.range.name + "\n")
+        except:
+            print 'ERROR', cell.address(), cell.range.addresses
+            raise Exception('ERRRER')
         outfile.write("====" + "\n")
 
     if marshal:

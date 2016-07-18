@@ -85,7 +85,7 @@ def reverse_rpn(node, ast):
 #     Methods: f_token  - __init__()
 #========================================================================
 class f_token:
-    def __init__(self, value, type, subtype):
+    def __init__(self, value, type, subtype=''):
         self.tvalue   = value
         self.ttype    = type
         self.tsubtype = subtype

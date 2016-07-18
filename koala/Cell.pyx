@@ -170,7 +170,7 @@ class Cell(object):
         try:
             self.__compiled_expression = compile(self.python_expression,'<string>','eval')
         except Exception as e:
-            raise Exception("Failed to compile cell %s with expression %s: %s" % (self.address(),self.python_expression,e)) 
+            raise Exception("Failed to compile cell %s with expression %s: %s\nFormula: %s" % (self.address(),self.python_expression,e, self.formula)) 
     
     def __str__(self):
         return self.address()

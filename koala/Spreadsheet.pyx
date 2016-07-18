@@ -20,7 +20,7 @@ from tokenizer import reverse_rpn
 from serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], volatile_ranges = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -49,6 +49,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+        self.volatile_ranges = volatile_ranges
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -350,6 +351,8 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
+        self.build_volatiles()
+
     def reset(self, cell):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
@@ -395,6 +398,21 @@ class Spreadsheet(object):
         print "%s %s = %s" % (" "*indent,addr,cell.value)
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
+
+    def build_volatiles(self):
+
+        for v_range in self.volatile_ranges:
+            print 'Name', v_range.name
+
+            start = eval(v_range.reference['start'])
+            end = eval(v_range.reference['end'])
+
+            print 'Eval Start', start
+            print 'Eval End', end
+
+            v_range.build('%s:%s' % (start, end), debug = True)
+
+            print 'V ranges', v_range.values, v_range.addresses
 
     def eval_ref(self, addr1, addr2 = None, ref = None):
         debug = False

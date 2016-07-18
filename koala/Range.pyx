@@ -54,106 +54,53 @@ class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
-        volatile = False
+        is_volatile = False
 
-        # Needed for RangeCore.build()
-        # self.__cellmap = cellmap
-        # self.__values = values
-        self.__stem_cells = None # cells from which RangeCore will be built
+        if type(reference) == dict:
+            is_volatile = True
 
-        if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
-            self.__stem_cells = reference
-        elif type(reference) == dict:
-            volatile = True
-        else:
-            reference = reference.replace('$','')
-            try:
-                self.__stem_cells, nrows, ncols = resolve_range(reference)
-            except:
-                return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
-
+        self.__volatile = is_volatile
         self.__reference = reference
-        self.__volatile = volatile
+        self.__cellmap = cellmap
 
-        if not volatile:
-            result = self.build(values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
+        if not is_volatile:
+            result = self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
         else:
-            self.__name = None
-            self.__cellmap = None
+            self.__name = '%s:%s' % (reference['start'], reference['end'])
             self.__origin = None
             self.__addresses = []
-            self.__order = None
+            self.__order = []
             self.__length = None
             self.__nrows = None
             self.__ncols = None
             self.__type = None
             self.__sheet = None
 
-
-    @property
-    def name(self):
-        return self.__name
-    @property
-    def origin(self):
-        return self.__origin
-    @property
-    def addresses(self):
-        return self.__addresses
-    @property
-    def order(self):
-        return self.__order
-    @property
-    def length(self):
-        return self.__length
-    @property
-    def volatile(self):
-        return self.__volatile
-    @property
-    def nrows(self):
-        return self.__nrows
-    @property
-    def ncols(self):
-        return self.__ncols
-    @property
-    def type(self):
-        return self.__type
-    @property
-    def sheet(self):
-        return self.__sheet
-    @property
-    def values(self):
-        if self.__cellmap:
-            values = []
-            for cell in self.cells:
-                values.append(cell.value)
-            return values
-        else:
-            return self.cells
-    
-    @values.setter
-    def values(self, new_values):
-        if self.__cellmap:
-            for index, cell in enumerate(self.cells):
-                if index < len(new_values):
-                    cell.value = new_values[index]
-        else:
-            for index, value in enumerate(self.order):
-                if index < len(new_values):
-                    self[value] = new_values[index]
-
-    @property
-    def cells(self):
-        return map(lambda c: self[c], self.order)
-
-    def build(self, values = None, cellmap = None, nrows = None, ncols = None, name = None):
+    # A separate function from __init__ is necessary so that it can be called from outside
+    def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
         
-        reference = self.__reference
-        cells = list(flatten(self.__stem_cells))
+        if debug:
+            print 'YOUHOUH'
+
+        if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
+            cells = reference
+        elif type(reference) == dict:
+            is_volatile = True
+        else:
+            reference = reference.replace('$','')
+            try:
+                cells, nrows, ncols = resolve_range(reference)
+            except:
+                return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
+
+        cells = list(flatten(cells))
 
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
 
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
+            if debug:
+                print 'CELLS', cells
 
         if values:
             if len(cells) != len(values):
@@ -190,7 +137,6 @@ class RangeCore(dict):
         else:
             self.__name = reference
         # self.__name = reference if type(reference) != list else name
-        self.__cellmap = cellmap
         self.__origin = origin
         self.__addresses = cells
         self.__order = order
@@ -209,7 +155,71 @@ class RangeCore(dict):
         self.__sheet = sheet
 
         dict.__init__(self, result)
-        # return result
+
+    def build(self, reference = None, values = None, nrows = None, ncols = None, name = None, debug = False):
+        self.__build(reference = reference, values = values, cellmap = self.__cellmap, nrows = nrows, ncols = ncols, name = name, debug = debug)
+
+
+    @property
+    def reference(self):
+        return self.__reference
+    @property
+    def name(self):
+        return self.__name
+    @property
+    def origin(self):
+        return self.__origin
+    @property
+    def addresses(self):
+        return self.__addresses
+    @property
+    def order(self):
+        return self.__order
+    @property
+    def length(self):
+        return self.__length
+    @property
+    def is_volatile(self):
+        return self.__volatile
+    @property
+    def nrows(self):
+        return self.__nrows
+    @property
+    def ncols(self):
+        return self.__ncols
+    @property
+    def type(self):
+        return self.__type
+    @property
+    def sheet(self):
+        return self.__sheet
+    @property
+    def values(self):
+        if self.__cellmap:
+            print 'THERE'
+            values = []
+            for cell in self.cells:
+                print 'Cell', cell.address(), cell.value
+                values.append(cell.value)
+            return values
+        else:
+            print 'HERE'
+            return self.cells
+    
+    @values.setter
+    def values(self, new_values):
+        if self.__cellmap:
+            for index, cell in enumerate(self.cells):
+                if index < len(new_values):
+                    cell.value = new_values[index]
+        else:
+            for index, value in enumerate(self.order):
+                if index < len(new_values):
+                    self[value] = new_values[index]
+
+    @property
+    def cells(self):
+        return map(lambda c: self[c], self.order)
 
 
     def get(self, row, col = None):

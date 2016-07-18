@@ -69,7 +69,7 @@ class ASTNode(object):
             return False      
 
 
-    def emit(self,ast,context=None):
+    def emit(self,ast,context=None, volatile = False):
         """Emit code"""
         self.token.tvalue
     
@@ -99,7 +99,7 @@ class OperatorNode(ASTNode):
             "<=": "is_inferior_or_equal"
         }
 
-    def emit(self,ast,context=None):
+    def emit(self,ast,context=None, volatile = False):
         xop = self.tvalue
         
         # Get the arguments
@@ -154,7 +154,7 @@ class OperatorNode(ASTNode):
 class OperandNode(ASTNode):
     def __init__(self,*args):
         super(OperandNode,self).__init__(*args)
-    def emit(self,ast,context=None):
+    def emit(self,ast,context=None, volatile = False):
         t = self.tsubtype
         
         if t == "logical":
@@ -176,7 +176,7 @@ class RangeNode(OperandNode):
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
     
-    def emit(self,ast,context=None):
+    def emit(self,ast,context=None, volatile = False):
         if isinstance(self.tvalue, ExcelError):
             if self.debug:
                 print 'WARNING: Excel Error Code found', self.tvalue
@@ -193,20 +193,23 @@ class RangeNode(OperandNode):
 
             is_a_range = is_range(rng)
 
-            if is_a_range:
-                sh,start,end = split_range(rng)
-            else:
-                try:
-                    sh,col,row = split_address(rng)
-                except:
-                    if self.debug:
-                        print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
-                    sh = None
-
-            if sh:
+            if self.tsubtype == 'volatile':
                 my_str = '"' + rng + '"'
             else:
-                my_str = '"' + sheet + rng + '"'
+                if is_a_range:
+                    sh,start,end = split_range(rng)
+                else:
+                    try:
+                        sh,col,row = split_address(rng)
+                    except:
+                        if self.debug:
+                            print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
+                        sh = None
+
+                if sh:
+                    my_str = '"' + rng + '"'
+                else:
+                    my_str = '"' + sheet + rng + '"'
 
         to_eval = True
         # exception for formulas which use the address and not it content as ":" or "OFFSET"
@@ -215,7 +218,9 @@ class RangeNode(OperandNode):
         if (parent is not None and
             (parent.tvalue == ':' or
             (parent.tvalue == 'OFFSET' and parent.children(ast)[0] == self) or
-            (parent.tvalue == 'CHOOSE' and parent.children(ast)[0] != self and self.tsubtype == "named_range"))):
+            (parent.tvalue == 'CHOOSE' and parent.children(ast)[0] != self and self.tsubtype == "named_range")) or
+            volatile):
+
             to_eval = False
 
         # if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
@@ -268,7 +273,7 @@ class FunctionNode(ASTNode):
         # map  excel functions onto their python equivalents
         self.funmap = FUNCTION_MAP
         
-    def emit(self,ast,context=None):
+    def emit(self,ast,context=None, volatile = False):
         fun = self.tvalue.lower()
 
         # Get the arguments
@@ -324,12 +329,12 @@ class FunctionNode(ASTNode):
         elif fun == "or":
             return "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index":
-            if self.parent(ast) is not None and self.parent(ast).tvalue == ':':
+            if volatile or self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 return 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
                 return 'self.eval_ref(index(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
         elif fun == "offset":
-            if self.parent(ast) is None or self.parent(ast).tvalue == ':':
+            if volatile or self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 return 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
                 return 'self.eval_ref(offset(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
