@@ -51,38 +51,38 @@ outputs = [
 
 if __name__ == '__main__':
 
-    input_folder = 'input'
+    input_folder = 'inputs'
     # input_folder = 'other/Norway_Output'
     graph_folder = 'graphs'
     # graph_folder = 'temp_graphs'
 
-    file = "../engie/data/%s/100021256 - North America - United States - Tubular Bells - Oil - Producing.xlsx" % input_folder
+    file = "../engie/data/%s/100065090 - North America - United States - MC-161 - Gas - Producing.xlsx" % input_folder
 
     print file
 
-    ### Graph Generation ###
-    startTime = datetime.now()
-    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
-    for name, reference in personalized_names.items():
-        c.named_ranges[name] = reference
-    c.clean_volatile()
-    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=outputs)
-    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    # ### Graph Generation ###
+    # startTime = datetime.now()
+    # c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
+    # for name, reference in personalized_names.items():
+    #     c.named_ranges[name] = reference
+    # c.clean_volatile()
+    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph(outputs=outputs)
+    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    ### Graph Pruning ###
-    startTime = datetime.now()
-    sp = sp.prune_graph(inputs)
-    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # ### Graph Pruning ###
+    # startTime = datetime.now()
+    # sp = sp.prune_graph(inputs)
+    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    ## Graph Serialization ###
-    print "Serializing to disk...", file
-    sp.dump2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    # ## Graph Serialization ###
+    # print "Serializing to disk...", file
+    # sp.dump(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load2(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    sp = Spreadsheet.load(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     ### Graph Evaluation ###
@@ -104,6 +104,12 @@ if __name__ == '__main__':
 
     # import cProfile
     # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
+
+    print 'TEST 4.1', sp.eval_ref(index(resolve_range("InputData!D342:K342"),1,sp.eval_ref('rsvPriceThreshColumn', ref = (186, 'Y'))),ref = (186, 'Y'))
+
+    print 'TEST 5', RangeCore.apply('is_strictly_superior',sp.eval_ref('CA_Years', ref = (186, 'Y')),sp.eval_ref("InputData!D342", ref = (186, 'Y')),(186, 'Y'))
+
+    print 'TEST 6', vlookup(sp.eval_ref('CA_Years', ref = (186, 'Y')),sp.eval_ref('priceThresholdTables', ref = (186, 'Y')),sp.eval_ref('rsvPriceThreshColumn', ref = (186, 'Y')),False)
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
