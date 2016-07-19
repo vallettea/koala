@@ -12,7 +12,22 @@ sys.path.insert(0, path)
 from koala.reader import read_archive, read_named_ranges, read_cells
 from koala.Range import RangeCore
 from koala.ExcelCompiler import ExcelCompiler
+from koala.Spreadsheet import Spreadsheet
 from koala.Cell import Cell
+
+
+# file_name = "./tests/ast/basic_evaluation.xlsx"
+
+# c = ExcelCompiler(file_name, debug = True)
+# # c.clean_volatile()
+# sp = c.gen_graph()
+
+# sp.dump(file_name.replace(".xlsx", ".gzip"))
+# sp = Spreadsheet.load(file_name.replace(".xlsx", ".gzip"))
+
+# import sys
+# sys.exit(0)
+
 
 class Test_Excel(unittest.TestCase):
     
@@ -23,7 +38,6 @@ class Test_Excel(unittest.TestCase):
         c = ExcelCompiler(file_name, debug = True)
         # c.clean_volatile()
         self.sp = c.gen_graph()
-
 
     def test_Volatile_Name_L6(self):
         self.sp.set_value('Sheet1!A6', 10)
