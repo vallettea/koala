@@ -205,7 +205,6 @@ class Cell(object):
 
         if is_range(range):
             # use the sheet specified in the range, else the passed sheet
-            print 'MAKE CELLS splitting', range
             sh,start,end = split_range(range)
             if sh: sheet = sh
 
