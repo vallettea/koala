@@ -191,11 +191,11 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = True):
                 # print 'FULL EXPRESSION', expr
                 new_tokens.append(f_token(expr, 'operand', 'volatile'))
 
-    try:
-        print '-------------- TEST', ''.join(map(lambda x: str(x.tvalue), tokens))
-        print '-------------- TEST new', ''.join(map(lambda x: str(x.tvalue), new_tokens))
-    except:
-        pass
+    # try:
+    #     print '-------------- TEST', ''.join(map(lambda x: str(x.tvalue), tokens))
+    #     print '-------------- TEST new', ''.join(map(lambda x: str(x.tvalue), new_tokens))
+    # except:
+    #     pass
 
 
     for t in new_tokens:
@@ -367,21 +367,25 @@ def make_subgraph(G, seed, direction = "ascending"):
     return subgraph
 
 
-def cell2code(named_ranges, cell, sheet):
+def cell2code(cell, named_ranges):
     """Generate python code for the given cell"""
     if cell.formula:
 
-        # debug = False
+        debug = False
         # if 'OFFSET' in cell.formula or 'INDEX' in cell.formula:
         #     debug = True
         # if debug:
         #     print 'FORMULA', cell.formula
 
         ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
+        sheet = cell.sheet
+
         e = shunting_yard(cell.formula, named_ranges, ref=ref, tokenize_range = False)
         
         ast,root = build_ast(e, debug = debug)
         code = root.emit(ast, context=sheet)
+
+        # print 'CODE', code, ref
 
     else:
         ast = None
@@ -389,29 +393,35 @@ def cell2code(named_ranges, cell, sheet):
     return code,ast
 
 
-def prepare_volatiles(reference, names):
-    # print 'REF', reference
+def prepare_volatile(code, names, ref_cell = None):
+    # print 'REF', code
 
     try:
-        start, end = reference.split('):')
+        start, end = code.split('):')
         start += ')'
     except:
         try:
-            start, end = reference.split(':INDEX')
+            start, end = code.split(':INDEX')
             end = 'INDEX' + end
         except:
-            start, end = reference.split(':OFFSET')
+            start, end = code.split(':OFFSET')
             end = 'OFFSET' + end
 
-    # print 'Start', start, 'End', end
-
     def build_code(formula):
-        e = shunting_yard(formula, names, tokenize_range = False)
-        debug = True
-        ast,root = build_ast(e, debug = debug)
-        code = root.emit(ast, volatile = True)
+        ref = None
+        sheet = None
 
-        # print 'Code', code
+        if ref_cell is not None:
+            sheet = ref_cell.sheet
+
+            if not ref_cell.is_named_range:
+                ref = parse_cell_address(ref_cell.address())
+
+        e = shunting_yard(formula, names, ref = ref, tokenize_range = False)
+        debug = False
+        ast,root = build_ast(e, debug = debug)
+        code = root.emit(ast, context = sheet, volatile = True)
+
         return code
 
     [start_code, end_code] = map(build_code, [start, end])
@@ -420,7 +430,6 @@ def prepare_volatiles(reference, names):
         "start": start_code,
         "end": end_code
     }
-
 
 
 def graph_from_seeds(seeds, cell_source):
@@ -462,7 +471,7 @@ def graph_from_seeds(seeds, cell_source):
         ###### 1) looking for cell c1 dependencies ####################
         # print 'C1', c1.address()
         # in case a formula, get all cells that are arguments
-        pystr, ast = cell2code(names, c1, cursheet)
+        pystr, ast = cell2code(c1, names)
         # set the code & compile it (will flag problems sooner rather than later)
         c1.python_expression = pystr
         c1.compile()    
@@ -510,20 +519,19 @@ def graph_from_seeds(seeds, cell_source):
                 target = cellmap[c1.address()]
             # if the dep_nameendency is a multi-cell range, create a range object
             elif is_range(dep_name) or (dep_name in names and is_range(names[dep_name])):
-
-                # print 'DEP NAME', dep_name
-
                 if dep_name in names:
                     reference = names[dep_name]
                 else:
                     reference = dep_name
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
-                    reference = prepare_volatiles(reference, names)
+                    reference = prepare_volatile(reference, names, ref_cell = c1)
+                    address = '%s:%s' % (reference["start"], reference["end"])
                     rng = cell_source.Range(reference)
 
                     cell_source.volatile_ranges.append(rng)
                 else:
+                    address = dep
                     rng = cell_source.Range(reference)
 
                 if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
@@ -535,10 +543,10 @@ def graph_from_seeds(seeds, cell_source):
                             # raise Exception( '%s unavailable' % c)
                             formulas_in_dep.append(None)
             
-                virtual_cell = Cell(dep, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
                 # save the range
-                cellmap[dep] = virtual_cell
+                cellmap[address] = virtual_cell
                 # add an edge from the range to the parent
                 G.add_node(virtual_cell)
                 # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
@@ -585,7 +593,7 @@ def graph_from_seeds(seeds, cell_source):
                         steps.append(step+1)
                     else:
                         # constant cell, no need for further processing, just remember to set the code
-                        pystr,ast = cell2code(names, c2, cursheet)
+                        pystr,ast = cell2code(c2, names)
                         c2.python_expression = pystr
                         c2.compile()     
                     

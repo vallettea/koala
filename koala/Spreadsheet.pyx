@@ -401,18 +401,12 @@ class Spreadsheet(object):
 
     def build_volatiles(self):
 
-        for v_range in self.volatile_ranges:
-            print 'Name', v_range.name
+        for vol_range in self.volatile_ranges:
+            start = eval(vol_range.reference['start'])
+            end = eval(vol_range.reference['end'])
 
-            start = eval(v_range.reference['start'])
-            end = eval(v_range.reference['end'])
-
-            print 'Eval Start', start
-            print 'Eval End', end
-
-            v_range.build('%s:%s' % (start, end), debug = True)
-
-            print 'V ranges', v_range.values, v_range.addresses
+            vol_range.build('%s:%s' % (start, end), debug = True)
+            self.reset(self.cellmap[vol_range.name])
 
     def eval_ref(self, addr1, addr2 = None, ref = None):
         debug = False
