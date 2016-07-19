@@ -10,7 +10,7 @@ from networkx.algorithms import number_connected_components
 from reader import read_archive, read_named_ranges, read_cells
 from excellib import *
 from utils import *
-from ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatiles
+from ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatile
 from ExcelError import *
 from Cell import Cell
 from Range import RangeFactory
@@ -63,7 +63,7 @@ class ExcelCompiler(object):
 
                 if is_range(reference):
                     if 'OFFSET' in reference or 'INDEX' in reference:
-                        start_end = prepare_volatiles(reference, self.named_ranges)
+                        start_end = prepare_volatile(reference, self.named_ranges)
                         rng = self.Range(start_end)
 
                         self.volatile_ranges.append(rng)
@@ -98,6 +98,7 @@ class ExcelCompiler(object):
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
+
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
         return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug, volatile_ranges = self.volatile_ranges)
