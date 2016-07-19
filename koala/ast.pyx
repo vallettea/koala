@@ -431,7 +431,8 @@ def prepare_volatile(code, names, ref_cell = None):
     if ref_cell:
         start_code = start_code.replace("'", '"')
         end_code = end_code.replace("'", '"')
-        ref_cell.python_expression = ref_cell.python_expression.replace('"', "'").replace(code, "%s:%s" % (start_code, end_code))
+
+        ref_cell.python_expression = ref_cell.python_expression.replace(code, "%s:%s" % (start_code, end_code))
 
     return {
         "start": start_code,
@@ -480,7 +481,7 @@ def graph_from_seeds(seeds, cell_source):
         # in case a formula, get all cells that are arguments
         pystr, ast = cell2code(c1, names)
         # set the code & compile it (will flag problems sooner rather than later)
-        c1.python_expression = pystr # compilation is done later
+        c1.python_expression = pystr.replace('"', "'") # compilation is done later
            
         
         # get all the cells/ranges this formula refers to
