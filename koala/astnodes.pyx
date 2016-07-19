@@ -120,7 +120,7 @@ class OperatorNode(ASTNode):
 
          
         if self.ttype == "operator-prefix":
-            return "RangeCore.apply_one('minus', %s, None, %s)" % (args[0].emit(ast,context=context), str(self.ref))
+            return 'RangeCore.apply_one("minus", %s, None, %s)' % (args[0].emit(ast,context=context), str(self.ref))
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             is_special = self.find_special_function(ast)
@@ -130,7 +130,7 @@ class OperatorNode(ASTNode):
             arg1 = args[0]
             arg2 = args[1]
 
-            return "RangeCore." + call + "(%s)" % ','.join(["'"+function+"'", str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), str(self.ref)])
+            return "RangeCore." + call + "(%s)" % ','.join(['"'+function+'"', str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), str(self.ref)])
 
         parent = self.parent(ast)
 
@@ -140,7 +140,7 @@ class OperatorNode(ASTNode):
             ss = "(" + aa + " if " + aa + " is not None else float('inf'))" + op + args[1].emit(ast,context=context)
         elif op == ">" or op == ">=":
             aa = args[1].emit(ast,context=context)
-            ss =  args[0].emit(ast,context=context) + op + "(" + aa + " if " + aa + " is not None else float('inf'))"
+            ss =  args[0].emit(ast,context=context) + op + '(' + aa + ' if ' + aa + ' is not None else float("inf"))'
         else:
             ss = args[0].emit(ast,context=context) + op + args[1].emit(ast,context=context)
                     
@@ -186,7 +186,7 @@ class RangeNode(OperandNode):
         is_a_named_range = self.tsubtype == "named_range"
 
         if is_a_named_range:
-            my_str = "'" + str(self) + "'" 
+            my_str = '"' + str(self) + '"' 
         else:
             rng = self.tvalue.replace('$','')
             sheet = context + "!" if context else ""

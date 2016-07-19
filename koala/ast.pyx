@@ -395,7 +395,7 @@ def cell2code(cell, named_ranges):
 
 
 def prepare_volatile(code, names, ref_cell = None):
-    # print 'REF', code
+    # if ref_cell is None, it means that the volatile is a named_range
 
     try:
         start, end = code.split('):')
@@ -426,6 +426,12 @@ def prepare_volatile(code, names, ref_cell = None):
         return code
 
     [start_code, end_code] = map(build_code, [start, end])
+
+    # string replacements so that cellmap keys and volatile Range names are coherent
+    if ref_cell:
+        start_code = start_code.replace("'", '"')
+        end_code = end_code.replace("'", '"')
+        ref_cell.python_expression = ref_cell.python_expression.replace('"', "'").replace(code, "%s:%s" % (start_code, end_code))
 
     return {
         "start": start_code,
@@ -474,8 +480,8 @@ def graph_from_seeds(seeds, cell_source):
         # in case a formula, get all cells that are arguments
         pystr, ast = cell2code(c1, names)
         # set the code & compile it (will flag problems sooner rather than later)
-        c1.python_expression = pystr
-        c1.compile()    
+        c1.python_expression = pystr # compilation is done later
+           
         
         # get all the cells/ranges this formula refers to
         deps = [x for x in ast.nodes() if isinstance(x,RangeNode)]
@@ -607,5 +613,7 @@ def graph_from_seeds(seeds, cell_source):
                 if(target != []):
                     # print "Adding edge %s --> %s" % (c2.address(), target.address())
                     G.add_edge(cellmap[c2.address()],target)
+        
+        c1.compile() # cell compilation is done here because volatile ranges might update python_expressions 
 
     return (cellmap, G)
