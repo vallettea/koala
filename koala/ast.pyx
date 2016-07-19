@@ -39,7 +39,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges, ref = None, tokenize_range = True):
+def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -114,47 +114,70 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = True):
     were_values = []
     arg_count = []
 
-
     new_tokens = []
 
     # reconstruct expressions with ':' and replace the corresponding tokens by the reconstructed expression
-    for index, token in enumerate(tokens):
-        # print 'LEN', len(tokens)
-        new_tokens.append(token)
+    if not tokenize_range:
+        for index, token in enumerate(tokens):
+            # print 'LEN', len(tokens)
+            new_tokens.append(token)
 
-        if type(token.tvalue) == str:
-            if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
-                # print 'PBATIC found', token.tvalue
-                depth = 0
-                expr = ''
+            if type(token.tvalue) == str:
+                if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
+                    # print 'PBATIC found', token.tvalue
+                    depth = 0
+                    expr = ''
 
-                rev = reversed(tokens[:index])
+                    rev = reversed(tokens[:index])
 
-                for t in rev: # going backwards, 'stop' starts, 'start' stops
-                    if t.tsubtype == 'stop':
-                        depth += 1
-                    elif depth > 0 and t.tsubtype == 'start':
-                        depth -= 1
+                    for t in rev: # going backwards, 'stop' starts, 'start' stops
+                        if t.tsubtype == 'stop':
+                            depth += 1
+                        elif depth > 0 and t.tsubtype == 'start':
+                            depth -= 1
 
-                    expr = t.tvalue + expr
+                        expr = t.tvalue + expr
 
-                    new_tokens.pop()
-
-                    if depth == 0:
-                        new_tokens.pop() # these 2 lines are needed to remove INDEX()
                         new_tokens.pop()
-                        expr = rev.next().tvalue + expr
-                        break
 
-                expr += token.tvalue
+                        if depth == 0:
+                            new_tokens.pop() # these 2 lines are needed to remove INDEX()
+                            new_tokens.pop()
+                            expr = rev.next().tvalue + expr
+                            break
 
-                depth = 0
+                    expr += token.tvalue
 
-                if token.tvalue[1:] in ['OFFSET', 'INDEX']:
+                    depth = 0
+
+                    if token.tvalue[1:] in ['OFFSET', 'INDEX']:
+                        for t in tokens[(index + 1):]:
+                            if t.tsubtype == 'start':
+                                depth += 1
+                            elif depth > 0 and t.tsubtype == 'stop':
+                                depth -= 1
+
+                            expr += t.tvalue
+
+                            tokens.remove(t)
+
+                            if depth == 0:
+                                break
+
+                    # print 'FULL EXPRESSION', expr
+                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
+
+                elif ':OFFSET' in token.tvalue or ':INDEX' in token.tvalue: # example -> A1:OFFSET(
+                    # print 'PBATIC found', token.tvalue
+                    depth = 0
+                    expr = ''
+
+                    expr += token.tvalue
+
                     for t in tokens[(index + 1):]:
                         if t.tsubtype == 'start':
                             depth += 1
-                        elif depth > 0 and t.tsubtype == 'stop':
+                        elif t.tsubtype == 'stop':
                             depth -= 1
 
                         expr += t.tvalue
@@ -162,43 +185,21 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = True):
                         tokens.remove(t)
 
                         if depth == 0:
+                            new_tokens.pop()
                             break
 
-                # print 'FULL EXPRESSION', expr
-                new_tokens.append(f_token(expr, 'operand', 'volatile'))
+                    # print 'FULL EXPRESSION', expr
+                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
 
-            elif ':OFFSET' in token.tvalue or ':INDEX' in token.tvalue: # example -> A1:OFFSET(
-                # print 'PBATIC found', token.tvalue
-                depth = 0
-                expr = ''
+        # try:
+        #     print '-------------- TEST', ''.join(map(lambda x: str(x.tvalue), tokens))
+        #     print '-------------- TEST new', ''.join(map(lambda x: str(x.tvalue), new_tokens))
+        # except:
+        #     pass
 
-                expr += token.tvalue
+    tokens = new_tokens if new_tokens else tokens
 
-                for t in tokens[(index + 1):]:
-                    if t.tsubtype == 'start':
-                        depth += 1
-                    elif t.tsubtype == 'stop':
-                        depth -= 1
-
-                    expr += t.tvalue
-
-                    tokens.remove(t)
-
-                    if depth == 0:
-                        new_tokens.pop()
-                        break
-
-                # print 'FULL EXPRESSION', expr
-                new_tokens.append(f_token(expr, 'operand', 'volatile'))
-
-    # try:
-    #     print '-------------- TEST', ''.join(map(lambda x: str(x.tvalue), tokens))
-    #     print '-------------- TEST new', ''.join(map(lambda x: str(x.tvalue), new_tokens))
-    # except:
-    #     pass
-
-
-    for t in new_tokens:
+    for t in tokens:
 
         if t.ttype == "operand":
             output.append(create_node(t, ref))
@@ -531,7 +532,7 @@ def graph_from_seeds(seeds, cell_source):
 
                     cell_source.volatile_ranges.append(rng)
                 else:
-                    address = dep
+                    address = dep_name
                     rng = cell_source.Range(reference)
 
                 if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
