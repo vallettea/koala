@@ -32,6 +32,10 @@ def dump(self, fname, marshal = False):
         should_eval = cell.should_eval
         is_range = "1" if cell.is_range else "0"
         is_named_range = "1" if cell.is_named_range else "0"
+        if cell.is_range:
+            is_volatile = "1" if cell.range.is_volatile else "0"
+        else:
+            is_volatile = "0"
 
         compiled_expressions[cell.address()] = cell.compiled_expression
 
@@ -42,6 +46,7 @@ def dump(self, fname, marshal = False):
             python_expression,
             is_range,
             is_named_range,
+            is_volatile,
             should_eval
         ]) + "\n")
 
@@ -54,11 +59,12 @@ def dump(self, fname, marshal = False):
 
     for cell in range_cells:
         parse_cell_info(cell)
-        try:
+
+        if cell.range.is_volatile:
+            outfile.write(json.dumps(cell.range.reference) + "\n")
+        else:
             outfile.write(cell.range.name + "\n")
-        except:
-            print 'ERROR', cell.address(), cell.range.addresses
-            raise Exception('ERRRER')
+
         outfile.write("====" + "\n")
 
     if marshal:
@@ -79,7 +85,7 @@ def dump(self, fname, marshal = False):
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write(k + SEP + self.named_ranges[k] + "\n")
-    
+
     outfile.close()
 
 def load(fname):
@@ -108,6 +114,7 @@ def load(fname):
     mode = "node0"
     nodes = []
     edges = []
+    volatile_ranges = []
     outputs = None
     inputs = None
     named_ranges = {}
@@ -141,19 +148,28 @@ def load(fname):
         elif line == "named_ranges":
             mode = "named_ranges"
             continue
+        elif line == "volatile_ranges":
+            mode = "volatile_ranges"
+            continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, should_eval] = line.split(SEP)
+            [address, formula, python_expression, is_range, is_named_range, is_volatile, should_eval] = line.split(SEP)
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
+            is_volatile = to_bool(is_volatile)
             should_eval = should_eval
             mode = "node1"
         elif mode == "node1":
             if is_range:
-                name = line
-                vv = Range(name)
+
+                reference = json.loads(line) if is_volatile else line # in order to be able to parse dicts
+                vv = Range(reference)
+
+                if is_volatile:
+                    volatile_ranges.append(vv)
+
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 nodes.append(cell)
@@ -178,13 +194,12 @@ def load(fname):
         elif mode == "named_ranges":
             k,v = line.split(SEP)
             named_ranges[k] = v
-            
 
     G = DiGraph(data = edges)
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, named_ranges, outputs, inputs)
+    return (G, cellmap, named_ranges, volatile_ranges, outputs, inputs)
 
 ########### based on json #################
 def dump_json(self, fname):
