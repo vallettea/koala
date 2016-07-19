@@ -101,8 +101,4 @@ class ExcelCompiler(object):
 
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug, volatile_ranges = self.volatile_ranges)
-
-
-
-
+        return Spreadsheet(G, cellmap, self.named_ranges, volatile_ranges = self.volatile_ranges, outputs = outputs, debug = self.debug)

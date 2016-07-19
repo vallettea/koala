@@ -20,7 +20,7 @@ from tokenizer import reverse_rpn
 from serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], volatile_ranges = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
