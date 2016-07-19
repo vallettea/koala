@@ -79,9 +79,6 @@ class RangeCore(dict):
     # A separate function from __init__ is necessary so that it can be called from outside
     def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
         
-        if debug:
-            print 'YOUHOUH'
-
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         elif type(reference) == dict:
@@ -99,8 +96,6 @@ class RangeCore(dict):
 
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
-            if debug:
-                print 'CELLS', cells
 
         if values:
             if len(cells) != len(values):
@@ -134,9 +129,8 @@ class RangeCore(dict):
             self.__name = name
         elif type(reference) == dict:
             self.__name = ':'.join([str(reference["start"]), str(reference["end"])])
-        else:
+        elif not self.is_volatile: # when building volatiles, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
-        # self.__name = reference if type(reference) != list else name
         self.__origin = origin
         self.__addresses = cells
         self.__order = order
@@ -196,14 +190,11 @@ class RangeCore(dict):
     @property
     def values(self):
         if self.__cellmap:
-            print 'THERE'
             values = []
             for cell in self.cells:
-                print 'Cell', cell.address(), cell.value
                 values.append(cell.value)
             return values
         else:
-            print 'HERE'
             return self.cells
     
     @values.setter
@@ -386,23 +377,23 @@ class RangeCore(dict):
         # This function decides whether RangeCore.apply_one or RangeCore.apply_all should be used
         # This is a necessary complement to what is decided in graph.py:OperandNode.emit()
 
-        isAssociated = False
+        is_associated = False
 
         if ref:
             if isinstance(first, RangeCore):
                 if first.length == 0:
                     first = 0
                 else:
-                    isAssociated = RangeCore.find_associated_cell(ref, first) is not None
+                    is_associated = RangeCore.find_associated_cell(ref, first) is not None
             elif second is not None and isinstance(second, RangeCore):
                 if second.length == 0:
                     second = 0
                 else:
-                    isAssociated = RangeCore.find_associated_cell(ref, second) is not None
+                    is_associated = RangeCore.find_associated_cell(ref, second) is not None
             else:
-                isAssociated = False
+                is_associated = False
 
-            if isAssociated:
+            if is_associated:
                 return RangeCore.apply_one(func, first, second, ref)
             else:
                 return RangeCore.apply_all(func, first, second, ref)
