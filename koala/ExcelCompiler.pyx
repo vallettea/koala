@@ -45,13 +45,14 @@ class ExcelCompiler(object):
 
         self.named_ranges = cleaned_ranged_names
             
-    def gen_graph(self, outputs = None):
+    def gen_graph(self, outputs = None, inputs = None):
         print '___### Generating Graph ###___'
 
         if outputs is None:
             seeds = list(flatten(self.cells.values()))
         else:
             outputs = list(outputs) # creates a copy
+
             seeds = []
             for o in outputs:
                 if o in self.named_ranges:
@@ -78,16 +79,46 @@ class ExcelCompiler(object):
                         seeds.append(self.cells[o])
 
         # print "Seeds %s cells" % len(seeds)
-
         # print "%s cells on the todo list" % len(todo)
 
         cellmap, G = graph_from_seeds(seeds, self)
+
+        # add inputs that are outside of calculation chain
+        for i in inputs:
+            if i not in cellmap:
+                if i in self.named_ranges:
+                    reference = self.named_ranges[i]
+                    if is_range(reference):
+
+                        rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+
+                    else:
+                        # might need to be changed to actual self.cells Cell, not a copy
+                        virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                else:
+                    if is_range(i):
+                        rng = self.Range(i)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                    else:
+                        cellmap[i] = self.cells[i]
+                        G.add_node(self.cells[i]) # edges are not needed here since the input here is not in the calculation chain
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, inputs = inputs, debug = self.debug)
 
 
 

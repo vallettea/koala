@@ -20,7 +20,7 @@ from tokenizer import reverse_rpn
 from serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [],  inputs = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, outputs = [], inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -103,20 +103,20 @@ class Spreadsheet(object):
         print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
 
-    def prune_graph(self, inputs):
+    def prune_graph(self):
         print '___### Pruning Graph ###___'
 
         G = self.G
 
         # get all the cells impacted by inputs
         dependencies = set()
-        for input_address in inputs:
-                child = self.cellmap[input_address]
-                if child == None:
-                    print "Not found ", input_address
-                    continue
-                g = make_subgraph(G, child, "descending")
-                dependencies = dependencies.union(g.nodes())
+        for input_address in self.inputs:
+            child = self.cellmap[input_address]
+            if child == None:
+                print "Not found ", input_address
+                continue
+            g = make_subgraph(G, child, "descending")
+            dependencies = dependencies.union(g.nodes())
 
         # print "%s cells depending on inputs" % str(len(dependencies))
 
@@ -173,7 +173,39 @@ class Spreadsheet(object):
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs, debug = self.debug)
+        # add back inputs that have been pruned because they are outside of calculation chain
+        for i in self.inputs:
+            if i not in new_cellmap:
+                if i in self.named_ranges:
+                    reference = self.named_ranges[i]
+                    if is_range(reference):
+
+                        rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            self.inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+
+                    else:
+                        # might need to be changed to actual self.cells Cell, not a copy
+                        virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                else:
+                    if is_range(i):
+                        rng = self.Range(i)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            self.inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                    else:
+                        new_cellmap[i] = self.cellmap[i]
+                        subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
+
+
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, self.inputs, debug = self.debug)
 
     def clean_volatile(self):
 
