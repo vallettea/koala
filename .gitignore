@@ -6,3 +6,6 @@ original
 *.pickle
 history_dif.json
 profiling
+*.c
+dist
+*.egg*
