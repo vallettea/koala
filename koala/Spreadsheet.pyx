@@ -342,8 +342,7 @@ class Spreadsheet(object):
         self.fix_cell(address)
 
         # case where the address refers to a range
-        if self.cellmap[address].range: 
-
+        if self.cellmap[address].is_range: 
             cells_to_set = []
             for a in self.cellmap[address].range.addresses:
                 if a in self.cellmap:
