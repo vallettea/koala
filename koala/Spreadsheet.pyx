@@ -359,7 +359,13 @@ class Spreadsheet(object):
         else:
             if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
                 ref_address = self.named_ranges[address]
-                ref_cell = self.cellmap[ref_address]
+                
+                if ref_address in self.cellmap:
+                    ref_cell = self.cellmap[ref_address]
+                else:
+                    ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
+                    self.add_cell(ref_cell)
+
                 self.fix_cell(ref_address)
                 ref_cell.value = val
 
