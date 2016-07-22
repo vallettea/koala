@@ -760,6 +760,16 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
 
     return Range.find_associated_value(ref, result_column)
 
+def sln(cost, salvage, life):
+
+    for arg in [cost, salvage, life]:
+        if isinstance(arg, ExcelError) or arg in ErrorCodes:
+            return arg
+
+    return (cost - salvage) / life
+
+
+
 if __name__ == '__main__':
     pass
 

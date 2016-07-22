@@ -1,3 +1,5 @@
+import pyximport; pyximport.install()
+
 import os
 import sys
 import unittest
@@ -13,18 +15,27 @@ from koala.ExcelError import ExcelError
 from koala.excellib import *
 from koala.Range import RangeCore as Range
 
-class Test_Choose(unittest.TestCase):
-    def setup(self):
-        pass
 
-    def test_choose_basic(self):
-        self.assertEqual(choose(3, 'John', 'Paul', 'George', 'Ringo'), 'George')
+class Test_SLN(unittest.TestCase):
+	def setup(self):
+		pass
 
-    def test_choose_fraction(self):
-        self.assertEqual(choose(3.4, 'John', 'Paul', 'George', 'Ringo'), 'George')
+	def test_sln_basic(self):
+		self.assertEqual(sln(30000, 5000, 10), 2500)
 
-    def test_choose_incorrect_index(self):
-        self.assertEqual(type(choose(3, 2)), ExcelError)
+
+# class Test_Choose(unittest.TestCase):
+#     def setup(self):
+#         pass
+
+#     def test_choose_basic(self):
+#         self.assertEqual(choose(3, 'John', 'Paul', 'George', 'Ringo'), 'George')
+
+#     def test_choose_fraction(self):
+#         self.assertEqual(choose(3.4, 'John', 'Paul', 'George', 'Ringo'), 'George')
+
+#     def test_choose_incorrect_index(self):
+#         self.assertEqual(type(choose(3, 2)), ExcelError)
 
 
 # class Test_Irr(unittest.TestCase):
