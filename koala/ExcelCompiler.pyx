@@ -45,10 +45,10 @@ class ExcelCompiler(object):
 
         self.named_ranges = cleaned_ranged_names
             
-    def gen_graph(self, outputs = None, inputs = None):
+    def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
 
-        if outputs is None:
+        if len(outputs) == 0:
             seeds = list(flatten(self.cells.values()))
         else:
             outputs = list(outputs) # creates a copy
