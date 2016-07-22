@@ -16,12 +16,29 @@ from koala.excellib import *
 from koala.Range import RangeCore as Range
 
 
-class Test_SLN(unittest.TestCase):
+class Test_VDB(unittest.TestCase):
 	def setup(self):
 		pass
 
-	def test_sln_basic(self):
-		self.assertEqual(sln(30000, 5000, 10), 2500)
+	def test_vdb_basic(self):
+		cost = 575000
+		salvage = 5000
+		life = 10
+		rate = 1.5
+		start = 3
+		end = 5
+
+		obj = 102160.546875
+
+		self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
+
+
+# class Test_SLN(unittest.TestCase):
+# 	def setup(self):
+# 		pass
+
+# 	def test_sln_basic(self):
+# 		self.assertEqual(sln(30000, 5000, 10), 2500)
 
 
 # class Test_Choose(unittest.TestCase):

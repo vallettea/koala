@@ -760,13 +760,63 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
 
     return Range.find_associated_value(ref, result_column)
 
-def sln(cost, salvage, life):
+def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-us/article/SLN-function-cdb666e5-c1c6-40a7-806a-e695edc2f1c8
 
     for arg in [cost, salvage, life]:
         if isinstance(arg, ExcelError) or arg in ErrorCodes:
             return arg
 
     return (cost - salvage) / life
+
+def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = False): # Excel reference: https://support.office.com/en-us/article/VDB-function-dde4e207-f3fa-488d-91d2-66d55e861d73
+
+    for arg in [cost, salvage, life, start_period, end_period, factor, no_switch]:
+        if isinstance(arg, ExcelError) or arg in ErrorCodes:
+            return arg
+
+    for arg in [cost, salvage, life, start_period, end_period, factor]:
+        if not isinstance(arg, (float, int)):
+            return ExcelError('#VALUE', 'Arg %s should be an int or float, instead: %s' % (arg, type(str)))
+
+    life = int(life)
+    start_period = int(start_period)
+    end_period = int(end_period)
+
+    sln_depr = sln(cost, salvage, life)
+
+    depr_rate = factor / life
+    acc_depr = 0
+    depr = 0
+
+    switch_to_sln = False
+    sln_depr = 0
+
+    result = 0
+
+    print 'LIFE', life
+
+    for current_year in range(life):
+        depr = (cost - acc_depr) * depr_rate
+        acc_depr += depr
+
+        temp_sln_depr = sln(cost, salvage, life)
+
+        if not no_switch:
+            if switch_to_sln:
+                depr = sln_depr
+            else:
+                if depr < temp_sln_depr:
+                    switch_to_sln = True
+                    fixed_remaining_years = life - current_year - 1
+                    fixed_remaining_cost = cost - acc_depr
+
+                    sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
+
+        if current_year >= start_period and current_year < end_period:
+            result += depr
+
+    return result
+
 
 
 
