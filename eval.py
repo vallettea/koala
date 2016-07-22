@@ -34,29 +34,38 @@ personalized_names = {
     "Nominal_to_real_multiplier": "Cashflow!L64:DG64"
 }
 
-inputs = [
-    "gen_discountRate", 
-    "IA_PriceExportOil", 
-    "IA_PriceExportGas",
-    "IA_PriceExportCond"
-]
+# inputs = [
+#     "gen_discountRate", 
+#     "IA_PriceExportOil", 
+#     "IA_PriceExportGas",
+#     "IA_PriceExportCond"
+# ]
 
-outputs = [
-    "CA_Years", 
-    "outNPV_Proj", 
-    "Dev_Fwd", # Cashflow!H81  
-    "Pnt_Fwd", # Cashflow!I81
-    "year_FID"
-]
+# outputs = [
+#     "CA_Years", 
+#     "outNPV_Proj", 
+#     "Dev_Fwd", # Cashflow!H81  
+#     "Pnt_Fwd", # Cashflow!I81
+#     "year_FID"
+# ]
+
+with open('../engie/tests/features.json') as data_file:    
+    features = json.load(data_file)
+
+inputs = features["primary_input"] + features["secondary_input"]
+outputs = features["primary_output"] + features["secondary_output"]
+
 
 if __name__ == '__main__':
 
     input_folder = 'inputs'
     # input_folder = 'other/Norway_Output'
-    graph_folder = 'graphs'
+    graph_folder = 'test_graphs'
     # graph_folder = 'temp_graphs'
 
-    file = "../engie/data/%s/100065090 - North America - United States - MC-161 - Gas - Producing.xlsx" % input_folder
+    file_number = '100021224'
+
+    file = glob.glob("../engie/data/%s/%s*.xlsx" % (input_folder, file_number))[0]
 
     print file
 
@@ -67,12 +76,12 @@ if __name__ == '__main__':
     #     c.named_ranges[name] = reference
     # c.clean_volatile()
     # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=outputs)
+    # sp = c.gen_graph(outputs=outputs, inputs = inputs)
     # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
     # ### Graph Pruning ###
     # startTime = datetime.now()
-    # sp = sp.prune_graph(inputs)
+    # # sp = sp.prune_graph()
     # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
     # ## Graph Serialization ###
@@ -88,7 +97,11 @@ if __name__ == '__main__':
     ### Graph Evaluation ###
     print 'First evaluation: outNPV_Proj', sp.evaluate('outNPV_Proj')
 
-    tmp = sp.evaluate('IA_PriceExportGas')
+    tmp = sp.evaluate('input_CapexDecom')
+
+    # tmp = sp.evaluate('IA_PriceExportGas')
+
+    print 'BE200', sp.cellmap['Calculations!BE200'].value
 
     history = True
     if history:
@@ -97,19 +110,27 @@ if __name__ == '__main__':
             sp.history[addr] = {'original': str(cell.value)}
 
     startTime = datetime.now()
-    sp.set_value('IA_PriceExportGas', 0)
+
+    sp.set_value('input_CapexDecom', 0)
+    print 'BE200', sp.cellmap['Calculations!BE200'].value
+
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
-    sp.set_value('IA_PriceExportGas', tmp)
+    sp.set_value('input_CapexDecom', tmp)
     startTime = datetime.now()
 
     # import cProfile
     # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
 
-    print 'TEST 4.1', sp.eval_ref(index(resolve_range("InputData!D342:K342"),1,sp.eval_ref('rsvPriceThreshColumn', ref = (186, 'Y'))),ref = (186, 'Y'))
+    # THIS EVAL DOES NOT WORK AND I NEED TO KNOW WHY
 
-    print 'TEST 5', RangeCore.apply('is_strictly_superior',sp.eval_ref('CA_Years', ref = (186, 'Y')),sp.eval_ref("InputData!D342", ref = (186, 'Y')),(186, 'Y'))
 
-    print 'TEST 6', vlookup(sp.eval_ref('CA_Years', ref = (186, 'Y')),sp.eval_ref('priceThresholdTables', ref = (186, 'Y')),sp.eval_ref('rsvPriceThreshColumn', ref = (186, 'Y')),False)
+    print 'TEST', RangeCore.apply('multiply',RangeCore.apply('substract',sp.eval_ref('totalDecom', ref = (200, 'BE')),xsum(sp.eval_ref("Calculations!L200:Calculations!CN200")),(200, 'BE')),sp.eval_ref('Deprec_UOPRates', ref = (200, 'BE')),(200, 'BE'))
+
+
+    print 'TEST 2', xsum(sp.eval_ref("Calculations!L200:Calculations!CN200"))
+    print 'TEST 3', sp.eval_ref('totalDecom', ref = (200, 'BE'))
+    print 'TEST 4', sp.eval_ref('Deprec_UOPRates', ref = (200, 'BE'))
+
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
