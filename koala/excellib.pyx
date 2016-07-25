@@ -646,6 +646,9 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
         if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
 
+    rows = int(rows)
+    cols = int(cols)
+
     # get first cell address of reference
     if is_range(reference):
         ref = list(flatten(resolve_range(reference)[0]))[0]
