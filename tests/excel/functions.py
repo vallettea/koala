@@ -40,9 +40,9 @@ class Test_VDB(unittest.TestCase):
 		start = 11.5
 		end = 12.5
 
-		obj = 0.0687262904547 # almost works => 0.068667899383780, can't get to understand the difference
+		obj = 0.068726290454684
 
-		self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
+		self.assertEqual(round(vdb(cost, salvage, life, start, end, rate), 15), obj)
 
 # class Test_SLN(unittest.TestCase):
 # 	def setup(self):

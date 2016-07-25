@@ -796,7 +796,21 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     result = 0
 
-    for current_year in range(life):
+    start_life = 0
+    end_life = life
+    periods = range(start_life, end_life)
+
+    if int(start_period) != start_period:
+        delta_start = abs(int(start_period) - start_period)
+
+        depr = (cost - acc_depr) * depr_rate * delta_start
+        acc_depr += depr
+
+        start_life = 1
+
+        periods = map(lambda x: x + 0.5, periods)
+
+    for current_year in periods:
         
         if not no_switch:
             if switch_to_sln:
@@ -812,10 +826,10 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
                     fixed_remaining_years = life - current_year - 1
                     fixed_remaining_cost = cost - acc_depr
 
-                    # Test
+                     # we need to check future sln: current depr should never be smaller than sln to come
                     sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
 
-                    if sln_depr > depr:
+                    if sln_depr > depr: # if it's the case, we switch to sln earlier than the regular case
                         # cancel what has been done
                         acc_depr -= depr
                         fixed_remaining_years += 1
