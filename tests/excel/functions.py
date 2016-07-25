@@ -20,18 +20,29 @@ class Test_VDB(unittest.TestCase):
 	def setup(self):
 		pass
 
-	def test_vdb_basic(self):
-		cost = 575000
-		salvage = 5000
-		life = 10
-		rate = 1.5
-		start = 3
-		end = 5
+	# def test_vdb_basic(self):
+	# 	cost = 575000
+	# 	salvage = 5000
+	# 	life = 10
+	# 	rate = 1.5
+	# 	start = 3
+	# 	end = 5
 
-		obj = 102160.546875
+	# 	obj = 102160.546875
+
+	# 	self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
+
+	def test_vdb_partial(self):
+		cost = 1
+		salvage = 0
+		life = 14
+		rate = 1.25
+		start = 11.5
+		end = 12.5
+
+		obj = 0.0687262904547 # almost works => 0.068667899383780, can't get to understand the difference
 
 		self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
-
 
 # class Test_SLN(unittest.TestCase):
 # 	def setup(self):

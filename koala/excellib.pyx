@@ -782,8 +782,8 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
             return ExcelError('#VALUE', 'Arg %s should be an int or float, instead: %s' % (arg, type(str)))
 
     life = int(life)
-    start_period = int(start_period)
-    end_period = int(end_period)
+    start_period = start_period
+    end_period = end_period
 
     sln_depr = sln(cost, salvage, life)
 
@@ -797,24 +797,47 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
     result = 0
 
     for current_year in range(life):
-        depr = (cost - acc_depr) * depr_rate
-        acc_depr += depr
-
-        temp_sln_depr = sln(cost, salvage, life)
-
+        
         if not no_switch:
             if switch_to_sln:
                 depr = sln_depr
             else:
+                depr = (cost - acc_depr) * depr_rate
+                acc_depr += depr
+
+                temp_sln_depr = sln(cost, salvage, life)
+
                 if depr < temp_sln_depr:
                     switch_to_sln = True
                     fixed_remaining_years = life - current_year - 1
                     fixed_remaining_cost = cost - acc_depr
 
+                    # Test
                     sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
 
-        if current_year >= start_period and current_year < end_period:
-            result += depr
+                    if sln_depr > depr:
+                        # cancel what has been done
+                        acc_depr -= depr
+                        fixed_remaining_years += 1
+                        fixed_remaining_cost = cost - acc_depr
+
+                        # recalculate depreciation
+                        sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
+                        depr = sln_depr
+                        acc_depr += depr
+        
+        delta_start = abs(current_year - start_period)
+        
+        if delta_start < 1 and delta_start != 0:
+            result += depr * (1 - delta_start)
+        elif current_year >= start_period and current_year < end_period:
+        
+            delta_end = abs(end_period - current_year)
+
+            if delta_end < 1 and delta_end != 0:
+                result += depr * delta_end
+            else:
+                result += depr
 
     return result
 
