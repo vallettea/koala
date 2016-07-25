@@ -624,7 +624,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
     return result
 
 
-def isNa(value):
+def isna(value):
     # This function might need more solid testing
     try:
         eval(value)
@@ -795,8 +795,6 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
     sln_depr = 0
 
     result = 0
-
-    print 'LIFE', life
 
     for current_year in range(life):
         depr = (cost - acc_depr) * depr_rate
