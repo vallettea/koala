@@ -814,7 +814,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     for current_year in periods:
         
-        if not no_switch:
+        if not no_switch: # no_switch = False (Default Case)
             if switch_to_sln:
                 depr = sln_depr
             else:
@@ -841,6 +841,9 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
                         sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
                         depr = sln_depr
                         acc_depr += depr
+        else: # no_switch = True
+            depr = (cost - acc_depr) * depr_rate
+            acc_depr += depr
         
         delta_start = abs(current_year - start_period)
         

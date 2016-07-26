@@ -32,17 +32,29 @@ class Test_VDB(unittest.TestCase):
 
 	# 	self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
 
-	def test_vdb_partial(self):
+	# def test_vdb_partial(self):
+	# 	cost = 1
+	# 	salvage = 0
+	# 	life = 14
+	# 	rate = 1.25
+	# 	start = 11.5
+	# 	end = 12.5
+
+	# 	obj = 0.068726290454684
+
+	# 	self.assertEqual(round(vdb(cost, salvage, life, start, end, rate), 15), obj)
+
+	def test_vdb_partial_no_switch(self):
 		cost = 1
 		salvage = 0
-		life = 14
-		rate = 1.25
-		start = 11.5
-		end = 12.5
+		life = 5.0
+		rate = 2.5
+		start = 0.5
+		end = 1.5
 
-		obj = 0.068726290454684
+		obj = 0.375
 
-		self.assertEqual(round(vdb(cost, salvage, life, start, end, rate), 15), obj)
+		self.assertEqual(vdb(cost, salvage, life, start, end, rate, True), obj)
 
 # class Test_SLN(unittest.TestCase):
 # 	def setup(self):
