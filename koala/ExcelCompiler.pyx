@@ -49,8 +49,8 @@ class ExcelCompiler(object):
     def gen_graph(self, outputs = None):
         print '___### Generating Graph ###___'
 
-        if outputs is None:
-            outputs = set(flatten(self.cells.keys()) + self.named_ranges.keys())
+        if outputs is None: # make it a set for item unicity
+            outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys())
         else:
             outputs = set(outputs) # creates a copy
         
