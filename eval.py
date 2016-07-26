@@ -50,7 +50,7 @@ outputs = [
 
 if __name__ == '__main__':
 
-    input_folder = 'input'
+    input_folder = 'inputs'
     # input_folder = 'other/Norway_Output'
     graph_folder = 'graphs'
     # graph_folder = 'temp_graphs'
