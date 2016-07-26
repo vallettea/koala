@@ -507,6 +507,8 @@ class Spreadsheet(object):
                 vv = 0
             if cell.is_range:
                 cell.value = vv.values
+            elif isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
+                cell.value = vv.values[0]
             else:
                 cell.value = vv
             cell.need_update = False
