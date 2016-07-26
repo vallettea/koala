@@ -351,7 +351,8 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        self.build_volatiles()
+        for vol_range in self.volatile_ranges: # reset all volatile ranges
+            self.reset(self.cellmap[vol_range.name])
 
     def reset(self, cell):
         addr = cell.address()
@@ -399,6 +400,13 @@ class Spreadsheet(object):
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
+    def build_volatile(self, vol_range):
+
+        start = eval(vol_range.reference['start'])
+        end = eval(vol_range.reference['end'])
+
+        vol_range.build('%s:%s' % (start, end), debug = True)
+
     def build_volatiles(self):
 
         for vol_range in self.volatile_ranges:
@@ -406,7 +414,6 @@ class Spreadsheet(object):
             end = eval(vol_range.reference['end'])
 
             vol_range.build('%s:%s' % (start, end), debug = True)
-            self.reset(self.cellmap[vol_range.name])
 
     def eval_ref(self, addr1, addr2 = None, ref = None):
         debug = False
@@ -424,6 +431,9 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
+
+                    if cell1.range.is_volatile:
+                        self.build_volatile(cell1.range)
 
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
