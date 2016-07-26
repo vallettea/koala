@@ -466,6 +466,8 @@ def xround(number, num_digits = 0): # Excel reference: https://support.office.co
     if not is_number(num_digits):
         return ExcelError('#VALUE!', '%s is not a number' % str(num_digits))
 
+    number = float(number) # if you don't Spreadsheet.dump/load, you might end up with Long numbers, which Decimal doesn't accept
+
     if num_digits >= 0: # round to the right side of the point
         return float(Decimal(repr(number)).quantize(Decimal(repr(pow(10, -num_digits))), rounding=ROUND_HALF_UP))
         # see https://docs.python.org/2/library/functions.html#round
