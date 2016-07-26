@@ -50,11 +50,11 @@ class ExcelCompiler(object):
         print '___### Generating Graph ###___'
 
         if outputs is None:
-            outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys())
+            outputs = set(flatten(self.cells.keys()) + self.named_ranges.keys())
         else:
-            outputs = set(list(outputs)) # creates a copy
+            outputs = set(outputs) # creates a copy
         
-        # print 'OUTPUTS', outputs
+        outputs = list(outputs) # to be able to modify the list
 
         seeds = []
         for o in outputs:
@@ -72,7 +72,7 @@ class ExcelCompiler(object):
 
                     # rng = self.Range(reference)
                     for address in rng.addresses: # this is avoid pruning deletion
-                        outputs.add(address)
+                        outputs.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                     seeds.append(virtual_cell)
                 else:
@@ -84,13 +84,15 @@ class ExcelCompiler(object):
                 if is_range(o):
                     rng = self.Range(o)
                     for address in rng.addresses: # this is avoid pruning deletion
-                        outputs.add(address)
+                        outputs.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
                     seeds.append(virtual_cell)
                 else:
                     seeds.append(self.cells[o])
 
         print "Seeds %s cells" % len(seeds)
+
+        outputs = set(outputs)
 
         # print "%s cells on the todo list" % len(todo)
 
