@@ -1,4 +1,3 @@
-import pyximport; pyximport.install()
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet

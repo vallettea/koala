@@ -1,4 +1,3 @@
-import pyximport; pyximport.install()
 
 import unittest
 import os

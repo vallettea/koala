@@ -1,19 +1,16 @@
 # cython: profile=True
 
-import networkx
 import collections
 
 import os.path
-# from math import *
 
 import networkx
 from networkx.classes.digraph import DiGraph
 
-# from excellib import *
-from utils import uniqueify, flatten
-from Cell import Cell
-from Range import parse_cell_address
-from tokenizer import ExcelParser, f_token, shunting_yard
+from koala.utils import uniqueify, flatten
+from koala.Cell import Cell
+from koala.Range import parse_cell_address
+from koala.tokenizer import ExcelParser, f_token, shunting_yard
 from astnodes import *
 
 

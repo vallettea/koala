@@ -1,8 +1,7 @@
 from setuptools import setup
 from setuptools import Extension
+from setuptools import find_packages
 from Cython.Build import cythonize
-
-import koala
 
 setup(
     name = "koala2",
@@ -12,7 +11,7 @@ setup(
     author = "Ants, open innovation lab",
     author_email = "contact@ants.builders",
 
-    packages = ["koala"],
+    packages = find_packages(),
 
     include_package_data = True,
 
@@ -27,5 +26,7 @@ setup(
         "lxml"
     ],
 
-    ext_modules = cythonize(["koala/*.pyx"]),
+    # ext_modules = cythonize(["koala/*.pyx"]),
+
+
 )

@@ -9,3 +9,5 @@ profiling
 *.c
 dist
 *.egg*
+dist
+build

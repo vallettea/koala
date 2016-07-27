@@ -15,7 +15,7 @@ from functools import partial
 # compatibility
 
 # package imports
-from openpyxl import LXML
+from koala.openpyxl.xml import LXML
 
 if LXML is True:
     from lxml.etree import (
@@ -56,7 +56,7 @@ else:
     from et_xmlfile import xmlfile
 
 
-from openpyxl.xml.constants import (
+from koala.openpyxl.xml.constants import (
     CHART_NS,
     DRAWING_NS,
     SHEET_DRAWING_NS,
