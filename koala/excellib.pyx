@@ -295,6 +295,10 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
 def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568 
     discount_rate = args[0]
     cashflow = args[1]
+
+    if isinstance(cashflow, Range):
+        cashflow = cashflow.values
+
     return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
