@@ -52,7 +52,12 @@ def dump(self, fname, marshal = False):
 
     for cell in simple_cells:
         parse_cell_info(cell)
-        outfile.write(str(cell.value) + "\n")
+
+        value = cell.value
+        if isinstance(value, unicode):
+            outfile.write(cell.value.encode('utf-8') + "\n")
+        else:
+            outfile.write(str(cell.value) + "\n")
         outfile.write("====" + "\n")
 
     outfile.write("-----" + "\n")
@@ -175,6 +180,7 @@ def load(fname):
                 nodes.append(cell)
             else:
                 value = to_bool(to_float(line))
+                
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 if formula:
