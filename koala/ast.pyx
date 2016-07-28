@@ -524,7 +524,7 @@ def graph_from_seeds(seeds, cell_source):
                     address = '%s:%s' % (reference["start"], reference["end"])
                     rng = cell_source.Range(reference)
 
-                    cell_source.volatile_ranges.append(rng)
+                    cell_source.volatile_ranges.add(rng.name)
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)

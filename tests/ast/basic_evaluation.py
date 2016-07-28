@@ -22,8 +22,12 @@ from koala.Cell import Cell
 # # c.clean_volatile()
 # sp = c.gen_graph()
 
-# sp.dump(file_name.replace(".xlsx", ".gzip"))
-# sp = Spreadsheet.load(file_name.replace(".xlsx", ".gzip"))
+# alive, relations = sp.detect_alive()
+
+# if len(alive) > 0:
+#     print 'Nb alive', len(alive)
+#     print 'Nb relations', len(relations)
+#     print 'ALIVE', alive
 
 # import sys
 # sys.exit(0)
@@ -37,6 +41,10 @@ class Test_Excel(unittest.TestCase):
         c = ExcelCompiler(file_name, debug = True)
         # c.clean_volatile()
         self.sp = c.gen_graph()
+
+    def test_detect_alive(self):
+        alive = self.sp.detect_alive()[0]
+        self.assertEqual(len(alive), 8)
 
     def test_Volatile_Name_L6(self):
         self.sp.set_value('Sheet1!A6', 10)

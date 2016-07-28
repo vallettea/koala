@@ -389,7 +389,7 @@ class Spreadsheet(object):
                 cell.value = val
 
         for vol_range in self.volatile_ranges: # reset all volatile ranges
-            self.reset(self.cellmap[vol_range.name])
+            self.reset(self.cellmap[vol_range])
 
     def reset(self, cell):
         addr = cell.address()
@@ -437,7 +437,11 @@ class Spreadsheet(object):
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
-    def build_volatile(self, vol_range):
+    def build_volatile(self, volatile):
+        if not isinstance(volatile, RangeCore):
+            vol_range = self.cellmap[volatile].range
+        else:
+            vol_range = volatile
 
         start = eval(vol_range.reference['start'])
         end = eval(vol_range.reference['end'])
@@ -446,7 +450,9 @@ class Spreadsheet(object):
 
     def build_volatiles(self):
 
-        for vol_range in self.volatile_ranges:
+        for volatile in self.volatile_ranges:
+            vol_range = self.cellmap[volatile].range
+
             start = eval(vol_range.reference['start'])
             end = eval(vol_range.reference['end'])
 
@@ -589,3 +595,51 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
+
+    def detect_alive(self):
+        to_check = dict()
+
+        self.build_volatiles()
+
+        # get all volatiles that ancestors of outputs
+        for output in self.outputs:
+            seed = self.cellmap[output]
+            todo = map(lambda n: n, self.G.predecessors(seed))
+            done = set(todo)
+
+            if seed.is_range and seed.range.is_volatile:
+                to_check[output] = seed.value
+
+            while len(todo) > 0:
+                pred = todo.pop()
+
+                if pred.is_range and pred.range.is_volatile:
+                    to_check[pred.address()] = pred.value
+
+                nexts = self.G.predecessors(pred)
+                for n in nexts:            
+                    if n not in done:
+                        todo.append(n)
+                        done.add(n)
+
+        # print 'to_check: %i / %i' % (len(to_check), len(self.volatile_ranges)) 
+
+        alive = set()
+        relations = dict()
+
+        # check that filtered volatiles are not affected by varying inputs
+        for input in self.inputs:
+            self.set_value(input, 0)
+
+            self.build_volatiles()
+
+            for output in to_check:
+                cell = self.cellmap[output]
+
+                if cell.value != to_check[output]:
+                    relations[input] = cell.address()
+                    alive.add(output)
+
+        return (alive, relations)
+
+
