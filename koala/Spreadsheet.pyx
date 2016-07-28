@@ -247,7 +247,7 @@ class Spreadsheet(object):
                             new_formula = new_formula.replace(repl["formula"], repl["value"])
                 else:
                     new_formula = None
-                
+
                 if with_cache:
                     # print 'Caching', cell["address"], cell["formula"], new_formula
                     cache[cell["formula"]] = new_formula
