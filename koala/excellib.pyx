@@ -181,6 +181,12 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         cells, nr, nc = my_range
         cells = list(flatten(cells))
 
+    nr = int(nr)
+    nc = int(nc)
+    row = int(row)
+    if col:
+        col = int(col)
+
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
 
@@ -289,6 +295,10 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
 def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568 
     discount_rate = args[0]
     cashflow = args[1]
+
+    if isinstance(cashflow, Range):
+        cashflow = cashflow.values
+
     return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
@@ -323,7 +333,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             if current <= lookup_value:
                 posMax = i 
         if posMax == -1:
-            return ('no result in lookup_range for match_type 1')
+            return ExcelError('#VALUE!','no result in lookup_range for match_type 1')
         return posMax +1 #Excel starts at 1
 
     elif match_type == 0:
@@ -340,7 +350,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             current = type_convert(range_values[i])
 
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
-               return ('for match_type -1, lookup_range must be sorted descending')
+               return ExcelError('#VALUE!','for match_type -1, lookup_range must be sorted descending')
             if current >= lookup_value:
                posMin = i 
         if posMin == -1:
@@ -459,6 +469,8 @@ def xround(number, num_digits = 0): # Excel reference: https://support.office.co
         return ExcelError('#VALUE!', '%s is not a number' % str(number))
     if not is_number(num_digits):
         return ExcelError('#VALUE!', '%s is not a number' % str(num_digits))
+
+    number = float(number) # if you don't Spreadsheet.dump/load, you might end up with Long numbers, which Decimal doesn't accept
 
     if num_digits >= 0: # round to the right side of the point
         return float(Decimal(repr(number)).quantize(Decimal(repr(pow(10, -num_digits))), rounding=ROUND_HALF_UP))
@@ -618,7 +630,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
     return result
 
 
-def isNa(value):
+def isna(value):
     # This function might need more solid testing
     try:
         eval(value)
@@ -639,6 +651,9 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
     for i in [reference, rows, cols, height, width]:
         if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
+
+    rows = int(rows)
+    cols = int(cols)
 
     # get first cell address of reference
     if is_range(reference):
@@ -753,6 +768,104 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
             return ExcelError('#N/A', 'lookup_value smaller than all values of table_array')
 
     return Range.find_associated_value(ref, result_column)
+
+def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-us/article/SLN-function-cdb666e5-c1c6-40a7-806a-e695edc2f1c8
+
+    for arg in [cost, salvage, life]:
+        if isinstance(arg, ExcelError) or arg in ErrorCodes:
+            return arg
+
+    return (cost - salvage) / life
+
+def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = False): # Excel reference: https://support.office.com/en-us/article/VDB-function-dde4e207-f3fa-488d-91d2-66d55e861d73
+
+    for arg in [cost, salvage, life, start_period, end_period, factor, no_switch]:
+        if isinstance(arg, ExcelError) or arg in ErrorCodes:
+            return arg
+
+    for arg in [cost, salvage, life, start_period, end_period, factor]:
+        if not isinstance(arg, (float, int, long)):
+            return ExcelError('#VALUE', 'Arg %s should be an int, float or long, instead: %s' % (arg, type(arg)))
+
+    life = int(life)
+    start_period = start_period
+    end_period = end_period
+
+    sln_depr = sln(cost, salvage, life)
+
+    depr_rate = factor / life
+    acc_depr = 0
+    depr = 0
+
+    switch_to_sln = False
+    sln_depr = 0
+
+    result = 0
+
+    start_life = 0
+    end_life = life
+    periods = range(start_life, end_life)
+
+    if int(start_period) != start_period:
+        delta_start = abs(int(start_period) - start_period)
+
+        depr = (cost - acc_depr) * depr_rate * delta_start
+        acc_depr += depr
+
+        start_life = 1
+
+        periods = map(lambda x: x + 0.5, periods)
+
+    for current_year in periods:
+        
+        if not no_switch: # no_switch = False (Default Case)
+            if switch_to_sln:
+                depr = sln_depr
+            else:
+                depr = (cost - acc_depr) * depr_rate
+                acc_depr += depr
+
+                temp_sln_depr = sln(cost, salvage, life)
+
+                if depr < temp_sln_depr:
+                    switch_to_sln = True
+                    fixed_remaining_years = life - current_year - 1
+                    fixed_remaining_cost = cost - acc_depr
+
+                     # we need to check future sln: current depr should never be smaller than sln to come
+                    sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
+
+                    if sln_depr > depr: # if it's the case, we switch to sln earlier than the regular case
+                        # cancel what has been done
+                        acc_depr -= depr
+                        fixed_remaining_years += 1
+                        fixed_remaining_cost = cost - acc_depr
+
+                        # recalculate depreciation
+                        sln_depr = sln(fixed_remaining_cost, salvage, fixed_remaining_years)
+                        depr = sln_depr
+                        acc_depr += depr
+        else: # no_switch = True
+            depr = (cost - acc_depr) * depr_rate
+            acc_depr += depr
+        
+        delta_start = abs(current_year - start_period)
+        
+        if delta_start < 1 and delta_start != 0:
+            result += depr * (1 - delta_start)
+        elif current_year >= start_period and current_year < end_period:
+        
+            delta_end = abs(end_period - current_year)
+
+            if delta_end < 1 and delta_end != 0:
+                result += depr * delta_end
+            else:
+                result += depr
+
+    return result
+
+
+
 
 if __name__ == '__main__':
     pass

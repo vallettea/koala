@@ -12,6 +12,7 @@ from Cell import Cell
 cache = {}
 
 def parse_cell_address(ref):
+    # A1 => (1, 'A')
     try:
         if ref not in cache:
             found = re.search(CELL_REF_RE, ref)
@@ -26,6 +27,7 @@ def parse_cell_address(ref):
         raise Exception('Couldn\'t find match in cell ref')
     
 def get_cell_address(sheet, tuple):
+    # Sheet1, (1, 'A') => Sheet1!A1
     row = tuple[0]
     col = tuple[1]
 
@@ -52,8 +54,35 @@ class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
         
+        is_volatile = False
+
+        if type(reference) == dict:
+            is_volatile = True
+
+        self.__volatile = is_volatile
+        self.__reference = reference
+        self.__cellmap = cellmap
+
+        if not is_volatile:
+            result = self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
+        else:
+            self.__name = '%s:%s' % (reference['start'], reference['end'])
+            self.__origin = None
+            self.__addresses = []
+            self.__order = []
+            self.__length = None
+            self.__nrows = None
+            self.__ncols = None
+            self.__type = None
+            self.__sheet = None
+
+    # A separate function from __init__ is necessary so that it can be called from outside
+    def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
+        
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
+        elif type(reference) == dict:
+            is_volatile = True
         else:
             reference = reference.replace('$','')
             try:
@@ -71,11 +100,6 @@ class RangeCore(dict):
         if values:
             if len(cells) != len(values):
                 raise ValueError("cells and values in a Range must have the same size")
-
-        try:
-            sheet = cells[0].split('!')[0]
-        except:
-            sheet = None
 
         result = []
         order = []
@@ -95,9 +119,18 @@ class RangeCore(dict):
             except: # when you don't provide any values
                 result.append(((row, col), None))
 
+        try:
+            sheet = cells[0].split('!')[0]
+        except:
+            sheet = None
+
         # dont allow messing with these params
-        self.__cellmap = cellmap
-        self.__name = reference if type(reference) != list else name
+        if type(reference) == list:
+            self.__name = name
+        elif type(reference) == dict:
+            self.__name = ':'.join([str(reference["start"]), str(reference["end"])])
+        elif not self.is_volatile: # when building volatiles, name shouldn't be updated, but in that case reference is not a dict
+            self.__name = reference
         self.__origin = origin
         self.__addresses = cells
         self.__order = order
@@ -117,6 +150,13 @@ class RangeCore(dict):
 
         dict.__init__(self, result)
 
+    def build(self, reference = None, values = None, nrows = None, ncols = None, name = None, debug = False):
+        self.__build(reference = reference, values = values, cellmap = self.__cellmap, nrows = nrows, ncols = ncols, name = name, debug = debug)
+
+
+    @property
+    def reference(self):
+        return self.__reference
     @property
     def name(self):
         return self.__name
@@ -132,6 +172,9 @@ class RangeCore(dict):
     @property
     def length(self):
         return self.__length
+    @property
+    def is_volatile(self):
+        return self.__volatile
     @property
     def nrows(self):
         return self.__nrows
@@ -168,6 +211,7 @@ class RangeCore(dict):
     @property
     def cells(self):
         return map(lambda c: self[c], self.order)
+
 
     def get(self, row, col = None):
         nr = self.nrows
@@ -333,23 +377,23 @@ class RangeCore(dict):
         # This function decides whether RangeCore.apply_one or RangeCore.apply_all should be used
         # This is a necessary complement to what is decided in graph.py:OperandNode.emit()
 
-        isAssociated = False
+        is_associated = False
 
         if ref:
             if isinstance(first, RangeCore):
                 if first.length == 0:
                     first = 0
                 else:
-                    isAssociated = RangeCore.find_associated_cell(ref, first) is not None
+                    is_associated = RangeCore.find_associated_cell(ref, first) is not None
             elif second is not None and isinstance(second, RangeCore):
                 if second.length == 0:
                     second = 0
                 else:
-                    isAssociated = RangeCore.find_associated_cell(ref, second) is not None
+                    is_associated = RangeCore.find_associated_cell(ref, second) is not None
             else:
-                isAssociated = False
+                is_associated = False
 
-            if isAssociated:
+            if is_associated:
                 return RangeCore.apply_one(func, first, second, ref)
             else:
                 return RangeCore.apply_all(func, first, second, ref)

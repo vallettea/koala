@@ -17,10 +17,11 @@ from tokenizer import ExcelParser, f_token, shunting_yard
 from astnodes import *
 
 
-def create_node(t, ref, debug = False):
+def create_node(t, ref = None, debug = False):
     """Simple factory function"""
     if t.ttype == "operand":
-        if t.tsubtype == "range" or t.tsubtype == "named_range":
+        if t.tsubtype in ["range", "named_range", "volatile"] :
+            # print 'Creating Node', t.tvalue, t.tsubtype
             return RangeNode(t, ref, debug = debug)
         else:
             return OperandNode(t)
@@ -38,7 +39,7 @@ class Operator:
         self.precedence = precedence
         self.associativity = associativity
 
-def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
+def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     """
     Tokenize an excel formula expression into reverse polish notation
     
@@ -60,7 +61,7 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
     #remove leading =
     if expression.startswith('='):
         expression = expression[1:]
-        
+            
     p = ExcelParser(tokenize_range = tokenize_range);
     p.parse(expression)
 
@@ -84,9 +85,6 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
             tokens.append(t)
         else:
             tokens.append(t)
-
-    # print "==> ", "".join([t.tvalue for t in tokens]) 
-
 
     #http://office.microsoft.com/en-us/excel-help/calculation-operators-and-precedence-HP010078886.aspx
     operators = {}
@@ -112,8 +110,84 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
     stack = []
     were_values = []
     arg_count = []
-    
+
+    new_tokens = []
+
+    # reconstruct expressions with ':' and replace the corresponding tokens by the reconstructed expression
+    if not tokenize_range:
+        for index, token in enumerate(tokens):
+            new_tokens.append(token)
+
+            if type(token.tvalue) == str:
+                if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
+                    depth = 0
+                    expr = ''
+
+                    rev = reversed(tokens[:index])
+
+                    for t in rev: # going backwards, 'stop' starts, 'start' stops
+                        if t.tsubtype == 'stop':
+                            depth += 1
+                        elif depth > 0 and t.tsubtype == 'start':
+                            depth -= 1
+
+                        expr = t.tvalue + expr
+
+                        new_tokens.pop()
+
+                        if depth == 0:
+                            new_tokens.pop() # these 2 lines are needed to remove INDEX()
+                            new_tokens.pop()
+                            expr = rev.next().tvalue + expr
+                            break
+
+                    expr += token.tvalue
+
+                    depth = 0
+
+                    if token.tvalue[1:] in ['OFFSET', 'INDEX']:
+                        for t in tokens[(index + 1):]:
+                            if t.tsubtype == 'start':
+                                depth += 1
+                            elif depth > 0 and t.tsubtype == 'stop':
+                                depth -= 1
+
+                            expr += t.tvalue
+
+                            tokens.remove(t)
+
+                            if depth == 0:
+                                break
+
+                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
+
+                elif ':OFFSET' in token.tvalue or ':INDEX' in token.tvalue: # example -> A1:OFFSET(
+                    depth = 0
+                    expr = ''
+
+                    expr += token.tvalue
+
+                    for t in tokens[(index + 1):]:
+                        if t.tsubtype == 'start':
+                            depth += 1
+                        elif t.tsubtype == 'stop':
+                            depth -= 1
+
+                        expr += t.tvalue
+
+                        tokens.remove(t)
+
+                        if depth == 0:
+                            new_tokens.pop()
+                            break
+
+                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
+
+
+    tokens = new_tokens if new_tokens else tokens
+
     for t in tokens:
+
         if t.ttype == "operand":
             output.append(create_node(t, ref))
             if were_values:
@@ -156,11 +230,9 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
                 if ( (o1.associativity == "left" and o1.precedence <= o2.precedence)
                         or
                       (o1.associativity == "right" and o1.precedence < o2.precedence) ):
-                    
                     output.append(create_node(stack.pop(), ref))
                 else:
                     break
-                
             stack.append(t)
         
         elif t.tsubtype == "start":
@@ -173,7 +245,6 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
             
             if not stack:
                 raise Exception("Mismatched or misplaced parentheses")
-            
             stack.pop()
 
             if stack and stack[-1].ttype == "function":
@@ -185,25 +256,24 @@ def shunting_yard(expression, named_ranges, ref = '', tokenize_range = False):
                 #print f, "has ",a," args"
                 output.append(f)
 
+
+
     while stack:
-        if stack[-1].tsubtype == "start" or stack[-1].tsubtype == "stop":
+        if (stack[-1].tsubtype == "start" or stack[-1].tsubtype == "stop"):
             raise Exception("Mismatched or misplaced parentheses")
         
         output.append(create_node(stack.pop(), ref))
 
-    #print "Stack is: ", "|".join(stack)
-    #print "Output is: ", "|".join([x.tvalue for x in output])
-    
     # convert to list
     return [x for x in output]
    
-def build_ast(expression):
+def build_ast(expression, debug = False):
     """build an AST from an Excel formula expression in reverse polish notation"""
     #use a directed graph to store the tree
     G = DiGraph()
-    
     stack = []
-    
+
+
     for n in expression:
         # Since the graph does not maintain the order of adding nodes/edges
         # add an extra attribute 'pos' so we can always sort to the correct order
@@ -250,7 +320,6 @@ def build_ast(expression):
     return G,stack.pop()
 
 # Whats the difference between subgraph() and make_subgraph() ?
-
 def subgraph(G, seed):
     subgraph = networkx.DiGraph()
     todo = map(lambda n: (seed,n), G.predecessors(seed))
@@ -285,18 +354,77 @@ def make_subgraph(G, seed, direction = "ascending"):
 
     return subgraph
 
-def cell2code(named_ranges, cell, sheet):
+
+def cell2code(cell, named_ranges):
     """Generate python code for the given cell"""
     if cell.formula:
+
+        debug = False
+        # if 'OFFSET' in cell.formula or 'INDEX' in cell.formula:
+        #     debug = True
+        # if debug:
+        #     print 'FORMULA', cell.formula
+
         ref = parse_cell_address(cell.address()) if not cell.is_named_range else None
-        e = shunting_yard(cell.formula or str(cell.value), named_ranges, ref=ref)
-        ast,root = build_ast(e)
+        sheet = cell.sheet
+
+        e = shunting_yard(cell.formula, named_ranges, ref=ref, tokenize_range = False)
+        
+        ast,root = build_ast(e, debug = debug)
         code = root.emit(ast, context=sheet)
+
+        # print 'CODE', code, ref
+
     else:
         ast = None
         code = str('"' + cell.value.encode('utf-8') + '"' if isinstance(cell.value,unicode) else cell.value)
     return code,ast
 
+
+def prepare_volatile(code, names, ref_cell = None):
+    # if ref_cell is None, it means that the volatile is a named_range
+
+    try:
+        start, end = code.split('):')
+        start += ')'
+    except:
+        try:
+            start, end = code.split(':INDEX')
+            end = 'INDEX' + end
+        except:
+            start, end = code.split(':OFFSET')
+            end = 'OFFSET' + end
+
+    def build_code(formula):
+        ref = None
+        sheet = None
+
+        if ref_cell is not None:
+            sheet = ref_cell.sheet
+
+            if not ref_cell.is_named_range:
+                ref = parse_cell_address(ref_cell.address())
+
+        e = shunting_yard(formula, names, ref = ref, tokenize_range = False)
+        debug = False
+        ast,root = build_ast(e, debug = debug)
+        code = root.emit(ast, context = sheet, volatile = True)
+
+        return code
+
+    [start_code, end_code] = map(build_code, [start, end])
+
+    # string replacements so that cellmap keys and volatile Range names are coherent
+    if ref_cell:
+        start_code = start_code.replace("'", '"')
+        end_code = end_code.replace("'", '"')
+
+        ref_cell.python_expression = ref_cell.python_expression.replace(code, "%s:%s" % (start_code, end_code))
+
+    return {
+        "start": start_code,
+        "end": end_code
+    }
 
 
 def graph_from_seeds(seeds, cell_source):
@@ -317,7 +445,7 @@ def graph_from_seeds(seeds, cell_source):
             cellmap[c.address()] = c
     # when called from ExcelCompiler instance, construct cellmap and graph from seeds 
     # elif isinstance(cell_source, ExcelCompiler):
-    else: # ~ cell_source is a Spreadsheet
+    else: # ~ cell_source is a ExcelCompiler
         cellmap = dict([(x.address(),x) for x in seeds])
         cells = cell_source.cells
         # directed graph
@@ -328,6 +456,7 @@ def graph_from_seeds(seeds, cell_source):
     # cells to analyze: only formulas
     todo = [s for s in seeds if s.formula]
     steps = [i for i,s in enumerate(todo)]
+    names = cell_source.named_ranges
 
     while todo:
         c1 = todo.pop()
@@ -335,15 +464,15 @@ def graph_from_seeds(seeds, cell_source):
         cursheet = c1.sheet
 
         ###### 1) looking for cell c1 dependencies ####################
-
+        # print 'C1', c1.address()
         # in case a formula, get all cells that are arguments
-        pystr, ast = cell2code(cell_source.named_ranges, c1, cursheet)
+        pystr, ast = cell2code(c1, names)
         # set the code & compile it (will flag problems sooner rather than later)
-        c1.python_expression = pystr
-        c1.compile()    
+        c1.python_expression = pystr.replace('"', "'") # compilation is done later
+           
         
         # get all the cells/ranges this formula refers to
-        deps = [x.tvalue.replace('$','') for x in ast.nodes() if isinstance(x,RangeNode)]
+        deps = [x for x in ast.nodes() if isinstance(x,RangeNode)]
         # remove dupes
         deps = uniqueify(deps)
 
@@ -352,7 +481,7 @@ def graph_from_seeds(seeds, cell_source):
         # ### LOG
         # tmp = []
         # for dep in deps:
-        #     if dep not in cell_source.named_ranges:
+        #     if dep not in names:
         #         if "!" not in dep and cursheet != None:
         #             dep = cursheet + "!" + dep
         #     if dep not in cellmap:
@@ -369,27 +498,36 @@ def graph_from_seeds(seeds, cell_source):
         #     print logStep, "done"
         
         for dep in deps:
-            # this is to avoid :A1 or A1: dep due to clean_volatiles() returning an ExcelError
-            if dep.startswith(':') or dep.endswith(':'):
-                dep = dep.replace(':', '')
+            dep_name = dep.tvalue.replace('$','')
 
-            # we need an absolute address
-            if dep not in cell_source.named_ranges and "!" not in dep and cursheet != None:
-                dep = cursheet + "!" + dep
+            # this is to avoid :A1 or A1: dep due to clean_volatiles() returning an ExcelError
+            if dep_name.startswith(':') or dep_name.endswith(':'):
+                dep_name = dep_name.replace(':', '')
+
+            # if not volatile, we need an absolute address
+            if dep.tsubtype != 'volatile' and dep_name not in names and "!" not in dep_name and cursheet != None:
+                dep_name = cursheet + "!" + dep_name
 
             # Named_ranges + ranges already parsed (previous iterations)
-            if dep in cellmap:
-                origins = [cellmap[dep]]
+            if dep_name in cellmap:
+                origins = [cellmap[dep_name]]
                 target = cellmap[c1.address()]
-            # if the dependency is a multi-cell range, create a range object
-            elif is_range(dep) or (dep in cell_source.named_ranges and is_range(cell_source.named_ranges[dep])):
-
-                if dep in cell_source.named_ranges:
-                    reference = cell_source.named_ranges[dep]
+            # if the dep_nameendency is a multi-cell range, create a range object
+            elif is_range(dep_name) or (dep_name in names and is_range(names[dep_name])):
+                if dep_name in names:
+                    reference = names[dep_name]
                 else:
-                    reference = dep
-                
-                rng = cell_source.Range(reference)
+                    reference = dep_name
+
+                if 'OFFSET' in reference or 'INDEX' in reference:
+                    reference = prepare_volatile(reference, names, ref_cell = c1)
+                    address = '%s:%s' % (reference["start"], reference["end"])
+                    rng = cell_source.Range(reference)
+
+                    cell_source.volatile_ranges.append(rng)
+                else:
+                    address = dep_name
+                    rng = cell_source.Range(reference)
 
                 if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
                     formulas_in_dep = []
@@ -400,10 +538,10 @@ def graph_from_seeds(seeds, cell_source):
                             # raise Exception( '%s unavailable' % c)
                             formulas_in_dep.append(None)
             
-                virtual_cell = Cell(dep, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
                 # save the range
-                cellmap[dep] = virtual_cell
+                cellmap[address] = virtual_cell
                 # add an edge from the range to the parent
                 G.add_node(virtual_cell)
                 # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
@@ -420,20 +558,20 @@ def graph_from_seeds(seeds, cell_source):
                             origins.append(cellmap[child])   
             else:
                 # not a range 
-                if dep in cell_source.named_ranges:
-                    reference = cell_source.named_ranges[dep]
+                if dep_name in names:
+                    reference = names[dep_name]
                 else:
-                    reference = dep
+                    reference = dep_name
 
 
                 if reference in cells:
-                    if dep in cell_source.named_ranges:
-                        virtual_cell = Cell(dep, None, value = cells[reference].value, formula = reference, is_range = False, is_named_range = True )
+                    if dep_name in names:
+                        virtual_cell = Cell(dep_name, None, value = cells[reference].value, formula = reference, is_range = False, is_named_range = True )
                         origins = [virtual_cell]
                     else:
                         origins = [cells[reference]] 
                 else:
-                    virtual_cell = Cell(dep, None, value = None, formula = None, is_range = False, is_named_range = True )
+                    virtual_cell = Cell(dep_name, None, value = None, formula = None, is_range = False, is_named_range = True )
                     origins = [virtual_cell]
 
                 target = cellmap[c1.address()]
@@ -450,7 +588,7 @@ def graph_from_seeds(seeds, cell_source):
                         steps.append(step+1)
                     else:
                         # constant cell, no need for further processing, just remember to set the code
-                        pystr,ast = cell2code(cell_source.named_ranges, c2, cursheet)
+                        pystr,ast = cell2code(c2, names)
                         c2.python_expression = pystr
                         c2.compile()     
                     
@@ -463,5 +601,7 @@ def graph_from_seeds(seeds, cell_source):
                 if(target != []):
                     # print "Adding edge %s --> %s" % (c2.address(), target.address())
                     G.add_edge(cellmap[c2.address()],target)
+        
+        c1.compile() # cell compilation is done here because volatile ranges might update python_expressions 
 
     return (cellmap, G)
