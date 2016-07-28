@@ -629,7 +629,16 @@ class Spreadsheet(object):
 
         # check that filtered volatiles are not affected by varying inputs
         for input in self.inputs:
-            self.set_value(input, 0)
+            input_value = self.cellmap[input].value
+            
+            if self.cellmap[input].value == 0:
+                self.set_value(input, 1)
+            elif type(input_value) == str:
+                self.set_value(input, 'ithinkbobdylanistheverybest')
+            elif type(input_value) == bool:
+                self.set_value(input, not input_value)
+            else:
+                self.set_value(input, 0)
 
             self.build_volatiles()
 
