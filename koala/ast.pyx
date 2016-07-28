@@ -86,9 +86,6 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
         else:
             tokens.append(t)
 
-    # print "==> ", "".join([t.tvalue for t in tokens]) 
-
-
     #http://office.microsoft.com/en-us/excel-help/calculation-operators-and-precedence-HP010078886.aspx
     operators = {}
     operators[':'] = Operator(':',8,'left')
@@ -119,12 +116,10 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     # reconstruct expressions with ':' and replace the corresponding tokens by the reconstructed expression
     if not tokenize_range:
         for index, token in enumerate(tokens):
-            # print 'LEN', len(tokens)
             new_tokens.append(token)
 
             if type(token.tvalue) == str:
                 if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
-                    # print 'PBATIC found', token.tvalue
                     depth = 0
                     expr = ''
 
@@ -164,11 +159,9 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                             if depth == 0:
                                 break
 
-                    # print 'FULL EXPRESSION', expr
                     new_tokens.append(f_token(expr, 'operand', 'volatile'))
 
                 elif ':OFFSET' in token.tvalue or ':INDEX' in token.tvalue: # example -> A1:OFFSET(
-                    # print 'PBATIC found', token.tvalue
                     depth = 0
                     expr = ''
 
@@ -188,14 +181,8 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                             new_tokens.pop()
                             break
 
-                    # print 'FULL EXPRESSION', expr
                     new_tokens.append(f_token(expr, 'operand', 'volatile'))
 
-        # try:
-        #     print '-------------- TEST', ''.join(map(lambda x: str(x.tvalue), tokens))
-        #     print '-------------- TEST new', ''.join(map(lambda x: str(x.tvalue), new_tokens))
-        # except:
-        #     pass
 
     tokens = new_tokens if new_tokens else tokens
 
