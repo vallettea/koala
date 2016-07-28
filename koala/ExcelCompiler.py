@@ -10,7 +10,7 @@ from networkx.algorithms import number_connected_components
 from koala.reader import read_archive, read_named_ranges, read_cells
 from koala.excellib import *
 from koala.utils import *
-from koala.ast import graph_from_seeds
+from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatile
 from koala.ExcelError import *
 from koala.Cell import Cell
 from koala.Range import RangeFactory
@@ -33,6 +33,7 @@ class ExcelCompiler(object):
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
+        self.volatile_ranges = []
         self.debug = debug
 
     def clean_volatile(self):
@@ -45,50 +46,92 @@ class ExcelCompiler(object):
 
         self.named_ranges = cleaned_ranged_names
             
-    def gen_graph(self, outputs = None):
+    def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
 
-        if outputs is None:
-            seeds = list(flatten(self.cells.values()))
+        if len(outputs) == 0:
+            outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
         else:
-            outputs = list(outputs) # creates a copy
-            seeds = []
-            for o in outputs:
-                if o in self.named_ranges:
-                    reference = self.named_ranges[o]
-                    if is_range(reference):
+            outputs = set(outputs) # creates a copy
+        
+        outputs = list(outputs) # to be able to modify the list
 
+        seeds = []
+        for o in outputs:
+            if o in self.named_ranges:
+                reference = self.named_ranges[o]
+
+                if is_range(reference):
+                    if 'OFFSET' in reference or 'INDEX' in reference:
+                        start_end = prepare_volatile(reference, self.named_ranges)
+                        rng = self.Range(start_end)
+
+                        self.volatile_ranges.append(rng)
+                    else:
                         rng = self.Range(reference)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            outputs.append(address)
-                        virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
-                        seeds.append(virtual_cell)
-                    else:
-                        # might need to be changed to actual self.cells Cell, not a copy
-                        virtual_cell = Cell(o, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
-                        seeds.append(virtual_cell)
-                else:
-                    if is_range(o):
-                        rng = self.Range(o)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            outputs.append(address)
-                        virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
-                        seeds.append(virtual_cell)
-                    else:
-                        seeds.append(self.cells[o])
 
-        # print "Seeds %s cells" % len(seeds)
+                    # rng = self.Range(reference)
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        outputs.append(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
+                else:
+                    # might need to be changed to actual self.cells Cell, not a copy
+                    value = self.cells[reference].value if reference in self.cells else None
+                    virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
+                    seeds.append(virtual_cell)
+            else:
+                if is_range(o):
+                    rng = self.Range(o)
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        outputs.append(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
+                else:
+                    seeds.append(self.cells[o])
+
+        print "Seeds %s cells" % len(seeds)
+
+        outputs = set(outputs)
 
         # print "%s cells on the todo list" % len(todo)
 
         cellmap, G = graph_from_seeds(seeds, self)
 
+        # add inputs that are outside of calculation chain
+        for i in inputs:
+            if i not in cellmap:
+                if i in self.named_ranges:
+                    reference = self.named_ranges[i]
+                    if is_range(reference):
+
+                        rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+
+                    else:
+                        # might need to be changed to actual self.cells Cell, not a copy
+                        virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                else:
+                    if is_range(i):
+                        rng = self.Range(i)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                        cellmap[i] = virtual_cell
+                        G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                    else:
+                        cellmap[i] = self.cells[i]
+                        G.add_node(self.cells[i]) # edges are not needed here since the input here is not in the calculation chain
+
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
+
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, outputs = outputs, debug = self.debug)
-
-
-
-
+        return Spreadsheet(G, cellmap, self.named_ranges, volatile_ranges = self.volatile_ranges, outputs = outputs, inputs = inputs, debug = self.debug)

@@ -1,3 +1,5 @@
+import pyximport; pyximport.install()
+
 import os
 import sys
 import unittest
@@ -13,18 +15,67 @@ from koala.ExcelError import ExcelError
 from koala.excellib import *
 from koala.Range import RangeCore as Range
 
-class Test_Choose(unittest.TestCase):
-    def setup(self):
-        pass
 
-    def test_choose_basic(self):
-        self.assertEqual(choose(3, 'John', 'Paul', 'George', 'Ringo'), 'George')
+class Test_VDB(unittest.TestCase):
+	def setup(self):
+		pass
 
-    def test_choose_fraction(self):
-        self.assertEqual(choose(3.4, 'John', 'Paul', 'George', 'Ringo'), 'George')
+	# def test_vdb_basic(self):
+	# 	cost = 575000
+	# 	salvage = 5000
+	# 	life = 10
+	# 	rate = 1.5
+	# 	start = 3
+	# 	end = 5
 
-    def test_choose_incorrect_index(self):
-        self.assertEqual(type(choose(3, 2)), ExcelError)
+	# 	obj = 102160.546875
+
+	# 	self.assertEqual(vdb(cost, salvage, life, start, end, rate), obj)
+
+	# def test_vdb_partial(self):
+	# 	cost = 1
+	# 	salvage = 0
+	# 	life = 14
+	# 	rate = 1.25
+	# 	start = 11.5
+	# 	end = 12.5
+
+	# 	obj = 0.068726290454684
+
+	# 	self.assertEqual(round(vdb(cost, salvage, life, start, end, rate), 15), obj)
+
+	def test_vdb_partial_no_switch(self):
+		cost = 1
+		salvage = 0
+		life = 5.0
+		rate = 2.5
+		start = 0.5
+		end = 1.5
+
+		obj = 0.375
+
+		self.assertEqual(vdb(cost, salvage, life, start, end, rate, True), obj)
+
+# class Test_SLN(unittest.TestCase):
+# 	def setup(self):
+# 		pass
+
+# 	def test_sln_basic(self):
+# 		self.assertEqual(sln(30000, 5000, 10), 2500)
+
+
+# class Test_Choose(unittest.TestCase):
+#     def setup(self):
+#         pass
+
+#     def test_choose_basic(self):
+#         self.assertEqual(choose(3, 'John', 'Paul', 'George', 'Ringo'), 'George')
+
+#     def test_choose_fraction(self):
+#         self.assertEqual(choose(3.4, 'John', 'Paul', 'George', 'Ringo'), 'George')
+
+#     def test_choose_incorrect_index(self):
+#         self.assertEqual(type(choose(3, 2)), ExcelError)
 
 
 # class Test_Irr(unittest.TestCase):
