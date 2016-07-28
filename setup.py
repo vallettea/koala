@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 setup(
     name = "koala2",
 
-    version = "0.0.4",
+    version = "0.0.6",
 
     author = "Ants, open innovation lab",
     author_email = "contact@ants.builders",
@@ -26,7 +26,7 @@ setup(
         "lxml"
     ],
 
-    # ext_modules = cythonize(["koala/*.pyx"]),
+    # ext_modules = cythonize(["koala/*.py", "koala/ast/*.py"]),
 
 
 )
