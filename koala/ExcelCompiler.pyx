@@ -33,7 +33,7 @@ class ExcelCompiler(object):
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
-        self.volatile_ranges = []
+        self.volatile_ranges = set()
         self.debug = debug
 
     def clean_volatile(self):
@@ -52,9 +52,17 @@ class ExcelCompiler(object):
         if len(outputs) == 0:
             outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
         else:
-            outputs = set(outputs) # creates a copy
+            outputs = set(outputs)
         
         outputs = list(outputs) # to be able to modify the list
+
+        if len(inputs) == 0:
+            inputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
+        else:
+            inputs = set(inputs)
+
+        inputs = list(inputs)
+
 
         seeds = []
         for o in outputs:
@@ -66,7 +74,7 @@ class ExcelCompiler(object):
                         start_end = prepare_volatile(reference, self.named_ranges)
                         rng = self.Range(start_end)
 
-                        self.volatile_ranges.append(rng)
+                        self.volatile_ranges.add(rng.name)
                     else:
                         rng = self.Range(reference)
 
@@ -128,6 +136,8 @@ class ExcelCompiler(object):
                     else:
                         cellmap[i] = self.cells[i]
                         G.add_node(self.cells[i]) # edges are not needed here since the input here is not in the calculation chain
+
+        inputs = set(inputs)
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
         undirected = networkx.Graph(G)
