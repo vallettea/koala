@@ -169,6 +169,9 @@ def right(text,n):
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
+    row = int(row)
+    col = int(col) if col is not None else col
+
     for i in [my_range, row, col]:
         if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
@@ -200,10 +203,10 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
     if nr == 1:
-        return cells[col - 1]
+        return cells[int(col) - 1]
 
     if nc == 1:
-        return cells[row - 1]
+        return cells[int(row) - 1]
         
     else: # could be optimised
         if col is None or row is None:
