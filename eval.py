@@ -55,7 +55,9 @@ if __name__ == '__main__':
     graph_folder = 'graphs'
     # graph_folder = 'temp_graphs'
 
-    file = "../engie/data/%s/100021256 - North America - United States - Tubular Bells - Oil - Producing.xlsx" % input_folder
+    file_number = 100021254
+
+    file = glob.glob("../engie/data/%s/%i*.xlsx" % (input_folder, file_number))[0]
 
     print file
 
@@ -64,24 +66,27 @@ if __name__ == '__main__':
     c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
     for name, reference in personalized_names.items():
         c.named_ranges[name] = reference
-    c.clean_volatile()
+    # c.clean_volatile()
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph(outputs=outputs)
+    sp = c.gen_graph()
+    # sp = c.gen_graph(outputs=outputs)
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    ### Graph Pruning ###
-    startTime = datetime.now()
-    sp = sp.prune_graph(inputs)
-    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    # ### Graph Pruning ###
+    # startTime = datetime.now()
+    # sp = sp.prune_graph(inputs)
+    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    ## Graph Serialization ###
+    ### Graph Serialization ###
     print "Serializing to disk...", file
-    sp.dump(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    # sp.dump(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    sp.dump(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    # sp = Spreadsheet.load(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    sp = Spreadsheet.load(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     ### Graph Evaluation ###
