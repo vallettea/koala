@@ -179,7 +179,7 @@ class Spreadsheet(object):
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, inputs, debug = self.debug)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, inputs, debug = self.debug)
 
     def clean_volatile(self, with_cache = True):
 
