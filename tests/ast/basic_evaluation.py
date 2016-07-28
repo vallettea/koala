@@ -28,7 +28,6 @@ from koala.Cell import Cell
 # import sys
 # sys.exit(0)
 
-
 class Test_Excel(unittest.TestCase):
     
     def setUp(self):
