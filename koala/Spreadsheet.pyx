@@ -109,20 +109,20 @@ class Spreadsheet(object):
         print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
 
-    def prune_graph(self, inputs):
+    def prune_graph(self):
         print '___### Pruning Graph ###___'
 
         G = self.G
 
         # get all the cells impacted by inputs
         dependencies = set()
-        for input_address in inputs:
-                child = self.cellmap[input_address]
-                if child == None:
-                    print "Not found ", input_address
-                    continue
-                g = make_subgraph(G, child, "descending")
-                dependencies = dependencies.union(g.nodes())
+        for input_address in self.inputs:
+            child = self.cellmap[input_address]
+            if child == None:
+                print "Not found ", input_address
+                continue
+            g = make_subgraph(G, child, "descending")
+            dependencies = dependencies.union(g.nodes())
 
         # print "%s cells depending on inputs" % str(len(dependencies))
 
@@ -179,7 +179,39 @@ class Spreadsheet(object):
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, inputs, debug = self.debug)
+        # add back inputs that have been pruned because they are outside of calculation chain
+        for i in self.inputs:
+            if i not in new_cellmap:
+                if i in self.named_ranges:
+                    reference = self.named_ranges[i]
+                    if is_range(reference):
+
+                        rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            self.inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+
+                    else:
+                        # might need to be changed to actual self.cells Cell, not a copy
+                        virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                else:
+                    if is_range(i):
+                        rng = self.Range(i)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            self.inputs.append(address)
+                        virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                        new_cellmap[i] = virtual_cell
+                        subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                    else:
+                        new_cellmap[i] = self.cellmap[i]
+                        subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
+
+
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, self.inputs, debug = self.debug)
 
     def clean_volatile(self, with_cache = True):
 
@@ -321,8 +353,7 @@ class Spreadsheet(object):
         self.fix_cell(address)
 
         # case where the address refers to a range
-        if self.cellmap[address].range: 
-
+        if self.cellmap[address].is_range: 
             cells_to_set = []
             for a in self.cellmap[address].range.addresses:
                 if a in self.cellmap:
@@ -339,7 +370,13 @@ class Spreadsheet(object):
         else:
             if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
                 ref_address = self.named_ranges[address]
-                ref_cell = self.cellmap[ref_address]
+                
+                if ref_address in self.cellmap:
+                    ref_cell = self.cellmap[ref_address]
+                else:
+                    ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
+                    self.add_cell(ref_cell)
+
                 self.fix_cell(ref_address)
                 ref_cell.value = val
 

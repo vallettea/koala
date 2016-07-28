@@ -33,20 +33,27 @@ personalized_names = {
     "Nominal_to_real_multiplier": "Cashflow!L64:DG64"
 }
 
-inputs = [
-    "gen_discountRate", 
-    "IA_PriceExportOil", 
-    "IA_PriceExportGas",
-    "IA_PriceExportCond"
-]
+# inputs = [
+#     "gen_discountRate", 
+#     "IA_PriceExportOil", 
+#     "IA_PriceExportGas",
+#     "IA_PriceExportCond"
+# ]
 
-outputs = [
-    "CA_Years", 
-    "outNPV_Proj", 
-    "Dev_Fwd", # Cashflow!H81  
-    "Pnt_Fwd", # Cashflow!I81
-    "year_FID"
-]
+# outputs = [
+#     "CA_Years", 
+#     "outNPV_Proj", 
+#     "Dev_Fwd", # Cashflow!H81  
+#     "Pnt_Fwd", # Cashflow!I81
+#     "year_FID"
+# ]
+
+with open('../engie/tests/features.json') as data_file:    
+    features = json.load(data_file)
+
+inputs = features["primary_input"]
+outputs = features["primary_output"]
+
 
 if __name__ == '__main__':
 
@@ -55,9 +62,9 @@ if __name__ == '__main__':
     graph_folder = 'graphs'
     # graph_folder = 'temp_graphs'
 
-    file_number = 100021254
+    file_number = 100021224
 
-    file = glob.glob("../engie/data/%s/%i*.xlsx" % (input_folder, file_number))[0]
+    file = glob.glob("../engie/data/%s/%s*.xlsx" % (input_folder, file_number))[0]
 
     print file
 
@@ -66,27 +73,28 @@ if __name__ == '__main__':
     c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
     for name, reference in personalized_names.items():
         c.named_ranges[name] = reference
-    # c.clean_volatile()
+    c.clean_volatile()
     print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    sp = c.gen_graph()
-    # sp = c.gen_graph(outputs=outputs)
+    # sp = c.gen_graph()
+    sp = c.gen_graph(outputs=outputs, inputs = inputs)
     print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # sp = sp.prune_graph(inputs)
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph()
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
     ### Graph Serialization ###
     print "Serializing to disk...", file
-    # sp.dump(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
-    sp.dump(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
+    sp.dump(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    # sp.dump(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    # sp = Spreadsheet.load(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
-    sp = Spreadsheet.load(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
+
+    sp = Spreadsheet.load(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    # sp = Spreadsheet.load(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     ### Graph Evaluation ###
@@ -101,7 +109,9 @@ if __name__ == '__main__':
             sp.history[addr] = {'original': str(cell.value)}
 
     startTime = datetime.now()
+
     sp.set_value('IA_PriceExportGas', 0)
+
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
     sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
