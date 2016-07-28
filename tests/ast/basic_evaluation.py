@@ -10,8 +10,8 @@ path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
 from koala.reader import read_archive, read_named_ranges, read_cells
-from koala import ExcelCompiler
-from koala.utils import Cell
+from koala.ExcelCompiler import ExcelCompiler
+from koala.Cell import Cell
 
 class Test_Excel(unittest.TestCase):
     
