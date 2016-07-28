@@ -784,8 +784,8 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
             return arg
 
     for arg in [cost, salvage, life, start_period, end_period, factor]:
-        if not isinstance(arg, (float, int)):
-            return ExcelError('#VALUE', 'Arg %s should be an int or float, instead: %s' % (arg, type(str)))
+        if not isinstance(arg, (float, int, long)):
+            return ExcelError('#VALUE', 'Arg %s should be an int, float or long, instead: %s' % (arg, type(arg)))
 
     life = int(life)
     start_period = start_period
