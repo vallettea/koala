@@ -119,7 +119,7 @@ def load(fname):
     mode = "node0"
     nodes = []
     edges = []
-    volatile_ranges = []
+    volatile_ranges = set()
     outputs = None
     inputs = None
     named_ranges = {}
@@ -173,7 +173,7 @@ def load(fname):
                 vv = Range(reference)
 
                 if is_volatile:
-                    volatile_ranges.append(vv)
+                    volatile_ranges.add(vv.name)
 
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
