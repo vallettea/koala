@@ -20,7 +20,7 @@ from tokenizer import reverse_rpn
 from serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, outputs = [], inputs = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -49,6 +49,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
+        self.volatile_ranges = volatile_ranges
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -58,9 +59,14 @@ class Spreadsheet(object):
     def activate_history(self):
         self.save_history = True
 
-    def add_cell(self, cell):
-        if cell.address() in self.cellmap:
-            raise Exception('Cell %s already in cellmap' % cell.address())
+    def add_cell(self, cell, value = None):
+        
+        if type(cell) != Cell:
+            cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
+        
+        addr = cell.address()
+        if addr in self.cellmap:
+            raise Exception('Cell %s already in cellmap' % addr)
 
         cellmap, G = graph_from_seeds([cell], self)
 
@@ -205,9 +211,9 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.outputs, self.inputs, debug = self.debug)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, self.inputs, debug = self.debug)
 
-    def clean_volatile(self):
+    def clean_volatile(self, with_cache = True):
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -241,10 +247,12 @@ class Spreadsheet(object):
             # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         ### 3) evaluate all volatiles
-        cache = {} # formula => new_formula
+        if with_cache:
+            cache = {} # formula => new_formula
 
         for cell in all_volatiles:
-            if cell["formula"] in cache:
+            if with_cache and cell["formula"] in cache:
+                # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
                 new_formula = cache[cell["formula"]]
             else:
                 if cell["sheet"]:
@@ -271,7 +279,10 @@ class Spreadsheet(object):
                             new_formula = new_formula.replace(repl["formula"], repl["value"])
                 else:
                     new_formula = None
-                cache[cell["formula"]] = new_formula
+                
+                if with_cache:
+                    # print 'Caching', cell["address"], cell["formula"], new_formula
+                    cache[cell["formula"]] = new_formula
 
             if cell["address"] in new_named_ranges:
                 new_named_ranges[cell["address"]] = new_formula
@@ -377,6 +388,9 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
+        for vol_range in self.volatile_ranges: # reset all volatile ranges
+            self.reset(self.cellmap[vol_range.name])
+
     def reset(self, cell):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
@@ -423,6 +437,21 @@ class Spreadsheet(object):
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
+    def build_volatile(self, vol_range):
+
+        start = eval(vol_range.reference['start'])
+        end = eval(vol_range.reference['end'])
+
+        vol_range.build('%s:%s' % (start, end), debug = True)
+
+    def build_volatiles(self):
+
+        for vol_range in self.volatile_ranges:
+            start = eval(vol_range.reference['start'])
+            end = eval(vol_range.reference['end'])
+
+            vol_range.build('%s:%s' % (start, end), debug = True)
+
     def eval_ref(self, addr1, addr2 = None, ref = None):
         debug = False
 
@@ -439,6 +468,9 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
+
+                    if cell1.range.is_volatile:
+                        self.build_volatile(cell1.range)
 
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
@@ -522,6 +554,8 @@ class Spreadsheet(object):
                 vv = 0
             if cell.is_range:
                 cell.value = vv.values
+            elif isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
+                cell.value = vv.values[0]
             else:
                 cell.value = vv
             cell.need_update = False

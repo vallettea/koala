@@ -10,8 +10,23 @@ path = os.path.join(dir, '../..')
 sys.path.insert(0, path)
 
 from koala.reader import read_archive, read_named_ranges, read_cells
+from koala.Range import RangeCore
 from koala.ExcelCompiler import ExcelCompiler
+from koala.Spreadsheet import Spreadsheet
 from koala.Cell import Cell
+
+
+# file_name = "./tests/ast/basic_evaluation.xlsx"
+
+# c = ExcelCompiler(file_name, debug = True)
+# # c.clean_volatile()
+# sp = c.gen_graph()
+
+# sp.dump(file_name.replace(".xlsx", ".gzip"))
+# sp = Spreadsheet.load(file_name.replace(".xlsx", ".gzip"))
+
+# import sys
+# sys.exit(0)
 
 class Test_Excel(unittest.TestCase):
     
@@ -20,11 +35,16 @@ class Test_Excel(unittest.TestCase):
         file_name = "./tests/ast/basic_evaluation.xlsx"
 
         c = ExcelCompiler(file_name, debug = True)
-        c.clean_volatile()
+        # c.clean_volatile()
         self.sp = c.gen_graph()
+
+    def test_Volatile_Name_L6(self):
+        self.sp.set_value('Sheet1!A6', 10)
+        self.assertEqual(self.sp.evaluate('Sheet1!L6'), 10)
         
     def test_D1(self):
         self.sp.set_value('Sheet1!A1', 10)
+
     	self.assertEqual(self.sp.evaluate('Sheet1!D1'), 20)
 
     def test_D2(self):
@@ -63,10 +83,8 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!B2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
 
-    def test_B17(self):
+    def test_C17(self):
         self.sp.set_value('Sheet1!A17', 40)
-
-        print 'python', self.sp.cellmap["Sheet1!C17"].python_expression
         self.assertEqual(self.sp.evaluate('Sheet1!C17'), 80)
 
     def test_I17(self):
@@ -77,8 +95,9 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!B1', 13)
         self.assertEqual(self.sp.evaluate('Sheet1!L1'), 13)
 
-    def test_F26(self):
+    def test_F26(self): # Offset with range output, see Issue #70
         self.sp.set_value('Sheet1!A23', 10)
+
         self.assertEqual(self.sp.evaluate('Sheet1!F26'), 21)
 
     def test_G26(self):
@@ -121,12 +140,15 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A3', 5)
         self.assertEqual(self.sp.evaluate('Sheet1!K17'), 5)
 
-    def test_Empty_Range(self):
-        self.sp.set_value('Sheet1!A12', 5)
-        self.assertEqual(self.sp.evaluate('Sheet1!A13'), 5)
-
     def test_Sumproduct_with_equality_H9(self):
+        # DOESNT WORK BECAUSE OF RANGES OF DIFFERENT LENGTH, see Issue #50
+
         self.sp.set_value('Sheet1!A1', 5)
+
+        # print 'Test', RangeCore.apply_all('is_equal',self.sp.eval_ref("Sheet1!C1:C3"),self.sp.eval_ref("Sheet1!C1"),(9, 'H'))
+        # print 'Test 2', RangeCore.apply_all('multiply',self.sp.eval_ref('Liste'),self.sp.eval_ref('Liste2'),(9, 'H'))
+        # print 'Test 3', RangeCore.apply_all('multiply',RangeCore.apply_all('multiply',self.sp.eval_ref('Liste'),self.sp.eval_ref('Liste2'),(9, 'H')),RangeCore.apply_all('is_equal',self.sp.eval_ref("Sheet1!C1:C3"),self.sp.eval_ref("Sheet1!C1"),(9, 'H')),(9, 'H'))
+
         self.assertEqual(self.sp.evaluate('Sheet1!H9'), 50)
 
     def test_Vlookup_Range_Lookup_is_True(self):

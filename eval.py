@@ -10,7 +10,6 @@ import json
 import warnings
 from io import BytesIO
 
-from koala.tokenizer import ExcelParser
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
 from koala.Cell import Cell
@@ -52,56 +51,56 @@ personalized_names = {
 with open('../engie/tests/features.json') as data_file:    
     features = json.load(data_file)
 
-inputs = features["primary_input"] + features["secondary_input"]
-outputs = features["primary_output"] + features["secondary_output"]
+inputs = features["primary_input"]
+outputs = features["primary_output"]
 
 
 if __name__ == '__main__':
 
     input_folder = 'inputs'
     # input_folder = 'other/Norway_Output'
-    graph_folder = 'test_graphs'
+    graph_folder = 'graphs'
     # graph_folder = 'temp_graphs'
 
-    file_number = '100021224'
+    file_number = 100021224
 
     file = glob.glob("../engie/data/%s/%s*.xlsx" % (input_folder, file_number))[0]
 
     print file
 
-    # ### Graph Generation ###
-    # startTime = datetime.now()
-    # c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
-    # for name, reference in personalized_names.items():
-    #     c.named_ranges[name] = reference
-    # c.clean_volatile()
-    # print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
-    # sp = c.gen_graph(outputs=outputs, inputs = inputs)
-    # print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
+    ### Graph Generation ###
+    startTime = datetime.now()
+    c = ExcelCompiler(file, ignore_sheets = ['IHS'], ignore_hidden = True, debug = True)
+    for name, reference in personalized_names.items():
+        c.named_ranges[name] = reference
+    c.clean_volatile()
+    print "___Timing___ %s cells and %s named_ranges parsed in %s" % (str(len(c.cells)-len(c.named_ranges)), str(len(c.named_ranges)), str(datetime.now() - startTime))
+    # sp = c.gen_graph()
+    sp = c.gen_graph(outputs=outputs, inputs = inputs)
+    print "___Timing___ Graph generated in %s" % (str(datetime.now() - startTime))
 
-    # ### Graph Pruning ###
-    # startTime = datetime.now()
-    # # sp = sp.prune_graph()
-    # print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
+    ### Graph Pruning ###
+    startTime = datetime.now()
+    sp = sp.prune_graph()
+    print "___Timing___  Pruning done in %s" % (str(datetime.now() - startTime))
 
-    # ## Graph Serialization ###
-    # print "Serializing to disk...", file
-    # sp.dump(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+    ### Graph Serialization ###
+    print "Serializing to disk...", file
+    sp.dump(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    # sp.dump(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
 
     ### Graph Loading ###
     startTime = datetime.now()
     print "Reading from disk...", file
-    sp = Spreadsheet.load(file.replace("xlsx", "gzip").replace(input_folder, graph_folder))
+
+    sp = Spreadsheet.load(file.replace(".xlsx", ".gzip").replace(input_folder, graph_folder))
+    # sp = Spreadsheet.load(file.replace(".xlsx", "_FULL.gzip").replace(input_folder, graph_folder))
     print "___Timing___ Graph read in %s" % (str(datetime.now() - startTime))
 
     ### Graph Evaluation ###
     print 'First evaluation: outNPV_Proj', sp.evaluate('outNPV_Proj')
 
-    tmp = sp.evaluate('input_CapexDecom')
-
-    # tmp = sp.evaluate('IA_PriceExportGas')
-
-    print 'BE200', sp.cellmap['Calculations!BE200'].value
+    tmp = sp.evaluate('IA_PriceExportGas')
 
     history = True
     if history:
@@ -111,26 +110,14 @@ if __name__ == '__main__':
 
     startTime = datetime.now()
 
-    sp.set_value('input_CapexDecom', 0)
-    print 'BE200', sp.cellmap['Calculations!BE200'].value
+    sp.set_value('IA_PriceExportGas', 0)
 
     print "___Timing___  Reset done in %s" % (str(datetime.now() - startTime))
-    sp.set_value('input_CapexDecom', tmp)
+    sp.set_value('IA_PriceExportGas', tmp)
     startTime = datetime.now()
-
+    
     # import cProfile
     # cProfile.run("sp.evaluate('outNPV_Proj')", 'stats')
-
-    # THIS EVAL DOES NOT WORK AND I NEED TO KNOW WHY
-
-
-    print 'TEST', RangeCore.apply('multiply',RangeCore.apply('substract',sp.eval_ref('totalDecom', ref = (200, 'BE')),xsum(sp.eval_ref("Calculations!L200:Calculations!CN200")),(200, 'BE')),sp.eval_ref('Deprec_UOPRates', ref = (200, 'BE')),(200, 'BE'))
-
-
-    print 'TEST 2', xsum(sp.eval_ref("Calculations!L200:Calculations!CN200"))
-    print 'TEST 3', sp.eval_ref('totalDecom', ref = (200, 'BE'))
-    print 'TEST 4', sp.eval_ref('Deprec_UOPRates', ref = (200, 'BE'))
-
 
     print 'Second evaluation %s' % str(sp.evaluate('outNPV_Proj'))
     print "___Timing___  Evaluation done in %s" % (str(datetime.now() - startTime))
