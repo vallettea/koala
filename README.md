@@ -143,6 +143,8 @@ sp.set_formula('Sheet1!D1', 'Sheet1!A1 * 1000')
 
 The `string` you pass as argument needs to be written with Excel syntax.
 
+** You will find more examples and sample excel files in the directory `examples`.**
+
 
 ## Origins
 This project is a "double fork" of two awesome projects:

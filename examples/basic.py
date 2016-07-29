@@ -1,7 +1,7 @@
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
 
-file = "./example/basic.xlsx"
+file = "./examples/basic.xlsx"
 
 print file
 
