@@ -88,7 +88,7 @@ In case you have very big files, you might want to reduce the size of the output
 
 Volatiles are functions that might output a reference to Cell rather than a specific value, which impose a reevaluation everytime. Typical examples are INDEX and OFFSET.
 
-After having created the graph, you can use `clean_volatile` to fix the value of the volatiles to their initial values, which reduces the graph size and increases the evaluation times:
+After having created the graph, you can use `clean_volatile` to fix the value of the volatiles to their initial values, which reduces the graph size and decreases the evaluation times:
 
 ```
 sp.clean_volatile()
