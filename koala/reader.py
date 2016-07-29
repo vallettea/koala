@@ -1,11 +1,12 @@
 from io import BytesIO
 import re
 
-from openpyxl.formula.translate import Translator 
-from openpyxl.cell.text import Text
-from openpyxl.utils.indexed_list import IndexedList
-from openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
-from openpyxl.xml.constants import (
+from koala.openpyxl.formula.translate import Translator 
+from koala.openpyxl.cell.text import Text
+from koala.openpyxl.utils.indexed_list import IndexedList
+import koala.openpyxl.xml.functions
+from koala.openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
+from koala.openpyxl.xml.constants import (
     SHEET_MAIN_NS,
     REL_NS,
     PKG_REL_NS,
@@ -19,8 +20,8 @@ from openpyxl.xml.constants import (
 
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
-from Cell import Cell
-from utils import CELL_REF_RE, col2num
+from koala.Cell import Cell
+from koala.utils import CELL_REF_RE, col2num
 
 FLOAT_REGEX = re.compile(r"\.|[E-e]")
 CENTRAL_DIRECTORY_SIGNATURE = b'\x50\x4b\x05\x06'

@@ -9,8 +9,8 @@ from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
 import marshal
 
-from Cell import Cell
-from Range import RangeCore, RangeFactory
+from koala.Cell import Cell
+from koala.Range import RangeCore, RangeFactory
 
 SEP = ";;"
 

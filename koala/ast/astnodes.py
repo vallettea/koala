@@ -4,9 +4,9 @@ import os.path
 
 # import networkx
 
-from excellib import FUNCTION_MAP, IND_FUN
-from utils import is_range, split_range, split_address
-from ExcelError import *
+from koala.excellib import FUNCTION_MAP, IND_FUN
+from koala.utils import is_range, split_range, split_address
+from koala.ExcelError import *
 
 class ASTNode(object):
     """A generic node in the AST"""

@@ -13,9 +13,9 @@ from math import log
 from decimal import Decimal, ROUND_HALF_UP
 import re
 
-from utils import *
-from Range import RangeCore as Range
-from ExcelError import *
+from koala.utils import *
+from koala.Range import RangeCore as Range
+from koala.ExcelError import *
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should

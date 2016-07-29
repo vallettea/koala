@@ -3,7 +3,7 @@
 from __future__ import division
 from itertools import izip
     
-from utils import *
+from koala.utils import *
 
 class Cell(object):
     ctr = 0

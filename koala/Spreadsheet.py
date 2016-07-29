@@ -9,15 +9,15 @@ from networkx.algorithms import number_connected_components
 
 import json
 
-from openpyxl.formula.translate import Translator
+from koala.openpyxl.formula.translate import Translator
 
-from excellib import *
-from utils import *
-from ast import *
-from Cell import Cell
-from Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
-from tokenizer import reverse_rpn
-from serializer import *
+from koala.excellib import *
+from koala.utils import *
+from koala.ast import *
+from koala.Cell import Cell
+from koala.Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
+from koala.tokenizer import reverse_rpn
+from koala.serializer import *
 
 class Spreadsheet(object):
     def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):

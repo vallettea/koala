@@ -1,4 +1,3 @@
-import pyximport; pyximport.install()
 
 import glob, re, sys
 from datetime import datetime

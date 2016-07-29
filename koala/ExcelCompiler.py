@@ -7,14 +7,14 @@ from math import *
 import networkx
 from networkx.algorithms import number_connected_components
 
-from reader import read_archive, read_named_ranges, read_cells
-from excellib import *
-from utils import *
-from ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatile
-from ExcelError import *
-from Cell import Cell
-from Range import RangeFactory
-from Spreadsheet import Spreadsheet
+from koala.reader import read_archive, read_named_ranges, read_cells
+from koala.excellib import *
+from koala.utils import *
+from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatile
+from koala.ExcelError import *
+from koala.Cell import Cell
+from koala.Range import RangeFactory
+from koala.Spreadsheet import Spreadsheet
 
 
 class ExcelCompiler(object):

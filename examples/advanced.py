@@ -1,4 +1,3 @@
-import pyximport; pyximport.install()
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
@@ -14,17 +13,17 @@ outputs = [
 ]
 
 
-file = "./example/advanced.xlsx"
+file = "./examples/advanced.xlsx"
 
 print file
 
 ### Graph Generation ###
 c = ExcelCompiler(file, ignore_sheets = ['Sheet2'], ignore_hidden = True, debug = True)
 c.clean_volatile()
-sp = c.gen_graph(outputs=outputs)
+sp = c.gen_graph(inputs= inputs, outputs = outputs)
 
 ### Graph Pruning ###
-sp = sp.prune_graph(inputs)
+sp = sp.prune_graph()
 
 ## Graph Serialization ###
 print "Serializing to disk..."
