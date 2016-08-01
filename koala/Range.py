@@ -81,16 +81,14 @@ class RangeCore(dict):
         
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
-        elif type(reference) == dict:
-            is_volatile = True
         else:
             reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(reference)
+                cells, nrows, ncols = resolve_range(reference, should_flatten = True)
             except:
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
-        cells = list(flatten(cells))
+        # cells = list(flatten(cells))
 
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
 

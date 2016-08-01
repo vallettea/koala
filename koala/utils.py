@@ -58,7 +58,7 @@ def split_address(address):
     
     return (sheet,col,row)
 
-def resolve_range(rng, flatten=False, sheet=''):
+def resolve_range(rng, should_flatten = False, sheet=''):
     
     # print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
@@ -108,9 +108,9 @@ def resolve_range(rng, flatten=False, sheet=''):
                 
             cells.append(row)
     
-        if flatten:
+        if should_flatten:
             # flatten into one list
-            l = flatten(cells)
+            l = list(flatten(cells))
             return l,1,len(l)
         else:
             return cells, len(cells), len(cells[0])
@@ -128,8 +128,11 @@ def col2num(col):
     return tot
 
 # convert back
+num2col_cache = {}
+
 def num2col(num):
-    
+    if num in num2col_cache:
+        return num2col_cache[num]
     if num < 1:
         raise Exception("Number must be larger than 0: %s" % num)
     
@@ -141,6 +144,8 @@ def num2col(num):
             q = q - 1
             r = 26
         s = string.ascii_uppercase[r-1] + s
+
+    num2col_cache[num] = s
     return s
 
 def address2index(a):
