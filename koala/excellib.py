@@ -183,7 +183,8 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     else:
         cells, nr, nc = my_range
         if nr > 1 or nc > 1:
-            cells = list(flatten(cells, only_lists = True))
+            a = np.array(cells)
+            cells = a.flatten().tolist()
 
     nr = int(nr)
     nc = int(nc)
@@ -658,7 +659,7 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     # get first cell address of reference
     if is_range(reference):
-        ref = resolve_range(reference, True)[0][0]
+        ref = resolve_range(reference, should_flatten = True)[0][0]
     else:
         ref = reference
     ref_sheet = ''
