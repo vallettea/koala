@@ -3,9 +3,10 @@
 from __future__ import division
 from itertools import izip
 import collections
-import functools
 import re
-import string
+# import numpy as np
+
+ASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -58,6 +59,7 @@ def split_address(address):
     
     return (sheet,col,row)
 
+resolve_range_cache = {}
 def resolve_range(rng, should_flatten = False, sheet=''):
     
     # print 'RESOLVE RANGE splitting', rng
@@ -75,6 +77,9 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     else:
         pass
 
+    if rng+str(should_flatten)+sheet in resolve_range_cache:
+        return resolve_range_cache[rng+str(should_flatten)+sheet]
+
     # single cell, no range
     if not is_range(rng):  return ([sheet + rng],1,1)
 
@@ -89,18 +94,38 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     nb_row = end_row - start_row + 1
     nb_col = end_col_idx - start_col_idx + 1
 
+    # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
+    # c = num2col_vec(np.array([range(start_col_idx, end_col_idx + 1),]*nb_row))
+    # if len(sheet)>0:
+    #     s = np.chararray((nb_row, nb_col), itemsize=len(sheet))
+    #     s[:] = sheet
+    #     c = np.core.defchararray.add(s, c)
+    # B = np.core.defchararray.add(c, r)
+
+    
+    # if start_col == end_col:
+    #     data = B.T.tolist()[0]
+    #     return data, len(data), 1
+    # elif start_row == end_row:
+    #     data = B.tolist()[0]
+    #     return data, 1, len(data)
+    # else:
+    #     if should_flatten:
+    #         return B.flatten().tolist(), 1, nb_col*nb_row
+    #     else:
+    #         return B.tolist(), nb_row, nb_col
 
     # single column
     if  start_col == end_col:
         nrows = end_row - start_row + 1
         data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
-        return data,len(data),1
+        BB = data,len(data),1
     
     # single row
     elif start_row == end_row:
         ncols = end_col_idx - start_col_idx + 1
         data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
-        return data,1,len(data)
+        BB = data,1,len(data)
     
     # rectangular range
     else:
@@ -112,9 +137,12 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         if should_flatten:
             # flatten into one list
             l = list(flatten(cells, only_lists = True))
-            return l,1,len(l)
+            BB = l,1,len(l)
         else:
-            return cells, len(cells), len(cells[0])
+            BB = cells, len(cells), len(cells[0])
+
+    resolve_range_cache[rng+str(should_flatten)+sheet] = BB
+    return BB
 
 col2num_cache = {}
 # e.g., convert BA -> 53
@@ -140,7 +168,7 @@ def num2col(num):
         return num2col_cache[num]
     if num < 1:
         raise Exception("Number must be larger than 0: %s" % num)
-    
+
     s = ''
     q = num
     while q > 0:
@@ -148,10 +176,12 @@ def num2col(num):
         if r == 0:
             q = q - 1
             r = 26
-        s = string.ascii_uppercase[r-1] + s
+        s = ASCII[r-1] + s
 
     num2col_cache[num] = s
     return s
+
+# num2col_vec = np.vectorize(num2col)
 
 def address2index(a):
     sh,c,r = split_address(a)

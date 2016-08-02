@@ -183,7 +183,8 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     else:
         cells, nr, nc = my_range
         if nr > 1 or nc > 1:
-            cells = list(flatten(cells, only_lists = True))
+            a = np.array(cells)
+            cells = a.flatten().tolist()
 
     nr = int(nr)
     nc = int(nc)
