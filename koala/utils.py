@@ -86,6 +86,10 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     start_row = int(start_row)
     end_row = int(end_row)
 
+    nb_row = end_row - start_row + 1
+    nb_col = end_col_idx - start_col_idx + 1
+
+
     # single column
     if  start_col == end_col:
         nrows = end_row - start_row + 1
@@ -102,22 +106,21 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     else:
         cells = []
         for r in range(start_row,end_row+1):
-            row = []
-            for c in range(start_col_idx,end_col_idx+1):
-                row.append(sheet + num2col(c) + str(r))
-                
+            row = map(lambda c: sheet + num2col(c) + str(r), range(start_col_idx,end_col_idx+1))
             cells.append(row)
     
         if should_flatten:
             # flatten into one list
-            l = list(flatten(cells))
+            l = list(flatten(cells, only_lists = True))
             return l,1,len(l)
         else:
             return cells, len(cells), len(cells[0])
 
+col2num_cache = {}
 # e.g., convert BA -> 53
 def col2num(col):
-    
+    if col in col2num_cache:
+        return col2num_cache[col]
     if not col:
         raise Exception("Column may not be empty")
     
@@ -125,6 +128,8 @@ def col2num(col):
     for i,c in enumerate([c for c in col[::-1] if c != "$"]):
         if c == '$': continue
         tot += (ord(c)-64) * 26 ** i
+
+    col2num_cache[col] = tot
     return tot
 
 # convert back
@@ -391,17 +396,46 @@ def extract_numeric_values(*args):
 
     for arg in args:
         if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
-            temp = [x for x in arg.values if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
-            values.append(temp)
+            for x in arg.values:
+                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+                    values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
-            values.append(temp)
+            for x in arg: 
+                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+                    values.append(x)
         elif is_number(arg):
             values.append(arg)
 
-    return [x for x in flatten(values) if is_number(x)]
+    return values
 
 
 
 if __name__ == '__main__':
     pass
+    print resolve_range("Cashflow!L76:DG76")
+    print resolve_range("B1:D1")
+    print resolve_range("B10:B13")
+    # print resolve_range("A1:AC3", should_flatten=True)
+    # import cProfile
+    # cProfile.run('resolve_range("A1:DF30")')
+    # import timeit
+    # print timeit.timeit('resolve_range("A1:DF30")', number=100, setup="from __main__ import resolve_range")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -88,8 +88,6 @@ class RangeCore(dict):
             except:
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
-        # cells = list(flatten(cells))
-
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
 
         if cellmap:
