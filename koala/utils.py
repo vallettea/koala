@@ -3,9 +3,10 @@
 from __future__ import division
 from itertools import izip
 import collections
-import functools
 import re
-import string
+# import numpy as np
+
+ASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -74,10 +75,9 @@ def split_address(address):
         split_address_cache[address] = (sheet, col, row)
         return (sheet,col,row)
 
-resolve_range_cache = {}
 
-def resolve_range(rng, should_flatten=False, sheet=''):
-    
+resolve_range_cache = {}
+def resolve_range(rng, should_flatten = False, sheet=''):
     
     # print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
@@ -98,11 +98,10 @@ def resolve_range(rng, should_flatten=False, sheet=''):
     
     if key in resolve_range_cache:    
         return resolve_range_cache[key]
-
     else:
-        # single cell, no range
         if not is_range(rng):  return ([sheet + rng],1,1)
 
+        # single cell, no range
         sh, start_col, start_row = split_address(start)
         sh, end_col, end_row = split_address(end)
         start_col_idx = col2num(start_col)
@@ -110,6 +109,30 @@ def resolve_range(rng, should_flatten=False, sheet=''):
 
         start_row = int(start_row)
         end_row = int(end_row)
+
+        # Attempt to use Numpy, not relevant for now 
+
+        # num2col_vec = np.vectorize(num2col)
+        # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
+        # c = num2col_vec(np.array([range(start_col_idx, end_col_idx + 1),]*nb_row))
+        # if len(sheet)>0:
+        #     s = np.chararray((nb_row, nb_col), itemsize=len(sheet))
+        #     s[:] = sheet
+        #     c = np.core.defchararray.add(s, c)
+        # B = np.core.defchararray.add(c, r)
+
+        
+        # if start_col == end_col:
+        #     data = B.T.tolist()[0]
+        #     return data, len(data), 1
+        # elif start_row == end_row:
+        #     data = B.tolist()[0]
+        #     return data, 1, len(data)
+        # else:
+        #     if should_flatten:
+        #         return B.flatten().tolist(), 1, nb_col*nb_row
+        #     else:
+        #         return B.tolist(), nb_row, nb_col
 
         # single column
         if  start_col == end_col:
@@ -152,7 +175,6 @@ def col2num(col):
     if col in col2num_cache:
         return col2num_cache[col]
     else:
-
         if not col:
             raise Exception("Column may not be empty")
         
@@ -166,8 +188,7 @@ def col2num(col):
 
 num2col_cache = {}
 # convert back
-def num2col(num):
-    
+def num2col(num):    
     if num in num2col_cache:
         return num2col_cache[num]
     else:
@@ -181,10 +202,11 @@ def num2col(num):
             if r == 0:
                 q = q - 1
                 r = 26
-            s = string.ascii_uppercase[r-1] + s
+            s = ASCII[r-1] + s
         
         num2col_cache[num] = s
         return s
+
 
 def address2index(a):
     sh,c,r = split_address(a)
@@ -433,10 +455,9 @@ def extract_numeric_values(*args):
                 if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
                     values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            for x in arg:
+            for x in arg: 
                 if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
-                    values.append(temp)
-
+                    values.append(x)
         elif is_number(arg):
             values.append(arg)
 

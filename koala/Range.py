@@ -31,20 +31,20 @@ get_cell_addr_cache = {}
 def get_cell_address(sheet, tuple):
     # Sheet1, (1, 'A') => Sheet1!A1
 
-    if (sheet, tuple) not in get_cell_addr_cache:
-        row = tuple[0]
-        col = tuple[1]
+    # if (sheet, tuple) not in get_cell_addr_cache:
+    row = tuple[0]
+    col = tuple[1]
 
-        if sheet is not None:
-            addr = sheet + '!' + col + str(row)
-            get_cell_addr_cache[(sheet, tuple)] = addr
-            return addr
-        else:
-            addr = col + str(row)
-            get_cell_addr_cache[(sheet, tuple)] = addr
-            return addr
+    if sheet is not None:
+        addr = sheet + '!' + col + str(row)
+        get_cell_addr_cache[(sheet, tuple)] = addr
+        return addr
     else:
-        return get_cell_addr_cache[(sheet, tuple)]
+        addr = col + str(row)
+        get_cell_addr_cache[(sheet, tuple)] = addr
+        return addr
+    # else:
+    #     return get_cell_addr_cache[(sheet, tuple)]
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
@@ -91,17 +91,13 @@ class RangeCore(dict):
         
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
-        elif type(reference) == dict:
-            is_volatile = True
         else:
             reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(reference, True)
+                cells, nrows, ncols = resolve_range(reference, should_flatten = True)
             except:
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
-        # cells = list(flatten(cells))
-        
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
 
         if cellmap:

@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 setup(
     name = "koala2",
 
-    version = "0.0.8",
+    version = "0.0.9",
 
     author = "Ants, open innovation lab",
     author_email = "contact@ants.builders",
