@@ -20,45 +20,64 @@ def is_range(address):
         return address
     return address.find(':') > 0
 
+
+split_range_cache = {}
+
 def split_range(rng):
-    if rng.find('!') > 0:
-        start,end = rng.split(':')
-        if start.find('!') > 0:
-            sh,start = start.split("!")
-        if end.find('!') > 0:
-            sh,end = end.split("!")
+    if rng in split_range_cache:
+        return split_range_cache[rng]
     else:
-        sh = None
-        start,end = rng.split(':')
-    
-    return sh,start,end
+        if rng.find('!') > 0:
+            start,end = rng.split(':')
+            if start.find('!') > 0:
+                sh,start = start.split("!")
+            if end.find('!') > 0:
+                sh,end = end.split("!")
+        else:
+            sh = None
+            start,end = rng.split(':')
         
+        split_range_cache[rng] = (sh, start, end)
+        return (sh,start,end)
+       
+
+split_address_cache = {}
+
 def split_address(address):
-    sheet = None
-    if address.find('!') > 0:
-        sheet,address = address.split('!')
-    
-    #ignore case
-    address = address.upper()
-    
-    # regular <col><row> format    
-    if re.match('^[A-Z\$]+[\d\$]+$', address):
-        col,row = filter(None,re.split('([A-Z\$]+)',address))
-    # R<row>C<col> format
-    elif re.match('^R\d+C\d+$', address):
-        row,col = address.split('C')
-        row = row[1:]
-    # R[<row>]C[<col>] format
-    elif re.match('^R\[\d+\]C\[\d+\]$', address):
-        row,col = address.split('C')
-        row = row[2:-1]
-        col = col[2:-1]
+
+    if address in split_address_cache:
+        return split_address_cache[address]
+
     else:
-        raise Exception('Invalid address format ' + address)
-    
-    return (sheet,col,row)
+        sheet = None
+        if address.find('!') > 0:
+            sheet,address = address.split('!')
+        
+        #ignore case
+        address = address.upper()
+        
+        # regular <col><row> format    
+        if re.match('^[A-Z\$]+[\d\$]+$', address):
+            col,row = filter(None,re.split('([A-Z\$]+)',address))
+        # R<row>C<col> format
+        elif re.match('^R\d+C\d+$', address):
+            row,col = address.split('C')
+            row = row[1:]
+        # R[<row>]C[<col>] format
+        elif re.match('^R\[\d+\]C\[\d+\]$', address):
+            row,col = address.split('C')
+            row = row[2:-1]
+            col = col[2:-1]
+        else:
+            raise Exception('Invalid address format ' + address)
+        
+        split_address_cache[address] = (sheet, col, row)
+        return (sheet,col,row)
+
+resolve_range_cache = {}
 
 def resolve_range(rng, should_flatten=False, sheet=''):
+    
     
     # print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
@@ -75,45 +94,56 @@ def resolve_range(rng, should_flatten=False, sheet=''):
     else:
         pass
 
-    # single cell, no range
-    if not is_range(rng):  return ([sheet + rng],1,1)
-
-    sh, start_col, start_row = split_address(start)
-    sh, end_col, end_row = split_address(end)
-    start_col_idx = col2num(start_col)
-    end_col_idx = col2num(end_col);
-
-    start_row = int(start_row)
-    end_row = int(end_row)
-
-    # single column
-    if  start_col == end_col:
-        nrows = end_row - start_row + 1
-        data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
-        return data,len(data),1
+    key = rng+str(should_flatten)+sheet
     
-    # single row
-    elif start_row == end_row:
-        ncols = end_col_idx - start_col_idx + 1
-        data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
-        return data,1,len(data)
-    
-    # rectangular range
+    if key in resolve_range_cache:    
+        return resolve_range_cache[key]
+
     else:
-        cells = []
-        for r in range(start_row,end_row+1):
-            row = []
-            for c in range(start_col_idx,end_col_idx+1):
-                row.append(sheet + num2col(c) + str(r))
-                
-            cells.append(row)
-    
-        if should_flatten:
-            # flatten into one list
-            l = list(flatten(cells, only_lists = True))
-            return l,1,len(l)
+        # single cell, no range
+        if not is_range(rng):  return ([sheet + rng],1,1)
+
+        sh, start_col, start_row = split_address(start)
+        sh, end_col, end_row = split_address(end)
+        start_col_idx = col2num(start_col)
+        end_col_idx = col2num(end_col);
+
+        start_row = int(start_row)
+        end_row = int(end_row)
+
+        # single column
+        if  start_col == end_col:
+            nrows = end_row - start_row + 1
+            data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
+            
+            output = data,len(data),1
+        
+        # single row
+        elif start_row == end_row:
+            ncols = end_col_idx - start_col_idx + 1
+            data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
+            output = data,1,len(data)
+        
+        # rectangular range
         else:
-            return cells, len(cells), len(cells[0])
+            cells = []
+            for r in range(start_row,end_row+1):
+                row = []
+                for c in range(start_col_idx,end_col_idx+1):
+                    row.append(sheet + num2col(c) + str(r))
+                    
+                cells.append(row)
+        
+            if should_flatten:
+                # flatten into one list
+                l = list(flatten(cells, only_lists = True))
+                output = l,1,len(l)
+            else:
+                output = cells, len(cells), len(cells[0])
+
+        resolve_range_cache[key] = output
+        return output
+
 
 col2num_cache = {}
 # e.g., convert BA -> 53

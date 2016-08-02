@@ -9,32 +9,42 @@ from koala.Cell import Cell
 
 ### Range Utils ###
 
-cache = {}
+parse_cell_addr_cache = {}
 
 def parse_cell_address(ref):
     # A1 => (1, 'A')
     try:
-        if ref not in cache:
+        if ref not in parse_cell_addr_cache:
             found = re.search(CELL_REF_RE, ref)
             col = found.group(1)
             row = found.group(2)
             result = (int(row), col)
-            cache[ref] = result
+            parse_cell_addr_cache[ref] = result
             return result
         else:
-            return cache[ref]
+            return parse_cell_addr_cache[ref]
     except:
         raise Exception('Couldn\'t find match in cell ref')
     
+get_cell_addr_cache = {}
+
 def get_cell_address(sheet, tuple):
     # Sheet1, (1, 'A') => Sheet1!A1
-    row = tuple[0]
-    col = tuple[1]
 
-    if sheet is not None:
-        return sheet + '!' + col + str(row)
+    if (sheet, tuple) not in get_cell_addr_cache:
+        row = tuple[0]
+        col = tuple[1]
+
+        if sheet is not None:
+            addr = sheet + '!' + col + str(row)
+            get_cell_addr_cache[(sheet, tuple)] = addr
+            return addr
+        else:
+            addr = col + str(row)
+            get_cell_addr_cache[(sheet, tuple)] = addr
+            return addr
     else:
-        return col + str(row)
+        return get_cell_addr_cache[(sheet, tuple)]
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations

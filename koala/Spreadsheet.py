@@ -56,6 +56,8 @@ class Spreadsheet(object):
         self.pending = {}
         self.fixed_cells = {}
 
+        self.tab = ''
+
     def activate_history(self):
         self.save_history = True
 
@@ -524,7 +526,7 @@ class Spreadsheet(object):
     def update_range(self, range):
         # This function loops through its Cell references to evaluate the ones that need so
         # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
-        
+
         debug = False
 
         if range.name not in self.pending.keys():
