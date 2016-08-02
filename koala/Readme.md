@@ -1,0 +1,36 @@
+
+# Excel functions available:
+
+* VALUE
+* LOG
+* MAX
+* MIN
+* SUM
+* CHOOSE
+* SUMIF
+* AVERAGE
+* RIGHT
+* INDEX
+* LOOKUP
+* LINEST
+* NPV
+* MATCH
+* MOD
+* COUNT
+* COUNTA
+* COUNTIF
+* COUNTIFS
+* ROUND
+* MID
+* DATE
+* YEARFRAC
+* ISNA
+* ISBLANK
+* ISTEXT
+* OFFSET
+* SUMPRODUCT
+* IFERROR
+* IRR
+* VLOOKUP
+* VDB
+* SLN
