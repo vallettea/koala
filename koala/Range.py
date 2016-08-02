@@ -86,12 +86,12 @@ class RangeCore(dict):
         else:
             reference = reference.replace('$','')
             try:
-                cells, nrows, ncols = resolve_range(reference)
+                cells, nrows, ncols = resolve_range(reference, True)
             except:
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
-        cells = list(flatten(cells))
-
+        # cells = list(flatten(cells))
+        
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
 
         if cellmap:

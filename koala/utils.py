@@ -58,7 +58,7 @@ def split_address(address):
     
     return (sheet,col,row)
 
-def resolve_range(rng, flatten=False, sheet=''):
+def resolve_range(rng, should_flatten=False, sheet=''):
     
     # print 'RESOLVE RANGE splitting', rng
     sh, start, end = split_range(rng)
@@ -108,40 +108,53 @@ def resolve_range(rng, flatten=False, sheet=''):
                 
             cells.append(row)
     
-        if flatten:
+        if should_flatten:
             # flatten into one list
-            l = flatten(cells)
+            l = list(flatten(cells, only_lists = True))
             return l,1,len(l)
         else:
             return cells, len(cells), len(cells[0])
 
+col2num_cache = {}
 # e.g., convert BA -> 53
 def col2num(col):
     
-    if not col:
-        raise Exception("Column may not be empty")
-    
-    tot = 0
-    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
-        if c == '$': continue
-        tot += (ord(c)-64) * 26 ** i
-    return tot
+    if col in col2num_cache:
+        return col2num_cache[col]
+    else:
 
+        if not col:
+            raise Exception("Column may not be empty")
+        
+        tot = 0
+        for i,c in enumerate([c for c in col[::-1] if c != "$"]):
+            if c == '$': continue
+            tot += (ord(c)-64) * 26 ** i
+        
+        col2num_cache[col] = tot
+        return tot
+
+num2col_cache = {}
 # convert back
 def num2col(num):
     
-    if num < 1:
-        raise Exception("Number must be larger than 0: %s" % num)
-    
-    s = ''
-    q = num
-    while q > 0:
-        (q,r) = divmod(q,26)
-        if r == 0:
-            q = q - 1
-            r = 26
-        s = string.ascii_uppercase[r-1] + s
-    return s
+    if num in num2col_cache:
+        return num2col_cache[num]
+    else:
+        if num < 1:
+            raise Exception("Number must be larger than 0: %s" % num)
+        
+        s = ''
+        q = num
+        while q > 0:
+            (q,r) = divmod(q,26)
+            if r == 0:
+                q = q - 1
+                r = 26
+            s = string.ascii_uppercase[r-1] + s
+        
+        num2col_cache[num] = s
+        return s
 
 def address2index(a):
     sh,c,r = split_address(a)
@@ -385,17 +398,19 @@ def extract_numeric_values(*args):
     values = []
 
     for arg in args:
-        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
-            temp = [x for x in arg.values if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
-            values.append(temp)
+        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+            for x in arg.values:
+                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+                    values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            temp = [x for x in arg if is_number(x) and type(x) is not bool] # excludes booleans from nested ranges
-            values.append(temp)
+            for x in arg:
+                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+                    values.append(temp)
+
         elif is_number(arg):
             values.append(arg)
 
-    return [x for x in flatten(values) if is_number(x)]
-
+    return values
 
 
 if __name__ == '__main__':

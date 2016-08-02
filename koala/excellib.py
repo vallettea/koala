@@ -182,13 +182,11 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         nc = my_range.ncols
     else:
         cells, nr, nc = my_range
-        cells = list(flatten(cells))
+        if nr > 1 or nc > 1:
+            cells = list(flatten(cells, only_lists = True))
 
     nr = int(nr)
     nc = int(nc)
-    row = int(row)
-    if col:
-        col = int(col)
 
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))
@@ -660,7 +658,7 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     # get first cell address of reference
     if is_range(reference):
-        ref = list(flatten(resolve_range(reference)[0]))[0]
+        ref = resolve_range(reference, True)[0][0]
     else:
         ref = reference
     ref_sheet = ''
