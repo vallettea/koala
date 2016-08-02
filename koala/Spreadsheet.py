@@ -8,6 +8,7 @@ import networkx
 from networkx.algorithms import number_connected_components
 
 import json
+import re
 
 from koala.openpyxl.formula.translate import Translator
 
@@ -20,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False, volatile_arguments = []):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -55,6 +56,7 @@ class Spreadsheet(object):
         self.debug = debug
         self.pending = {}
         self.fixed_cells = {}
+        self.volatile_arguments = volatile_arguments
 
     def activate_history(self):
         self.save_history = True
@@ -250,6 +252,8 @@ class Spreadsheet(object):
         if with_cache:
             cache = {} # formula => new_formula
 
+        volatile_arguments = set()
+
         for cell in all_volatiles:
             if with_cache and cell["formula"] in cache:
                 # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
@@ -262,6 +266,11 @@ class Spreadsheet(object):
                 e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
                 ast,root = build_ast(e)
                 code = root.emit(ast)
+                
+                # print cell["formula"]
+                
+                for a in list(flatten(self.get_volatiles_arguments_from_ast(ast, root, cell))):
+                    volatile_arguments.add(a)
                 
                 replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
@@ -290,7 +299,7 @@ class Spreadsheet(object):
                 old_cell = self.cellmap[cell["address"]]
                 new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
             
-        return new_cells, new_named_ranges
+        return new_cells, new_named_ranges, volatile_arguments
 
     def print_value_ast(self, ast,node,indent):
         print "%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype))
@@ -323,6 +332,41 @@ class Spreadsheet(object):
             for c in node.children(ast):
                 results.append(self.eval_volatiles_from_ast(ast, c, cell))
         return list(flatten(results, only_lists = True))
+
+    def get_arguments_from_ast(self, ast, node, cell):
+        arguments = []
+        context = cell["sheet"]
+
+        for c in node.children(ast):
+            if c.ttype == "operand":
+                if context is not None and "!" not in c.tvalue:
+                    arguments += [context + "!" + c.tvalue]
+                else:
+                    arguments += [c.tvalue]
+            else:
+                arguments += [self.get_arguments_from_ast(ast, c, cell)]
+
+        return arguments
+
+    def get_volatiles_arguments_from_ast(self, ast, node, cell):
+        arguments = []
+        context = cell["sheet"]
+
+        if node.token.tvalue == "INDEX"  or node.token.tvalue == "OFFSET":
+            volatile_string = reverse_rpn(node, ast)
+            for i,c in enumerate(node.children(ast)):
+                if c.ttype == "operand" and i > 0:
+                    if context is not None and "!" not in c.tvalue:
+                        arguments += [context + "!" + c.tvalue]
+                    else:
+                        arguments += [c.tvalue]
+                else:
+                    arguments += [self.get_arguments_from_ast(ast, c, cell)]
+        else:
+            for c in node.children(ast):
+                arguments += [self.get_volatiles_arguments_from_ast(ast, c, cell)]
+
+        return arguments
 
 
     def dump_json(self, fname):
@@ -524,7 +568,7 @@ class Spreadsheet(object):
     def update_range(self, range):
         # This function loops through its Cell references to evaluate the ones that need so
         # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
-
+        
         debug = False
 
         if range.name not in self.pending.keys():
@@ -650,5 +694,26 @@ class Spreadsheet(object):
                     alive.add(output)
 
         return (alive, relations)
+
+    def check_valid(self):
+        todo = [self.cellmap[input] for input in self.inputs]
+        done = set()
+
+        while len(todo) > 0:
+            cell = todo.pop()
+            for child in self.G.successors_iter(cell):
+                if child.address() in self.volatile_arguments:
+                    print "VOLATILE HAVE A ROLE", cell.address()
+                else:
+                    if child not in done:
+                        done.add(child)
+                        todo.append(child)
+
+
+
+
+
+
+
 
 
