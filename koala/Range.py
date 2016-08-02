@@ -31,20 +31,20 @@ get_cell_addr_cache = {}
 def get_cell_address(sheet, tuple):
     # Sheet1, (1, 'A') => Sheet1!A1
 
-    # if (sheet, tuple) not in get_cell_addr_cache:
-    row = tuple[0]
-    col = tuple[1]
+    if (sheet, tuple) not in get_cell_addr_cache:
+        row = tuple[0]
+        col = tuple[1]
 
-    if sheet is not None:
-        addr = sheet + '!' + col + str(row)
-        get_cell_addr_cache[(sheet, tuple)] = addr
-        return addr
+        if sheet is not None:
+            addr = sheet + '!' + col + str(row)
+            get_cell_addr_cache[(sheet, tuple)] = addr
+            return addr
+        else:
+            addr = col + str(row)
+            get_cell_addr_cache[(sheet, tuple)] = addr
+            return addr
     else:
-        addr = col + str(row)
-        get_cell_addr_cache[(sheet, tuple)] = addr
-        return addr
-    # else:
-    #     return get_cell_addr_cache[(sheet, tuple)]
+        return get_cell_addr_cache[(sheet, tuple)]
 
 def check_value(a):
     try: # This is to avoid None or Exception returned by Range operations
