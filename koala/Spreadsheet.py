@@ -56,8 +56,6 @@ class Spreadsheet(object):
         self.pending = {}
         self.fixed_cells = {}
 
-        self.tab = ''
-
     def activate_history(self):
         self.save_history = True
 
