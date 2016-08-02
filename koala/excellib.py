@@ -188,9 +188,6 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
 
     nr = int(nr)
     nc = int(nc)
-    row = int(row)
-    if col:
-        col = int(col)
 
     if type(cells) != list:
         return ExcelError('#VALUE!', '%s must be a list' % str(cells))

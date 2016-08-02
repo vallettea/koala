@@ -21,43 +21,60 @@ def is_range(address):
         return address
     return address.find(':') > 0
 
+
+split_range_cache = {}
+
 def split_range(rng):
-    if rng.find('!') > 0:
-        start,end = rng.split(':')
-        if start.find('!') > 0:
-            sh,start = start.split("!")
-        if end.find('!') > 0:
-            sh,end = end.split("!")
+    if rng in split_range_cache:
+        return split_range_cache[rng]
     else:
-        sh = None
-        start,end = rng.split(':')
-    
-    return sh,start,end
+        if rng.find('!') > 0:
+            start,end = rng.split(':')
+            if start.find('!') > 0:
+                sh,start = start.split("!")
+            if end.find('!') > 0:
+                sh,end = end.split("!")
+        else:
+            sh = None
+            start,end = rng.split(':')
         
+        split_range_cache[rng] = (sh, start, end)
+        return (sh,start,end)
+       
+
+split_address_cache = {}
+
 def split_address(address):
-    sheet = None
-    if address.find('!') > 0:
-        sheet,address = address.split('!')
-    
-    #ignore case
-    address = address.upper()
-    
-    # regular <col><row> format    
-    if re.match('^[A-Z\$]+[\d\$]+$', address):
-        col,row = filter(None,re.split('([A-Z\$]+)',address))
-    # R<row>C<col> format
-    elif re.match('^R\d+C\d+$', address):
-        row,col = address.split('C')
-        row = row[1:]
-    # R[<row>]C[<col>] format
-    elif re.match('^R\[\d+\]C\[\d+\]$', address):
-        row,col = address.split('C')
-        row = row[2:-1]
-        col = col[2:-1]
+
+    if address in split_address_cache:
+        return split_address_cache[address]
+
     else:
-        raise Exception('Invalid address format ' + address)
-    
-    return (sheet,col,row)
+        sheet = None
+        if address.find('!') > 0:
+            sheet,address = address.split('!')
+        
+        #ignore case
+        address = address.upper()
+        
+        # regular <col><row> format    
+        if re.match('^[A-Z\$]+[\d\$]+$', address):
+            col,row = filter(None,re.split('([A-Z\$]+)',address))
+        # R<row>C<col> format
+        elif re.match('^R\d+C\d+$', address):
+            row,col = address.split('C')
+            row = row[1:]
+        # R[<row>]C[<col>] format
+        elif re.match('^R\[\d+\]C\[\d+\]$', address):
+            row,col = address.split('C')
+            row = row[2:-1]
+            col = col[2:-1]
+        else:
+            raise Exception('Invalid address format ' + address)
+        
+        split_address_cache[address] = (sheet, col, row)
+        return (sheet,col,row)
+
 
 resolve_range_cache = {}
 def resolve_range(rng, should_flatten = False, sheet=''):
@@ -77,111 +94,119 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     else:
         pass
 
-    if rng+str(should_flatten)+sheet in resolve_range_cache:
-        return resolve_range_cache[rng+str(should_flatten)+sheet]
-
-    # single cell, no range
-    if not is_range(rng):  return ([sheet + rng],1,1)
-
-    sh, start_col, start_row = split_address(start)
-    sh, end_col, end_row = split_address(end)
-    start_col_idx = col2num(start_col)
-    end_col_idx = col2num(end_col);
-
-    start_row = int(start_row)
-    end_row = int(end_row)
-
-    nb_row = end_row - start_row + 1
-    nb_col = end_col_idx - start_col_idx + 1
-
-    # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
-    # c = num2col_vec(np.array([range(start_col_idx, end_col_idx + 1),]*nb_row))
-    # if len(sheet)>0:
-    #     s = np.chararray((nb_row, nb_col), itemsize=len(sheet))
-    #     s[:] = sheet
-    #     c = np.core.defchararray.add(s, c)
-    # B = np.core.defchararray.add(c, r)
-
+    key = rng+str(should_flatten)+sheet
     
-    # if start_col == end_col:
-    #     data = B.T.tolist()[0]
-    #     return data, len(data), 1
-    # elif start_row == end_row:
-    #     data = B.tolist()[0]
-    #     return data, 1, len(data)
-    # else:
-    #     if should_flatten:
-    #         return B.flatten().tolist(), 1, nb_col*nb_row
-    #     else:
-    #         return B.tolist(), nb_row, nb_col
-
-    # single column
-    if  start_col == end_col:
-        nrows = end_row - start_row + 1
-        data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
-        BB = data,len(data),1
-    
-    # single row
-    elif start_row == end_row:
-        ncols = end_col_idx - start_col_idx + 1
-        data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
-        BB = data,1,len(data)
-    
-    # rectangular range
+    if key in resolve_range_cache:    
+        return resolve_range_cache[key]
     else:
-        cells = []
-        for r in range(start_row,end_row+1):
-            row = map(lambda c: sheet + num2col(c) + str(r), range(start_col_idx,end_col_idx+1))
-            cells.append(row)
-    
-        if should_flatten:
-            # flatten into one list
-            l = list(flatten(cells, only_lists = True))
-            BB = l,1,len(l)
-        else:
-            BB = cells, len(cells), len(cells[0])
+        if not is_range(rng):  return ([sheet + rng],1,1)
 
-    resolve_range_cache[rng+str(should_flatten)+sheet] = BB
-    return BB
+        # single cell, no range
+        sh, start_col, start_row = split_address(start)
+        sh, end_col, end_row = split_address(end)
+        start_col_idx = col2num(start_col)
+        end_col_idx = col2num(end_col);
+
+        start_row = int(start_row)
+        end_row = int(end_row)
+
+        # Attempt to use Numpy, not relevant for now 
+
+        # num2col_vec = np.vectorize(num2col)
+        # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
+        # c = num2col_vec(np.array([range(start_col_idx, end_col_idx + 1),]*nb_row))
+        # if len(sheet)>0:
+        #     s = np.chararray((nb_row, nb_col), itemsize=len(sheet))
+        #     s[:] = sheet
+        #     c = np.core.defchararray.add(s, c)
+        # B = np.core.defchararray.add(c, r)
+
+        
+        # if start_col == end_col:
+        #     data = B.T.tolist()[0]
+        #     return data, len(data), 1
+        # elif start_row == end_row:
+        #     data = B.tolist()[0]
+        #     return data, 1, len(data)
+        # else:
+        #     if should_flatten:
+        #         return B.flatten().tolist(), 1, nb_col*nb_row
+        #     else:
+        #         return B.tolist(), nb_row, nb_col
+
+        # single column
+        if  start_col == end_col:
+            nrows = end_row - start_row + 1
+            data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
+            
+            output = data,len(data),1
+        
+        # single row
+        elif start_row == end_row:
+            ncols = end_col_idx - start_col_idx + 1
+            data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
+            output = data,1,len(data)
+        
+        # rectangular range
+        else:
+            cells = []
+            for r in range(start_row,end_row+1):
+                row = []
+                for c in range(start_col_idx,end_col_idx+1):
+                    row.append(sheet + num2col(c) + str(r))
+                    
+                cells.append(row)
+        
+            if should_flatten:
+                # flatten into one list
+                l = list(flatten(cells, only_lists = True))
+                output = l,1,len(l)
+            else:
+                output = cells, len(cells), len(cells[0])
+
+        resolve_range_cache[key] = output
+        return output
+
 
 col2num_cache = {}
 # e.g., convert BA -> 53
 def col2num(col):
+    
     if col in col2num_cache:
         return col2num_cache[col]
-    if not col:
-        raise Exception("Column may not be empty")
-    
-    tot = 0
-    for i,c in enumerate([c for c in col[::-1] if c != "$"]):
-        if c == '$': continue
-        tot += (ord(c)-64) * 26 ** i
+    else:
+        if not col:
+            raise Exception("Column may not be empty")
+        
+        tot = 0
+        for i,c in enumerate([c for c in col[::-1] if c != "$"]):
+            if c == '$': continue
+            tot += (ord(c)-64) * 26 ** i
+        
+        col2num_cache[col] = tot
+        return tot
 
-    col2num_cache[col] = tot
-    return tot
-
-# convert back
 num2col_cache = {}
-
-def num2col(num):
+# convert back
+def num2col(num):    
     if num in num2col_cache:
         return num2col_cache[num]
-    if num < 1:
-        raise Exception("Number must be larger than 0: %s" % num)
+    else:
+        if num < 1:
+            raise Exception("Number must be larger than 0: %s" % num)
+        
+        s = ''
+        q = num
+        while q > 0:
+            (q,r) = divmod(q,26)
+            if r == 0:
+                q = q - 1
+                r = 26
+            s = ASCII[r-1] + s
+        
+        num2col_cache[num] = s
+        return s
 
-    s = ''
-    q = num
-    while q > 0:
-        (q,r) = divmod(q,26)
-        if r == 0:
-            q = q - 1
-            r = 26
-        s = ASCII[r-1] + s
-
-    num2col_cache[num] = s
-    return s
-
-# num2col_vec = np.vectorize(num2col)
 
 def address2index(a):
     sh,c,r = split_address(a)
@@ -425,7 +450,7 @@ def extract_numeric_values(*args):
     values = []
 
     for arg in args:
-        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
             for x in arg.values:
                 if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
                     values.append(x)
@@ -439,33 +464,5 @@ def extract_numeric_values(*args):
     return values
 
 
-
 if __name__ == '__main__':
     pass
-    print resolve_range("Cashflow!L76:DG76")
-    print resolve_range("B1:D1")
-    print resolve_range("B10:B13")
-    # print resolve_range("A1:AC3", should_flatten=True)
-    # import cProfile
-    # cProfile.run('resolve_range("A1:DF30")')
-    # import timeit
-    # print timeit.timeit('resolve_range("A1:DF30")', number=100, setup="from __main__ import resolve_range")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
