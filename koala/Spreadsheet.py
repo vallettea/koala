@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False, volatile_arguments = []):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], volatile_arguments = [], debug = False,):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -45,7 +45,7 @@ class Spreadsheet(object):
         self.addr_to_range = addr_to_range
 
         self.outputs = outputs
-        self.inputs = inputs
+        self.inputs = inputs if inputs != [] else cellmap
         self.save_history = False
         self.history = dict()
         self.count = 0
@@ -298,7 +298,9 @@ class Spreadsheet(object):
             else: 
                 old_cell = self.cellmap[cell["address"]]
                 new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
-            
+        
+        self.volatile_arguments = volatile_arguments
+
         return new_cells, new_named_ranges, volatile_arguments
 
     def print_value_ast(self, ast,node,indent):
@@ -332,6 +334,48 @@ class Spreadsheet(object):
             for c in node.children(ast):
                 results.append(self.eval_volatiles_from_ast(ast, c, cell))
         return list(flatten(results, only_lists = True))
+
+
+    def find_volatile_arguments(self):
+        print '___### Finding Volatile arguments ###___'
+        ### gather all occurence of volatile functions in cells or named_range
+        all_volatiles = []
+
+        for volatile_name in self.volatile_to_remove:
+            for k,v in self.named_ranges.items():
+                if volatile_name in v:
+                    all_volatiles.append({"formula":v, "address": k, "sheet": None})
+            for k,cell in self.cellmap.items():
+                if cell.formula and volatile_name in cell.formula:
+                    all_volatiles.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
+
+            # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
+
+        ### evaluate all volatiles
+        cache = {} # formula => new_formula
+
+        volatile_arguments = set()
+
+        for cell in all_volatiles:
+            if cell["formula"] in cache:
+                # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
+                new_formula = cache[cell["formula"]]
+            else:
+                if cell["sheet"]:
+                    parsed = parse_cell_address(cell["address"])
+                else:
+                    parsed = ""
+                e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
+                ast,root = build_ast(e)
+                code = root.emit(ast)
+                
+                
+                for a in list(flatten(self.get_volatiles_arguments_from_ast(ast, root, cell))):
+                    volatile_arguments.add(a)
+                
+        self.volatile_arguments = volatile_arguments
+
+
 
     def get_arguments_from_ast(self, ast, node, cell):
         arguments = []
@@ -640,80 +684,34 @@ class Spreadsheet(object):
 
         return cell.value
 
+
     def detect_alive(self):
-        to_check = dict()
-
-        self.build_volatiles()
-
-        # get all volatiles that ancestors of outputs
-        for output in self.outputs:
-            seed = self.cellmap[output]
-            todo = map(lambda n: n, self.G.predecessors(seed))
-            done = set(todo)
-
-            if seed.is_range and seed.range.is_volatile:
-                to_check[output] = seed.value
-
-            while len(todo) > 0:
-                pred = todo.pop()
-
-                if pred.is_range and pred.range.is_volatile:
-                    to_check[pred.address()] = pred.value
-
-                nexts = self.G.predecessors(pred)
-                for n in nexts:            
-                    if n not in done:
-                        todo.append(n)
-                        done.add(n)
-
-        # print 'to_check: %i / %i' % (len(to_check), len(self.volatile_ranges)) 
-
-        alive = set()
-        relations = dict()
-
-        # check that filtered volatiles are not affected by varying inputs
-        for input in self.inputs:
-            input_value = self.cellmap[input].value
-            
-            if self.cellmap[input].value == 0:
-                self.set_value(input, 1)
-            elif type(input_value) == str:
-                self.set_value(input, 'ithinkbobdylanistheverybest')
-            elif type(input_value) == bool:
-                self.set_value(input, not input_value)
-            else:
-                self.set_value(input, 0)
-
-            self.build_volatiles()
-
-            for output in to_check:
-                cell = self.cellmap[output]
-
-                if cell.value != to_check[output]:
-                    relations[input] = cell.address()
-                    alive.add(output)
-
-        return (alive, relations)
-
-    def check_valid(self):
+        # todo = [self.cellmap[output] for output in self.outputs]
         todo = [self.cellmap[input] for input in self.inputs]
         done = set()
 
-        while len(todo) > 0:
+        alive = set()
+
+        detected = False
+
+        def check_alive(cell):
+            if cell.address() in self.volatile_arguments:
+                alive.add(cell.address())
+                # print "VOLATILE HAVE A ROLE", cell.address()
+            else:
+                if cell not in done:
+                    done.add(cell)
+                    todo.append(cell)
+
+        while len(todo) > 0 and not detected:
             cell = todo.pop()
-            for child in self.G.successors_iter(cell):
-                if child.address() in self.volatile_arguments:
-                    print "VOLATILE HAVE A ROLE", cell.address()
-                else:
-                    if child not in done:
-                        done.add(child)
-                        todo.append(child)
 
+            if cell not in done:
+                check_alive(cell)
+                try:
+                    for child in self.G.successors_iter(cell):
+                        check_alive(child)
+                except:
+                    pass
 
-
-
-
-
-
-
-
+        return alive
