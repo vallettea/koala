@@ -52,25 +52,27 @@ def split_address(address):
     else:
         sheet = None
         if address.find('!') > 0:
-            sheet,address = address.split('!')
+            sheet,addr = address.split('!')
+        else:
+            addr = address
         
         #ignore case
-        address = address.upper()
+        addr = addr.upper()
         
         # regular <col><row> format    
-        if re.match('^[A-Z\$]+[\d\$]+$', address):
-            col,row = filter(None,re.split('([A-Z\$]+)',address))
+        if re.match('^[A-Z\$]+[\d\$]+$', addr):
+            col,row = filter(None,re.split('([A-Z\$]+)',addr))
         # R<row>C<col> format
-        elif re.match('^R\d+C\d+$', address):
-            row,col = address.split('C')
+        elif re.match('^R\d+C\d+$', addr):
+            row,col = addr.split('C')
             row = row[1:]
         # R[<row>]C[<col>] format
-        elif re.match('^R\[\d+\]C\[\d+\]$', address):
-            row,col = address.split('C')
+        elif re.match('^R\[\d+\]C\[\d+\]$', addr):
+            row,col = addr.split('C')
             row = row[2:-1]
             col = col[2:-1]
         else:
-            raise Exception('Invalid address format ' + address)
+            raise Exception('Invalid address format ' + addr)
         
         split_address_cache[address] = (sheet, col, row)
         return (sheet,col,row)
