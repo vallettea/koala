@@ -441,7 +441,6 @@ def graph_from_seeds(seeds, cell_source):
             G.add_node(c)
             cellmap[c.address()] = c
     # when called from ExcelCompiler instance, construct cellmap and graph from seeds 
-    # elif isinstance(cell_source, ExcelCompiler):
     else: # ~ cell_source is a ExcelCompiler
         cellmap = dict([(x.address(),x) for x in seeds])
         cells = cell_source.cells
@@ -542,7 +541,7 @@ def graph_from_seeds(seeds, cell_source):
                 # add an edge from the range to the parent
                 G.add_node(virtual_cell)
                 # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
-                G.add_edge(virtual_cell, cellmap[c1.address()])
+                G.add_edge(virtual_cell, c1)
                 # cells in the range should point to the range as their parent
                 target = virtual_cell 
                 origins = []
@@ -564,14 +563,19 @@ def graph_from_seeds(seeds, cell_source):
                 if reference in cells:
                     if dep_name in names:
                         virtual_cell = Cell(dep_name, None, value = cells[reference].value, formula = reference, is_range = False, is_named_range = True )
+                        
+                        G.add_node(virtual_cell)
+                        G.add_edge(cells[reference], virtual_cell)
+
                         origins = [virtual_cell]
                     else:
                         origins = [cells[reference]] 
                 else:
+                    # print 'DEP NAME not in cells'
                     virtual_cell = Cell(dep_name, None, value = None, formula = None, is_range = False, is_named_range = True )
                     origins = [virtual_cell]
 
-                target = cellmap[c1.address()]
+                target = c1
 
 
             # process each cell                    
@@ -597,7 +601,7 @@ def graph_from_seeds(seeds, cell_source):
                 # add an edge from the cell to the parent (range or cell)
                 if(target != []):
                     # print "Adding edge %s --> %s" % (c2.address(), target.address())
-                    G.add_edge(cellmap[c2.address()],target)
+                    G.add_edge(c2,target)
         
         c1.compile() # cell compilation is done here because volatile ranges might update python_expressions 
 
