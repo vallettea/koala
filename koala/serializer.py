@@ -87,9 +87,13 @@ def dump(self, fname, marshal = False):
     if self.inputs is not None:
         outfile.write("inputs" + "\n")
         outfile.write(SEP.join(self.inputs) + "\n")
+    if self.volatile_arguments is not None:
+        outfile.write("vol_args" + "\n")
+        outfile.write(SEP.join(self.volatile_arguments) + "\n")
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write(k + SEP + self.named_ranges[k] + "\n")
+    
 
     outfile.close()
 
@@ -153,8 +157,8 @@ def load(fname):
         elif line == "named_ranges":
             mode = "named_ranges"
             continue
-        elif line == "volatile_ranges":
-            mode = "volatile_ranges"
+        elif line == "vol_args":
+            mode = "vol_args"
             continue
 
         if mode == "node0":
@@ -200,12 +204,14 @@ def load(fname):
         elif mode == "named_ranges":
             k,v = line.split(SEP)
             named_ranges[k] = v
+        elif mode == "vol_args":
+            volatile_arguments = line.split(SEP)
 
     G = DiGraph(data = edges)
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, named_ranges, volatile_ranges, outputs, inputs)
+    return (G, cellmap, named_ranges, volatile_ranges, outputs, inputs, volatile_arguments)
 
 ########### based on json #################
 def dump_json(self, fname):
