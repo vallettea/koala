@@ -34,18 +34,14 @@ class ExcelCompiler(object):
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
         self.volatile_ranges = set()
-        self.volatile_arguments = None
         self.debug = debug
 
     def clean_volatile(self):
-        print '___### Cleaning volatiles ###___'
-
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
 
-        cleaned_cells, cleaned_ranged_names, volatile_arguments = sp.clean_volatile()
+        cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
-        self.volatile_arguments = volatile_arguments
             
     def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
@@ -135,8 +131,8 @@ class ExcelCompiler(object):
 
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-        undirected = networkx.Graph(G)
-
+        
+        # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, volatile_ranges = self.volatile_ranges, outputs = outputs, inputs = inputs, volatile_arguments = self.volatile_arguments, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, volatile_ranges = self.volatile_ranges, outputs = outputs, inputs = inputs, debug = self.debug)
