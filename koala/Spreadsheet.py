@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], volatile_arguments = [], debug = False,):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -56,7 +56,6 @@ class Spreadsheet(object):
         self.debug = debug
         self.pending = {}
         self.fixed_cells = {}
-        self.volatile_arguments = volatile_arguments
 
     def activate_history(self):
         self.save_history = True
@@ -329,6 +328,34 @@ class Spreadsheet(object):
         return list(flatten(results, only_lists = True))
 
 
+    def detect_alive(self, inputs = None, outputs = None):
+
+        volatile_arguments = self.find_volatile_arguments(outputs)
+        
+        if inputs is None:
+            inputs = self.inputs
+
+        todo = [self.cellmap[input] for input in inputs]
+        done = set()
+
+        alive = set()
+
+        while len(todo) > 0:
+            cell = todo.pop()
+
+            if cell not in done:
+                if cell.address() in volatile_arguments:
+                    alive.add(cell.address())
+
+                # for child in self.G.predecessors_iter(cell):
+                for child in self.G.successors_iter(cell):
+                    todo.append(child)
+  
+                done.add(cell)
+
+        return alive
+
+
     def find_volatile_arguments(self, outputs = None):
         ### gather all occurence of volatile functions in cells or named_range
 
@@ -377,12 +404,12 @@ class Spreadsheet(object):
                 ast,root = build_ast(e)
                 code = root.emit(ast)
                 
-                for a in list(flatten(self.get_volatiles_arguments_from_ast(ast, root, sheet))):
+                for a in list(flatten(self.get_volatile_arguments_from_ast(ast, root, sheet))):
                     volatile_arguments.add(a)
 
                 done.add(formula)
-                
-        self.volatile_arguments = volatile_arguments
+            
+        return volatile_arguments
 
 
     def get_arguments_from_ast(self, ast, node, sheet):
@@ -399,7 +426,7 @@ class Spreadsheet(object):
 
         return arguments
 
-    def get_volatiles_arguments_from_ast(self, ast, node, sheet):
+    def get_volatile_arguments_from_ast(self, ast, node, sheet):
         arguments = []
 
         if node.token.tvalue == "INDEX"  or node.token.tvalue == "OFFSET":
@@ -414,7 +441,7 @@ class Spreadsheet(object):
                     arguments += [self.get_arguments_from_ast(ast, c, sheet)]
         else:
             for c in node.children(ast):
-                arguments += [self.get_volatiles_arguments_from_ast(ast, c, sheet)]
+                arguments += [self.get_volatile_arguments_from_ast(ast, c, sheet)]
 
         return arguments
 
@@ -689,28 +716,3 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
-
-
-    def detect_alive(self, inputs = None):
-        
-        if inputs is None:
-            inputs = self.inputs
-
-        todo = [self.cellmap[input] for input in inputs]
-        done = set()
-
-        alive = set()
-
-        while len(todo) > 0:
-            cell = todo.pop()
-
-            if cell not in done:
-                if cell.address() in self.volatile_arguments:
-                    alive.add(cell.address())
-
-                for child in self.G.successors_iter(cell):
-                    todo.append(child)
-  
-                done.add(cell)
-
-        return alive
