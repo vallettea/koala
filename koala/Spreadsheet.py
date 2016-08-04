@@ -335,9 +335,9 @@ class Spreadsheet(object):
         if inputs is None:
             inputs = self.inputs
 
+        # go down the tree and list all cell that are volatile arguments
         todo = [self.cellmap[input] for input in inputs]
         done = set()
-
         alive = set()
 
         while len(todo) > 0:
@@ -352,25 +352,23 @@ class Spreadsheet(object):
                     todo.append(child)
   
                 done.add(cell)
-
         return alive
 
 
     def find_volatile_arguments(self, outputs = None):
-        ### gather all occurence of volatile functions in cells or named_range
-
-        print '___### Finding Volatile arguments ###___'
-
+        
+        # 1) gather all occurence of volatile 
         all_volatiles = set()
 
         if outputs is None:
+            # 1.1) from all cells
             for volatile_name in self.volatile_to_remove:
                 for k, cell in self.cellmap.items():
                     if cell.formula and volatile_name in cell.formula:
                         all_volatiles.add((cell.formula, cell.address(), cell.sheet))
 
         else:
-            # climb up the graph and check all cells on the way
+            # 1.2) from the outputs while climbing up the tree
             todo = [self.cellmap[output] for output in outputs]
             done = set()
 
@@ -388,10 +386,8 @@ class Spreadsheet(object):
 
                     done.add(cell)
 
-        # print "%i to check" % len(all_volatiles)
-
+        # 2) extract the arguments from these volatiles
         done = set()
-
         volatile_arguments = set()
 
         for formula, address, sheet in all_volatiles:
@@ -416,7 +412,7 @@ class Spreadsheet(object):
         arguments = []
 
         for c in node.children(ast):
-            if c.ttype == "operand":
+            if c.ttype == "operand" and node.tvalue != ":":
                 if sheet is not None and "!" not in c.tvalue:
                     arguments += [sheet + "!" + c.tvalue]
                 else:
@@ -429,8 +425,7 @@ class Spreadsheet(object):
     def get_volatile_arguments_from_ast(self, ast, node, sheet):
         arguments = []
 
-        if node.token.tvalue == "INDEX"  or node.token.tvalue == "OFFSET":
-            volatile_string = reverse_rpn(node, ast)
+        if node.token.tvalue in self.volatile_to_remove:
             for i,c in enumerate(node.children(ast)):
                 if c.ttype == "operand" and i > 0:
                     if sheet is not None and "!" not in c.tvalue:
