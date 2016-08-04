@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = set(), inputs = set(), debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -188,22 +188,18 @@ class Spreadsheet(object):
                     if is_range(reference):
 
                         rng = self.Range(reference)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            self.inputs.append(address)
                         virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                         new_cellmap[i] = virtual_cell
                         subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
 
                     else:
                         # might need to be changed to actual self.cells Cell, not a copy
-                        virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                        virtual_cell = Cell(i, None, value = self.cellmap[reference].value, formula = reference, is_range = False, is_named_range = True)
                         new_cellmap[i] = virtual_cell
                         subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
                 else:
                     if is_range(i):
                         rng = self.Range(i)
-                        for address in rng.addresses: # this is avoid pruning deletion
-                            self.inputs.append(address)
                         virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
                         new_cellmap[i] = virtual_cell
                         subgraph.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
@@ -476,10 +472,10 @@ class Spreadsheet(object):
         # case where the address refers to a range
         if self.cellmap[address].is_range: 
             cells_to_set = []
-            for a in self.cellmap[address].range.addresses:
-                if a in self.cellmap:
-                    cells_to_set.append(self.cellmap[a])
-                    self.fix_cell(a)
+            # for a in self.cellmap[address].range.addresses:
+                # if a in self.cellmap:
+                #     cells_to_set.append(self.cellmap[a])
+                #     self.fix_cell(a)
 
             if type(val) != list:
                 val = [val]*len(cells_to_set)
@@ -498,7 +494,7 @@ class Spreadsheet(object):
                     ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
                     self.add_cell(ref_cell)
 
-                self.fix_cell(ref_address)
+                # self.fix_cell(ref_address)
                 ref_cell.value = val
 
             if cell.value != val:
@@ -540,15 +536,15 @@ class Spreadsheet(object):
     def free_cell(self, address = None):
         if address is None:
             for addr in self.fixed_cells:
-                self.cellmap[addr].should_eval = 'always'
+                # self.cellmap[addr].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
                 self.evaluate(addr)
                 self.cellmap[addr].should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
         elif address in self.cellmap:
-            self.cellmap[address].should_eval = 'always'
-            self.fixed_cells.pop(address, None)
+            # self.cellmap[address].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
             self.evaluate(address)
             self.cellmap[address].should_eval = self.fixed_cells[address]
+            # self.fixed_cells.pop(address, None)
         else:
             raise Exception('Cell %s not in cellmap' % address)
 
