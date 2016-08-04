@@ -42,6 +42,7 @@ class ExcelCompiler(object):
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
+        self.volatile_ranges = []
             
     def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
