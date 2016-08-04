@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False, volatile_arguments = []):
+    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = [], inputs = [], debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -45,7 +45,7 @@ class Spreadsheet(object):
         self.addr_to_range = addr_to_range
 
         self.outputs = outputs
-        self.inputs = inputs
+        self.inputs = inputs if inputs != [] else cellmap
         self.save_history = False
         self.history = dict()
         self.count = 0
@@ -56,7 +56,6 @@ class Spreadsheet(object):
         self.debug = debug
         self.pending = {}
         self.fixed_cells = {}
-        self.volatile_arguments = volatile_arguments
 
     def activate_history(self):
         self.save_history = True
@@ -216,6 +215,7 @@ class Spreadsheet(object):
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, self.inputs, debug = self.debug)
 
     def clean_volatile(self, with_cache = True):
+        print '___### Cleaning Volatiles ###___'
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -236,15 +236,15 @@ class Spreadsheet(object):
                     self.cellmap[n] = Cell(n, None, value = None, formula = reference, is_range = False, is_named_range = True )
         
         ### 2) gather all occurence of volatile functions in cells or named_range
-        all_volatiles = []
+        all_volatiles = set()
 
         for volatile_name in self.volatile_to_remove:
             for k,v in self.named_ranges.items():
                 if volatile_name in v:
-                    all_volatiles.append({"formula":v, "address": k, "sheet": None})
+                    all_volatiles.add((v, k, None))
             for k,cell in self.cellmap.items():
                 if cell.formula and volatile_name in cell.formula:
-                    all_volatiles.append({"formula":cell.formula, "address": cell.address(), "sheet": cell.sheet})
+                    all_volatiles.add((cell.formula, cell.address(), cell.sheet))
 
             # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
@@ -252,29 +252,23 @@ class Spreadsheet(object):
         if with_cache:
             cache = {} # formula => new_formula
 
-        volatile_arguments = set()
-
-        for cell in all_volatiles:
-            if with_cache and cell["formula"] in cache:
+        for formula, address, sheet in all_volatiles:
+            if with_cache and formula in cache:
                 # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
-                new_formula = cache[cell["formula"]]
+                new_formula = cache[formula]
             else:
-                if cell["sheet"]:
-                    parsed = parse_cell_address(cell["address"])
+                if sheet:
+                    parsed = parse_cell_address(address)
                 else:
                     parsed = ""
-                e = shunting_yard(cell["formula"], self.named_ranges, ref=parsed, tokenize_range = True)
+                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
                 ast,root = build_ast(e)
                 code = root.emit(ast)
                 
-                # print cell["formula"]
-                
-                for a in list(flatten(self.get_volatiles_arguments_from_ast(ast, root, cell))):
-                    volatile_arguments.add(a)
-                
+                cell = {"formula": formula, "address": address, "sheet": sheet}
                 replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
-                new_formula = cell["formula"]
+                new_formula = formula
                 if type(replacements) == list:
                     for repl in replacements:
                         if type(repl["value"]) == ExcelError:
@@ -291,15 +285,15 @@ class Spreadsheet(object):
 
                 if with_cache:
                     # print 'Caching', cell["address"], cell["formula"], new_formula
-                    cache[cell["formula"]] = new_formula
+                    cache[formula] = new_formula
 
-            if cell["address"] in new_named_ranges:
-                new_named_ranges[cell["address"]] = new_formula
+            if address in new_named_ranges:
+                new_named_ranges[address] = new_formula
             else: 
-                old_cell = self.cellmap[cell["address"]]
-                new_cells[cell["address"]] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
-            
-        return new_cells, new_named_ranges, volatile_arguments
+                old_cell = self.cellmap[address]
+                new_cells[address] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
+        
+        return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
         print "%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype))
@@ -333,38 +327,121 @@ class Spreadsheet(object):
                 results.append(self.eval_volatiles_from_ast(ast, c, cell))
         return list(flatten(results, only_lists = True))
 
-    def get_arguments_from_ast(self, ast, node, cell):
+
+    def detect_alive(self, inputs = None, outputs = None):
+
+        volatile_arguments = self.find_volatile_arguments(outputs)
+        
+        if inputs is None:
+            inputs = self.inputs
+
+        todo = [self.cellmap[input] for input in inputs]
+        done = set()
+
+        alive = set()
+
+        while len(todo) > 0:
+            cell = todo.pop()
+
+            if cell not in done:
+                if cell.address() in volatile_arguments:
+                    alive.add(cell.address())
+
+                # for child in self.G.predecessors_iter(cell):
+                for child in self.G.successors_iter(cell):
+                    todo.append(child)
+  
+                done.add(cell)
+
+        return alive
+
+
+    def find_volatile_arguments(self, outputs = None):
+        ### gather all occurence of volatile functions in cells or named_range
+
+        print '___### Finding Volatile arguments ###___'
+
+        all_volatiles = set()
+
+        if outputs is None:
+            for volatile_name in self.volatile_to_remove:
+                for k, cell in self.cellmap.items():
+                    if cell.formula and volatile_name in cell.formula:
+                        all_volatiles.add((cell.formula, cell.address(), cell.sheet))
+
+        else:
+            # climb up the graph and check all cells on the way
+            todo = [self.cellmap[output] for output in outputs]
+            done = set()
+
+            while len(todo) > 0:
+                cell = todo.pop()
+
+                if cell not in done:
+                    if cell.formula:
+                        for volatile_name in self.volatile_to_remove:
+                            if volatile_name in cell.formula:
+                                all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
+                    
+                    for parent in self.G.predecessors_iter(cell): # climb up the tree  @$!# FUCK OFF, what's the bloody way, UP or DOWN ?
+                        todo.append(parent) 
+
+                    done.add(cell)
+
+        # print "%i to check" % len(all_volatiles)
+
+        done = set()
+
+        volatile_arguments = set()
+
+        for formula, address, sheet in all_volatiles:
+            if formula not in done:
+                if sheet:
+                    parsed = parse_cell_address(address)
+                else:
+                    parsed = ""
+                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+                ast,root = build_ast(e)
+                code = root.emit(ast)
+                
+                for a in list(flatten(self.get_volatile_arguments_from_ast(ast, root, sheet))):
+                    volatile_arguments.add(a)
+
+                done.add(formula)
+            
+        return volatile_arguments
+
+
+    def get_arguments_from_ast(self, ast, node, sheet):
         arguments = []
-        context = cell["sheet"]
 
         for c in node.children(ast):
             if c.ttype == "operand":
-                if context is not None and "!" not in c.tvalue:
-                    arguments += [context + "!" + c.tvalue]
+                if sheet is not None and "!" not in c.tvalue:
+                    arguments += [sheet + "!" + c.tvalue]
                 else:
                     arguments += [c.tvalue]
             else:
-                arguments += [self.get_arguments_from_ast(ast, c, cell)]
+                arguments += [self.get_arguments_from_ast(ast, c, sheet)]
 
         return arguments
 
-    def get_volatiles_arguments_from_ast(self, ast, node, cell):
+    def get_volatile_arguments_from_ast(self, ast, node, sheet):
         arguments = []
-        context = cell["sheet"]
 
         if node.token.tvalue == "INDEX"  or node.token.tvalue == "OFFSET":
             volatile_string = reverse_rpn(node, ast)
             for i,c in enumerate(node.children(ast)):
                 if c.ttype == "operand" and i > 0:
-                    if context is not None and "!" not in c.tvalue:
-                        arguments += [context + "!" + c.tvalue]
+                    if sheet is not None and "!" not in c.tvalue:
+                        arguments += [sheet + "!" + c.tvalue]
                     else:
                         arguments += [c.tvalue]
                 else:
-                    arguments += [self.get_arguments_from_ast(ast, c, cell)]
+                    arguments += [self.get_arguments_from_ast(ast, c, sheet)]
         else:
             for c in node.children(ast):
-                arguments += [self.get_volatiles_arguments_from_ast(ast, c, cell)]
+                arguments += [self.get_volatile_arguments_from_ast(ast, c, sheet)]
 
         return arguments
 
@@ -639,81 +716,3 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
 
         return cell.value
-
-    def detect_alive(self):
-        to_check = dict()
-
-        self.build_volatiles()
-
-        # get all volatiles that ancestors of outputs
-        for output in self.outputs:
-            seed = self.cellmap[output]
-            todo = map(lambda n: n, self.G.predecessors(seed))
-            done = set(todo)
-
-            if seed.is_range and seed.range.is_volatile:
-                to_check[output] = seed.value
-
-            while len(todo) > 0:
-                pred = todo.pop()
-
-                if pred.is_range and pred.range.is_volatile:
-                    to_check[pred.address()] = pred.value
-
-                nexts = self.G.predecessors(pred)
-                for n in nexts:            
-                    if n not in done:
-                        todo.append(n)
-                        done.add(n)
-
-        # print 'to_check: %i / %i' % (len(to_check), len(self.volatile_ranges)) 
-
-        alive = set()
-        relations = dict()
-
-        # check that filtered volatiles are not affected by varying inputs
-        for input in self.inputs:
-            input_value = self.cellmap[input].value
-            
-            if self.cellmap[input].value == 0:
-                self.set_value(input, 1)
-            elif type(input_value) == str:
-                self.set_value(input, 'ithinkbobdylanistheverybest')
-            elif type(input_value) == bool:
-                self.set_value(input, not input_value)
-            else:
-                self.set_value(input, 0)
-
-            self.build_volatiles()
-
-            for output in to_check:
-                cell = self.cellmap[output]
-
-                if cell.value != to_check[output]:
-                    relations[input] = cell.address()
-                    alive.add(output)
-
-        return (alive, relations)
-
-    def check_valid(self):
-        todo = [self.cellmap[input] for input in self.inputs]
-        done = set()
-
-        while len(todo) > 0:
-            cell = todo.pop()
-            for child in self.G.successors_iter(cell):
-                if child.address() in self.volatile_arguments:
-                    print "VOLATILE HAVE A ROLE", cell.address()
-                else:
-                    if child not in done:
-                        done.add(child)
-                        todo.append(child)
-
-
-
-
-
-
-
-
-

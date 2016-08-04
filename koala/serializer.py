@@ -90,6 +90,7 @@ def dump(self, fname, marshal = False):
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write(k + SEP + self.named_ranges[k] + "\n")
+    
 
     outfile.close()
 
@@ -152,9 +153,6 @@ def load(fname):
             continue
         elif line == "named_ranges":
             mode = "named_ranges"
-            continue
-        elif line == "volatile_ranges":
-            mode = "volatile_ranges"
             continue
 
         if mode == "node0":
