@@ -48,14 +48,14 @@ class ExcelCompiler(object):
         print '___### Generating Graph ###___'
 
         if len(outputs) == 0:
-            outputs = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
+            preseeds = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
         else:
-            outputs = set(outputs)
+            preseeds = set(outputs)
         
-        outputs = list(outputs) # to be able to modify the list
+        preseeds = list(preseeds) # to be able to modify the list
 
         seeds = []
-        for o in outputs:
+        for o in preseeds:
             if o in self.named_ranges:
                 reference = self.named_ranges[o]
 
@@ -70,7 +70,7 @@ class ExcelCompiler(object):
 
                     # rng = self.Range(reference)
                     for address in rng.addresses: # this is avoid pruning deletion
-                        outputs.append(address)
+                        preseeds.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
                     seeds.append(virtual_cell)
                 else:
@@ -82,7 +82,7 @@ class ExcelCompiler(object):
                 if is_range(o):
                     rng = self.Range(o)
                     for address in rng.addresses: # this is avoid pruning deletion
-                        outputs.append(address)
+                        preseeds.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
                     seeds.append(virtual_cell)
                 else:
@@ -90,7 +90,7 @@ class ExcelCompiler(object):
 
         seeds = set(seeds)
         print "Seeds %s cells" % len(seeds)
-        outputs = set(outputs) # seeds and outputs are the same when you don't specify outputs
+        outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
         cellmap, G = graph_from_seeds(seeds, self)
 

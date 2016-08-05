@@ -45,7 +45,7 @@ class Spreadsheet(object):
         self.addr_to_range = addr_to_range
 
         self.outputs = outputs
-        self.inputs = inputs if inputs != [] else cellmap
+        self.inputs = inputs
         self.save_history = False
         self.history = dict()
         self.count = 0
@@ -696,6 +696,8 @@ class Spreadsheet(object):
                 def is_almost_equal(a, b, precision = 0.001):
                     if is_number(a) and is_number(b):
                         return abs(float(a) - float(b)) <= precision
+                    elif (a is None or a == 'None') and (b is None or b == 'None'):
+                        return True
                     else:
                         return a == b
 
@@ -704,8 +706,8 @@ class Spreadsheet(object):
                     
                     if 'new' not in self.history[cell.address()].keys():
                         if type(ori_value) == list and type(cell.value) == list \
-                                and all(map(lambda (x, y): is_almost_equal(x, y), zip(ori_value, cell.value))) \
-                            or is_almost_equal(ori_value, cell.value):
+                                and all(map(lambda (x, y): not is_almost_equal(x, y), zip(ori_value, cell.value))) \
+                            or not is_almost_equal(ori_value, cell.value):
 
                             self.count += 1
                             self.history[cell.address()]['formula'] = str(cell.formula)
