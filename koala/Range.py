@@ -63,7 +63,7 @@ def check_value(a):
 class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
-        
+
         is_volatile = False
 
         if type(reference) == dict:
@@ -85,6 +85,7 @@ class RangeCore(dict):
             self.__ncols = None
             self.__type = None
             self.__sheet = None
+            self.__empty = None
 
     # A separate function from __init__ is necessary so that it can be called from outside
     def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
@@ -110,17 +111,20 @@ class RangeCore(dict):
         result = []
         order = []
 
+        empty = True
+
         for index, cell in enumerate(cells):
             row,col = parse_cell_address(cell)
             order.append((row, col))
             try:
                 if cellmap:
                     result.append(((row, col), cellmap[cell]))
-
+                    empty = empty and cellmap[cell].value is None
                 else:
                     if isinstance(values[index], RangeCore):
                         raise Exception('Range can\'t be values of Range', reference)
                     result.append(((row, col), values[index]))
+                    empty = empty and values[index] is None
 
             except: # when you don't provide any values
                 result.append(((row, col), None))
@@ -143,6 +147,7 @@ class RangeCore(dict):
         self.__length = len(cells)
         self.__nrows = nrows
         self.__ncols = ncols
+        self.__empty = empty
 
         if ncols == 1 and nrows == 1:
             self.__type = 'scalar'
@@ -187,6 +192,9 @@ class RangeCore(dict):
     @property
     def ncols(self):
         return self.__ncols
+    @property
+    def is_empty(self):
+        return self.__empty
     @property
     def type(self):
         return self.__type
