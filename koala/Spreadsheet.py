@@ -677,14 +677,17 @@ class Spreadsheet(object):
         try:
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
+                if isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
+                    cell.value = vv.values[0]
+                else:
+                    cell.value = vv
+            elif cell.is_range:
+                for child in cell.range.cells:
+                    self.evaluate(child)
             else:
-                vv = 0
-            if cell.is_range:
-                cell.value = vv.values
-            elif isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
-                cell.value = vv.values[0]
-            else:
-                cell.value = vv
+                cell.value = 0
+            
+            
             cell.need_update = False
             
             # DEBUG: saving differences
