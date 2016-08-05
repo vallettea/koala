@@ -683,7 +683,7 @@ class Spreadsheet(object):
                     cell.value = vv
             elif cell.is_range:
                 for child in cell.range.cells:
-                    self.evaluate(child)
+                    self.evaluate(child.address())
             else:
                 cell.value = 0
             
@@ -692,21 +692,29 @@ class Spreadsheet(object):
             
             # DEBUG: saving differences
             if self.save_history:
+
+                def is_almost_equal(a, b, precision = 0.001):
+                    if is_number(a) and is_number(b):
+                        return abs(float(a) - float(b)) <= precision
+                    else:
+                        return a == b
+
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
                     
-                    if 'new' not in self.history[cell.address()].keys() \
-                        and is_number(ori_value) and is_number(cell.value) \
-                        and abs(float(ori_value) - float(cell.value)) > 0.001:
+                    if 'new' not in self.history[cell.address()].keys():
+                        if type(ori_value) == list and type(cell.value) == list \
+                                and all(map(lambda (x, y): is_almost_equal(x, y), zip(ori_value, cell.value))) \
+                            or is_almost_equal(ori_value, cell.value):
 
-                        self.count += 1
-                        self.history[cell.address()]['formula'] = str(cell.formula)
-                        self.history[cell.address()]['priority'] = self.count
-                        self.history[cell.address()]['python'] = str(cell.python_expression)
+                            self.count += 1
+                            self.history[cell.address()]['formula'] = str(cell.formula)
+                            self.history[cell.address()]['priority'] = self.count
+                            self.history[cell.address()]['python'] = str(cell.python_expression)
 
-                        if self.count == 1:
-                            self.history['ROOT_DIFF'] = self.history[cell.address()]
-                            self.history['ROOT_DIFF']['cell'] = cell.address()
+                            if self.count == 1:
+                                self.history['ROOT_DIFF'] = self.history[cell.address()]
+                                self.history['ROOT_DIFF']['cell'] = cell.address()
 
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:
