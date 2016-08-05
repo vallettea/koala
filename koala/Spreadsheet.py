@@ -531,14 +531,23 @@ class Spreadsheet(object):
     def free_cell(self, address = None):
         if address is None:
             for addr in self.fixed_cells:
-                self.cellmap[addr].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-                self.evaluate(addr)
-                self.cellmap[addr].should_eval = self.fixed_cells[addr]
+                cell = self.cellmap[addr]
+
+                cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+                if cell.python_expression is not None:
+                    self.eval_ref(addr)
+                
+                cell.should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
+
         elif address in self.cellmap:
-            self.cellmap[address].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-            self.evaluate(address)
-            self.cellmap[address].should_eval = self.fixed_cells[address]
+            cell = self.cellmap[address]
+
+            cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+            if cell.python_expression is not None:
+                self.eval_ref(address)
+            
+            cell.should_eval = self.fixed_cells[address]
             self.fixed_cells.pop(address, None)
         else:
             raise Exception('Cell %s not in cellmap' % address)
