@@ -5,6 +5,8 @@ class ExcelError(Exception):
     def __init__(self, value, info = None):
         self.value = value
         self.info = info
+    def __str__(self):
+    	return self.info
 
 class EmptyCellError(ExcelError):
     pass
