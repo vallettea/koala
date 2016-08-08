@@ -408,11 +408,16 @@ class Spreadsheet(object):
         arguments = []
 
         for c in node.children(ast):
-            if c.ttype == "operand" and node.tvalue != ":":
-                if sheet is not None and "!" not in c.tvalue:
-                    arguments += [sheet + "!" + c.tvalue]
-                else:
-                    arguments += [c.tvalue]
+            if c.tvalue == ":":
+                arg_range =  reverse_rpn(c, ast)
+                for elem in resolve_range(arg_range, False, sheet)[0]:
+                    arguments += [elem]
+            if c.ttype == "operand":
+                if not is_number(c.tvalue):
+                    if sheet is not None and "!" not in c.tvalue and c.tvalue not in self.named_ranges:
+                        arguments += [sheet + "!" + c.tvalue]
+                    else:
+                        arguments += [c.tvalue]
             else:
                 arguments += [self.get_arguments_from_ast(ast, c, sheet)]
 
@@ -422,14 +427,15 @@ class Spreadsheet(object):
         arguments = []
 
         if node.token.tvalue in self.volatile_to_remove:
-            for i,c in enumerate(node.children(ast)):
-                if c.ttype == "operand" and i > 0:
-                    if sheet is not None and "!" not in c.tvalue:
-                        arguments += [sheet + "!" + c.tvalue]
-                    else:
-                        arguments += [c.tvalue]
+            for c in node.children(ast)[1:]:
+                if c.ttype == "operand":
+                    if not is_number(c.tvalue):
+                        if sheet is not None and "!" not in c.tvalue and c.tvalue not in self.named_ranges:
+                            arguments += [sheet + "!" + c.tvalue]
+                        else:
+                            arguments += [c.tvalue]
                 else:
-                    arguments += [self.get_arguments_from_ast(ast, c, sheet)]
+                        arguments += [self.get_arguments_from_ast(ast, c, sheet)]
         else:
             for c in node.children(ast):
                 arguments += [self.get_volatile_arguments_from_ast(ast, c, sheet)]
