@@ -45,7 +45,7 @@ class Spreadsheet(object):
         self.addr_to_range = addr_to_range
 
         self.outputs = outputs
-        self.inputs = inputs if inputs != [] else cellmap
+        self.inputs = inputs
         self.save_history = False
         self.history = dict()
         self.count = 0
@@ -537,14 +537,23 @@ class Spreadsheet(object):
     def free_cell(self, address = None):
         if address is None:
             for addr in self.fixed_cells:
-                self.cellmap[addr].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-                self.evaluate(addr)
-                self.cellmap[addr].should_eval = self.fixed_cells[addr]
+                cell = self.cellmap[addr]
+
+                cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+                if cell.python_expression is not None:
+                    self.eval_ref(addr)
+                
+                cell.should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
+
         elif address in self.cellmap:
-            self.cellmap[address].should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-            self.evaluate(address)
-            self.cellmap[address].should_eval = self.fixed_cells[address]
+            cell = self.cellmap[address]
+
+            cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+            if cell.python_expression is not None:
+                self.eval_ref(address)
+            
+            cell.should_eval = self.fixed_cells[address]
             self.fixed_cells.pop(address, None)
         else:
             raise Exception('Cell %s not in cellmap' % address)
@@ -674,33 +683,46 @@ class Spreadsheet(object):
         try:
             if cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
+                if isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
+                    cell.value = vv.values[0]
+                else:
+                    cell.value = vv
+            elif cell.is_range:
+                for child in cell.range.cells:
+                    self.evaluate(child.address())
             else:
-                vv = 0
-            if cell.is_range:
-                cell.value = vv.values
-            elif isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
-                cell.value = vv.values[0]
-            else:
-                cell.value = vv
+                cell.value = 0
+            
+            
             cell.need_update = False
             
             # DEBUG: saving differences
             if self.save_history:
+
+                def is_almost_equal(a, b, precision = 0.001):
+                    if is_number(a) and is_number(b):
+                        return abs(float(a) - float(b)) <= precision
+                    elif (a is None or a == 'None') and (b is None or b == 'None'):
+                        return True
+                    else:
+                        return a == b
+
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
                     
-                    if 'new' not in self.history[cell.address()].keys() \
-                        and is_number(ori_value) and is_number(cell.value) \
-                        and abs(float(ori_value) - float(cell.value)) > 0.001:
+                    if 'new' not in self.history[cell.address()].keys():
+                        if type(ori_value) == list and type(cell.value) == list \
+                                and all(map(lambda (x, y): not is_almost_equal(x, y), zip(ori_value, cell.value))) \
+                            or not is_almost_equal(ori_value, cell.value):
 
-                        self.count += 1
-                        self.history[cell.address()]['formula'] = str(cell.formula)
-                        self.history[cell.address()]['priority'] = self.count
-                        self.history[cell.address()]['python'] = str(cell.python_expression)
+                            self.count += 1
+                            self.history[cell.address()]['formula'] = str(cell.formula)
+                            self.history[cell.address()]['priority'] = self.count
+                            self.history[cell.address()]['python'] = str(cell.python_expression)
 
-                        if self.count == 1:
-                            self.history['ROOT_DIFF'] = self.history[cell.address()]
-                            self.history['ROOT_DIFF']['cell'] = cell.address()
+                            if self.count == 1:
+                                self.history['ROOT_DIFF'] = self.history[cell.address()]
+                                self.history['ROOT_DIFF']['cell'] = cell.address()
 
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:

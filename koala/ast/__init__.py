@@ -524,15 +524,6 @@ def graph_from_seeds(seeds, cell_source):
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)
-
-                if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
-                    formulas_in_dep = []
-                    for c in rng.addresses:
-                        if c in cells:
-                            formulas_in_dep.append(cells[c].formula)
-                        else:
-                            # raise Exception( '%s unavailable' % c)
-                            formulas_in_dep.append(None)
             
                 virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
 
@@ -591,8 +582,8 @@ def graph_from_seeds(seeds, cell_source):
                         # constant cell, no need for further processing, just remember to set the code
                         pystr,ast = cell2code(c2, names)
                         c2.python_expression = pystr
-                        c2.compile()     
-                    
+                        c2.compile()  
+                                                
                     # save in the cellmap
                     cellmap[c2.address()] = c2
                     # add to the graph
@@ -604,5 +595,6 @@ def graph_from_seeds(seeds, cell_source):
                     G.add_edge(c2,target)
         
         c1.compile() # cell compilation is done here because volatile ranges might update python_expressions 
+    
 
     return (cellmap, G)

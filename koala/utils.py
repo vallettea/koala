@@ -162,7 +162,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             if should_flatten:
                 # flatten into one list
                 l = list(flatten(cells, only_lists = True))
-                output = l,1,len(l)
+                output = l,len(cells), len(cells[0])
             else:
                 output = cells, len(cells), len(cells[0])
 
