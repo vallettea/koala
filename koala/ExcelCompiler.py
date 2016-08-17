@@ -63,7 +63,7 @@ class ExcelCompiler(object):
                     if 'OFFSET' in reference or 'INDEX' in reference:
                         start_end = prepare_volatile(reference, self.named_ranges)
                         rng = self.Range(start_end)
-                        self.volatiles.add(rng.name)
+                        self.volatiles.add(o)
                     else:
                         rng = self.Range(reference)
 
@@ -74,6 +74,9 @@ class ExcelCompiler(object):
                     seeds.append(virtual_cell)
                 else:
                     # might need to be changed to actual self.cells Cell, not a copy
+                    if 'OFFSET' in reference or 'INDEX' in reference:
+                        self.volatiles.add(o)
+
                     value = self.cells[reference].value if reference in self.cells else None
                     virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
                     seeds.append(virtual_cell)

@@ -171,7 +171,10 @@ def load(fname):
                 vv = Range(reference)
 
                 if is_volatile:
-                    volatiles.add(vv.name)
+                    if not is_named_range:
+                        address = vv.name
+
+                    volatiles.add(address)
 
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression

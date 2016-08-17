@@ -495,7 +495,7 @@ def graph_from_seeds(seeds, cell_source):
         #     print logStep, "->", deps
         # else:
         #     print logStep, "done"
-        
+
         for dep in deps:
             dep_name = dep.tvalue.replace('$','')
 
@@ -523,10 +523,13 @@ def graph_from_seeds(seeds, cell_source):
                     rng = cell_source.Range(reference)
 
                     if dep_name in names:
-                        address = dep_name # already added to cell_source.volatiles
+                        address = dep_name 
                     else:
-                        address = '%s:%s' % (reference["start"], reference["end"])
-                        cell_source.volatiles.add(address)
+                        if c1.address() in names:
+                            address = c1.address() # virtual cell will be added again (already done in ExcelCompiler), optimization is needed
+                        else:
+                            address = '%s:%s' % (reference["start"], reference["end"])
+                            cell_source.volatiles.add(address)
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)
@@ -569,11 +572,10 @@ def graph_from_seeds(seeds, cell_source):
                         origins = [cell]
 
                     cell = origins[0]
-
+                    
                     if cell.formula is not None and ('OFFSET' in cell.formula or 'INDEX' in cell.formula):
                         cell_source.volatiles.add(cell.address())
                 else:
-                    # print 'DEP NAME not in cells'
                     virtual_cell = Cell(dep_name, None, value = None, formula = None, is_range = False, is_named_range = True )
                     origins = [virtual_cell]
 

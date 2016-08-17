@@ -509,7 +509,6 @@ class Spreadsheet(object):
         for vol_range in self.volatiles: # reset all volatiles
             self.reset(self.cellmap[vol_range])
 
-
     def reset(self, cell):
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges: return
