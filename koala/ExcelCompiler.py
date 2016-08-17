@@ -33,7 +33,7 @@ class ExcelCompiler(object):
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
-        self.volatile_ranges = set()
+        self.volatiles = set()
         self.debug = debug
 
     def clean_volatile(self):
@@ -42,7 +42,7 @@ class ExcelCompiler(object):
         cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
-        self.volatile_ranges = []
+        self.volatiles = set()
             
     def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
@@ -63,8 +63,7 @@ class ExcelCompiler(object):
                     if 'OFFSET' in reference or 'INDEX' in reference:
                         start_end = prepare_volatile(reference, self.named_ranges)
                         rng = self.Range(start_end)
-
-                        self.volatile_ranges.add(rng.name)
+                        self.volatiles.add(rng.name)
                     else:
                         rng = self.Range(reference)
 
@@ -136,4 +135,4 @@ class ExcelCompiler(object):
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, volatile_ranges = self.volatile_ranges, outputs = outputs, inputs = inputs, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, volatiles = self.volatiles, outputs = outputs, inputs = inputs, debug = self.debug)

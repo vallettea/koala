@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = set(), inputs = set(), debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatiles = set(), outputs = set(), inputs = set(), debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -50,7 +50,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
-        self.volatile_ranges = volatile_ranges
+        self.volatiles = volatiles
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -208,7 +208,7 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, self.inputs, debug = self.debug)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatiles, self.outputs, self.inputs, debug = self.debug)
 
     def clean_volatile(self, with_cache = True):
         print '___### Cleaning Volatiles ###___'
@@ -377,7 +377,7 @@ class Spreadsheet(object):
                             if volatile_name in cell.formula:
                                 all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
                     
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree  @$!# FUCK OFF, what's the bloody way, UP or DOWN ?
+                    for parent in self.G.predecessors_iter(cell): # climb up the tree
                         todo.append(parent) 
 
                     done.add(cell)
@@ -506,8 +506,9 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol_range in self.volatile_ranges: # reset all volatile ranges
+        for vol_range in self.volatiles: # reset all volatiles
             self.reset(self.cellmap[vol_range])
+
 
     def reset(self, cell):
         addr = cell.address()
@@ -577,7 +578,7 @@ class Spreadsheet(object):
 
     def build_volatiles(self):
 
-        for volatile in self.volatile_ranges:
+        for volatile in self.volatiles:
             vol_range = self.cellmap[volatile].range
 
             start = eval(vol_range.reference['start'])

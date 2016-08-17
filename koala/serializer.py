@@ -120,7 +120,7 @@ def load(fname):
     mode = "node0"
     nodes = []
     edges = []
-    volatile_ranges = set()
+    volatiles = set()
     outputs = None
     inputs = None
     named_ranges = {}
@@ -171,7 +171,7 @@ def load(fname):
                 vv = Range(reference)
 
                 if is_volatile:
-                    volatile_ranges.add(vv.name)
+                    volatiles.add(vv.name)
 
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
@@ -180,8 +180,12 @@ def load(fname):
                 value = to_bool(to_float(line))
                 
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
+                
                 cell.python_expression = python_expression
                 if formula:
+                    if 'OFFSET' in formula or 'INDEX' in formula:
+                        volatiles.add(address)
+
                     if marshaled_file:
                         ce = compiled_expressions[address]
                         cell.compiled_expression = ce
@@ -203,7 +207,7 @@ def load(fname):
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, named_ranges, volatile_ranges, outputs, inputs)
+    return (G, cellmap, named_ranges, volatiles, outputs, inputs)
 
 ########### based on json #################
 def dump_json(self, fname):
