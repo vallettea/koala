@@ -7,7 +7,6 @@ from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
-import marshal
 
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
@@ -15,11 +14,9 @@ from koala.Range import RangeCore, RangeFactory
 SEP = ";;"
 
 ########### based on custom format #################
-def dump(self, fname, marshal = False):
+def dump(self, fname):
     outfile = gzip.GzipFile(fname, 'w')
 
-    if marshal:
-        outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
     simple_cells = filter(lambda cell: cell.is_range == False, self.cellmap.values())
@@ -71,9 +68,7 @@ def dump(self, fname, marshal = False):
             outfile.write(cell.range.name + "\n")
 
         outfile.write("====" + "\n")
-
-    if marshal:
-        marshal.dump(compiled_expressions, outfile2)
+        outfile.write("====" + "\n")
     
     # writing the edges
     outfile.write("edges" + "\n")
@@ -125,12 +120,7 @@ def load(fname):
     inputs = None
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
-    try:
-        infile2 = open(fname + "_marshal", "rb")
-        compiled_expressions = marshal.load(infile2)
-        marshaled_file = True
-    except:
-        marshaled_file = False
+
     for line in infile.read().splitlines():
 
         if line == "====":
@@ -189,11 +179,8 @@ def load(fname):
                     if 'OFFSET' in formula or 'INDEX' in formula:
                         volatiles.add(address)
 
-                    if marshaled_file:
-                        ce = compiled_expressions[address]
-                        cell.compiled_expression = ce
-                    else:
-                        cell.compile()               
+
+                    cell.compile()               
                 nodes.append(cell)
         elif mode == "edges":
             source, target = line.split(SEP)
