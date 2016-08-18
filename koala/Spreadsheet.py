@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatile_ranges = [], outputs = set(), inputs = set(), debug = False):
+    def __init__(self, G, cellmap, named_ranges, volatiles = set(), outputs = set(), inputs = set(), debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -50,7 +50,7 @@ class Spreadsheet(object):
         self.history = dict()
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
-        self.volatile_ranges = volatile_ranges
+        self.volatiles = volatiles
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -208,10 +208,11 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatile_ranges, self.outputs, self.inputs, debug = self.debug)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatiles, self.outputs, self.inputs, debug = self.debug)
 
     def clean_volatile(self, with_cache = True):
         print '___### Cleaning Volatiles ###___'
+        # with_cache = False
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -247,8 +248,9 @@ class Spreadsheet(object):
         ### 3) evaluate all volatiles
         if with_cache:
             cache = {} # formula => new_formula
-
+        
         for formula, address, sheet in all_volatiles:
+
             if with_cache and formula in cache:
                 # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
                 new_formula = cache[formula]
@@ -288,7 +290,7 @@ class Spreadsheet(object):
             else: 
                 old_cell = self.cellmap[address]
                 new_cells[address] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
-        
+
         return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
@@ -300,8 +302,7 @@ class Spreadsheet(object):
         results = []
         context = cell["sheet"]
 
-        if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
-            (node.token.tvalue == "OFFSET"):
+        if (node.token.tvalue == "INDEX" or node.token.tvalue == "OFFSET"):
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
 
@@ -315,7 +316,7 @@ class Spreadsheet(object):
             except Exception as e:
                 if self.debug:
                     print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
-                raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
+                raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression))
 
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
@@ -372,13 +373,11 @@ class Spreadsheet(object):
                 cell = todo.pop()
 
                 if cell not in done:
-                    if cell.formula:
-                        for volatile_name in self.volatile_to_remove:
-                            if volatile_name in cell.formula:
-                                all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
-                    
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree  @$!# FUCK OFF, what's the bloody way, UP or DOWN ?
-                        todo.append(parent) 
+                    if cell.address() in self.volatiles:
+                        if cell.formula:
+                            all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
+                        else:
+                            raise Exception('Volatiles should always have a formula')
 
                     done.add(cell)
 
@@ -506,7 +505,7 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol_range in self.volatile_ranges: # reset all volatile ranges
+        for vol_range in self.volatiles: # reset all volatiles
             self.reset(self.cellmap[vol_range])
 
     def reset(self, cell):
@@ -577,7 +576,7 @@ class Spreadsheet(object):
 
     def build_volatiles(self):
 
-        for volatile in self.volatile_ranges:
+        for volatile in self.volatiles:
             vol_range = self.cellmap[volatile].range
 
             start = eval(vol_range.reference['start'])

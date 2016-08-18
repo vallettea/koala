@@ -7,7 +7,6 @@ from networkx.readwrite import json_graph
 from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
 from networkx.drawing.nx_pylab import draw, draw_circular
-import marshal
 
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
@@ -15,11 +14,9 @@ from koala.Range import RangeCore, RangeFactory
 SEP = ";;"
 
 ########### based on custom format #################
-def dump(self, fname, marshal = False):
+def dump(self, fname):
     outfile = gzip.GzipFile(fname, 'w')
 
-    if marshal:
-        outfile2 = open(fname + "_marshal", 'wb')
 
     # write simple cells first
     simple_cells = filter(lambda cell: cell.is_range == False, self.cellmap.values())
@@ -71,9 +68,7 @@ def dump(self, fname, marshal = False):
             outfile.write(cell.range.name + "\n")
 
         outfile.write("====" + "\n")
-
-    if marshal:
-        marshal.dump(compiled_expressions, outfile2)
+        outfile.write("====" + "\n")
     
     # writing the edges
     outfile.write("edges" + "\n")
@@ -120,17 +115,12 @@ def load(fname):
     mode = "node0"
     nodes = []
     edges = []
-    volatile_ranges = set()
+    volatiles = set()
     outputs = None
     inputs = None
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'r')
-    try:
-        infile2 = open(fname + "_marshal", "rb")
-        compiled_expressions = marshal.load(infile2)
-        marshaled_file = True
-    except:
-        marshaled_file = False
+
     for line in infile.read().splitlines():
 
         if line == "====":
@@ -171,7 +161,10 @@ def load(fname):
                 vv = Range(reference)
 
                 if is_volatile:
-                    volatile_ranges.add(vv.name)
+                    if not is_named_range:
+                        address = vv.name
+
+                    volatiles.add(address)
 
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
@@ -180,13 +173,14 @@ def load(fname):
                 value = to_bool(to_float(line))
                 
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
+                
                 cell.python_expression = python_expression
                 if formula:
-                    if marshaled_file:
-                        ce = compiled_expressions[address]
-                        cell.compiled_expression = ce
-                    else:
-                        cell.compile()               
+                    if 'OFFSET' in formula or 'INDEX' in formula:
+                        volatiles.add(address)
+
+
+                    cell.compile()               
                 nodes.append(cell)
         elif mode == "edges":
             source, target = line.split(SEP)
@@ -203,7 +197,7 @@ def load(fname):
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, named_ranges, volatile_ranges, outputs, inputs)
+    return (G, cellmap, named_ranges, volatiles, outputs, inputs)
 
 ########### based on json #################
 def dump_json(self, fname):

@@ -137,8 +137,6 @@ class RangeCore(dict):
         # dont allow messing with these params
         if type(reference) == list:
             self.__name = name
-        elif type(reference) == dict:
-            self.__name = ':'.join([str(reference["start"]), str(reference["end"])])
         elif not self.is_volatile: # when building volatiles, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
         self.__origin = origin

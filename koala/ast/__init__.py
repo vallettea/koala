@@ -465,8 +465,11 @@ def graph_from_seeds(seeds, cell_source):
         pystr, ast = cell2code(c1, names)
         # set the code & compile it (will flag problems sooner rather than later)
         c1.python_expression = pystr.replace('"', "'") # compilation is done later
-           
         
+        if 'OFFSET' in c1.formula or 'INDEX' in c1.formula:
+            if c1.address() not in cell_source.named_ranges: # volatiles names already treated in ExcelCompiler
+                cell_source.volatiles.add(c1.address())
+
         # get all the cells/ranges this formula refers to
         deps = [x for x in ast.nodes() if isinstance(x,RangeNode)]
         # remove dupes
@@ -492,7 +495,7 @@ def graph_from_seeds(seeds, cell_source):
         #     print logStep, "->", deps
         # else:
         #     print logStep, "done"
-        
+
         for dep in deps:
             dep_name = dep.tvalue.replace('$','')
 
@@ -508,7 +511,7 @@ def graph_from_seeds(seeds, cell_source):
             if dep_name in cellmap:
                 origins = [cellmap[dep_name]]
                 target = cellmap[c1.address()]
-            # if the dep_nameendency is a multi-cell range, create a range object
+            # if the dep_name is a multi-cell range, create a range object
             elif is_range(dep_name) or (dep_name in names and is_range(names[dep_name])):
                 if dep_name in names:
                     reference = names[dep_name]
@@ -516,19 +519,28 @@ def graph_from_seeds(seeds, cell_source):
                     reference = dep_name
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
-                    reference = prepare_volatile(reference, names, ref_cell = c1)
-                    address = '%s:%s' % (reference["start"], reference["end"])
-                    rng = cell_source.Range(reference)
+                    start_end = prepare_volatile(reference, names, ref_cell = c1)
+                    rng = cell_source.Range(start_end)
 
-                    cell_source.volatile_ranges.add(rng.name)
+                    if dep_name in names: # dep is a volatile range
+                        address = dep_name 
+                    else:
+                        if c1.address() in names: # c1 holds is a volatile range
+                            address = c1.address()
+                        else: # a volatile range with no name, its address will be its name
+                            address = '%s:%s' % (start_end["start"], start_end["end"])
+                            cell_source.volatiles.add(address)
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)
-            
-                virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                
+                if address in cellmap:
+                    virtual_cell = cellmap[address]
+                else:
+                    virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                    # save the range
+                    cellmap[address] = virtual_cell
 
-                # save the range
-                cellmap[address] = virtual_cell
                 # add an edge from the range to the parent
                 G.add_node(virtual_cell)
                 # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
@@ -550,7 +562,6 @@ def graph_from_seeds(seeds, cell_source):
                 else:
                     reference = dep_name
 
-
                 if reference in cells:
                     if dep_name in names:
                         virtual_cell = Cell(dep_name, None, value = cells[reference].value, formula = reference, is_range = False, is_named_range = True )
@@ -560,9 +571,14 @@ def graph_from_seeds(seeds, cell_source):
 
                         origins = [virtual_cell]
                     else:
-                        origins = [cells[reference]] 
+                        cell = cells[reference]
+                        origins = [cell]
+
+                    cell = origins[0]
+                    
+                    if cell.formula is not None and ('OFFSET' in cell.formula or 'INDEX' in cell.formula):
+                        cell_source.volatiles.add(cell.address())
                 else:
-                    # print 'DEP NAME not in cells'
                     virtual_cell = Cell(dep_name, None, value = None, formula = None, is_range = False, is_named_range = True )
                     origins = [virtual_cell]
 
