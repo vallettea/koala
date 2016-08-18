@@ -372,13 +372,11 @@ class Spreadsheet(object):
                 cell = todo.pop()
 
                 if cell not in done:
-                    if cell.formula:
-                        for volatile_name in self.volatile_to_remove:
-                            if volatile_name in cell.formula:
-                                all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
-                    
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree
-                        todo.append(parent) 
+                    if cell.address() in self.volatiles:
+                        if cell.formula:
+                            all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
+                        else:
+                            raise Exception('Volatiles should always have a formula')
 
                     done.add(cell)
 

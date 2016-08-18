@@ -519,25 +519,28 @@ def graph_from_seeds(seeds, cell_source):
                     reference = dep_name
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
-                    reference = prepare_volatile(reference, names, ref_cell = c1)
-                    rng = cell_source.Range(reference)
+                    start_end = prepare_volatile(reference, names, ref_cell = c1)
+                    rng = cell_source.Range(start_end)
 
-                    if dep_name in names:
+                    if dep_name in names: # dep is a volatile range
                         address = dep_name 
                     else:
-                        if c1.address() in names:
-                            address = c1.address() # virtual cell will be added again (already done in ExcelCompiler), optimization is needed
-                        else:
-                            address = '%s:%s' % (reference["start"], reference["end"])
+                        if c1.address() in names: # c1 holds is a volatile range
+                            address = c1.address()
+                        else: # a volatile range with no name, its address will be its name
+                            address = '%s:%s' % (start_end["start"], start_end["end"])
                             cell_source.volatiles.add(address)
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)
-            
-                virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                
+                if address in cellmap:
+                    virtual_cell = cellmap[address]
+                else:
+                    virtual_cell = Cell(address, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                    # save the range
+                    cellmap[address] = virtual_cell
 
-                # save the range
-                cellmap[address] = virtual_cell
                 # add an edge from the range to the parent
                 G.add_node(virtual_cell)
                 # Cell(A1:A10) -> c1 or Cell(ExampleName) -> c1
