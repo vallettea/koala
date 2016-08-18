@@ -248,8 +248,6 @@ class Spreadsheet(object):
         ### 3) evaluate all volatiles
         if with_cache:
             cache = {} # formula => new_formula
-
-        print 'len vol', len(all_volatiles)
         
         for formula, address, sheet in all_volatiles:
 

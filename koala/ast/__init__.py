@@ -467,7 +467,7 @@ def graph_from_seeds(seeds, cell_source):
         c1.python_expression = pystr.replace('"', "'") # compilation is done later
         
         if 'OFFSET' in c1.formula or 'INDEX' in c1.formula:
-            if c1.address() not in cell_source.named_ranges: # volatiles names already treatedd in ExcelCompiler
+            if c1.address() not in cell_source.named_ranges: # volatiles names already treated in ExcelCompiler
                 cell_source.volatiles.add(c1.address())
 
         # get all the cells/ranges this formula refers to
