@@ -212,6 +212,7 @@ class Spreadsheet(object):
 
     def clean_volatile(self, with_cache = True):
         print '___### Cleaning Volatiles ###___'
+        # with_cache = False
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -248,7 +249,10 @@ class Spreadsheet(object):
         if with_cache:
             cache = {} # formula => new_formula
 
+        print 'len vol', len(all_volatiles)
+        
         for formula, address, sheet in all_volatiles:
+
             if with_cache and formula in cache:
                 # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
                 new_formula = cache[formula]
@@ -288,7 +292,7 @@ class Spreadsheet(object):
             else: 
                 old_cell = self.cellmap[address]
                 new_cells[address] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
-        
+
         return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
@@ -300,8 +304,7 @@ class Spreadsheet(object):
         results = []
         context = cell["sheet"]
 
-        if (node.token.tvalue == "INDEX" and node.parent(ast) is not None and node.parent(ast).tvalue == ':') or \
-            (node.token.tvalue == "OFFSET"):
+        if (node.token.tvalue == "INDEX" or node.token.tvalue == "OFFSET"):
             volatile_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
 
@@ -315,7 +318,7 @@ class Spreadsheet(object):
             except Exception as e:
                 if self.debug:
                     print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
-                raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression)) 
+                raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression))
 
             return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
         else:
