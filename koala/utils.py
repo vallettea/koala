@@ -6,6 +6,8 @@ import collections
 import re
 # import numpy as np
 
+from ExcelError import ExcelError
+
 ASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
@@ -82,6 +84,10 @@ resolve_range_cache = {}
 def resolve_range(rng, should_flatten = False, sheet=''):
     
     # print 'RESOLVE RANGE splitting', rng
+    if ':' not in rng:
+        if '!' in rng:
+            rng = rng.split('!')
+        return ExcelError('#REF!', info = '%s is not a regular range, nor a named_range' % rng)
     sh, start, end = split_range(rng)
     
     if sh and sheet:
