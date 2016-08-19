@@ -328,11 +328,11 @@ class Spreadsheet(object):
     def detect_alive(self, inputs = None, outputs = None):
 
         volatile_arguments = self.find_volatile_arguments(outputs)
-        
+
         if inputs is None:
             inputs = self.inputs
 
-        # go down the tree and list all cell that are volatile arguments
+        # go down the tree and list all cells that are volatile arguments
         todo = [self.cellmap[input] for input in inputs]
         done = set()
         alive = set()
@@ -344,7 +344,6 @@ class Spreadsheet(object):
                 if cell.address() in volatile_arguments:
                     alive.add(cell.address())
 
-                # for child in self.G.predecessors_iter(cell):
                 for child in self.G.successors_iter(cell):
                     todo.append(child)
   
@@ -368,7 +367,6 @@ class Spreadsheet(object):
             # 1.2) from the outputs while climbing up the tree
             todo = [self.cellmap[output] for output in outputs]
             done = set()
-
             while len(todo) > 0:
                 cell = todo.pop()
 
@@ -379,11 +377,16 @@ class Spreadsheet(object):
                         else:
                             raise Exception('Volatiles should always have a formula')
 
+                    for parent in self.G.predecessors_iter(cell): # climb up the tree      
+                        todo.append(parent)
+
                     done.add(cell)
 
         # 2) extract the arguments from these volatiles
         done = set()
         volatile_arguments = set()
+
+        #print 'All vol %i / %i' % (len(all_volatiles), len(self.volatiles))
 
         for formula, address, sheet in all_volatiles:
             if formula not in done:
@@ -610,7 +613,6 @@ class Spreadsheet(object):
                         return self.evaluate(associated_addr)
                     else:
                         range_name = cell1.address()
-
                         if cell1.need_update:
                             self.update_range(cell1.range)
                             range_need_update = True
@@ -680,18 +682,17 @@ class Spreadsheet(object):
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
             return cell.value
         try:
-            if cell.compiled_expression != None:
+            if cell.is_range:
+                for child in cell.range.cells:
+                    self.evaluate(child.address())
+            elif cell.compiled_expression != None:
                 vv = eval(cell.compiled_expression)
                 if isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
                     cell.value = vv.values[0]
                 else:
                     cell.value = vv
-            elif cell.is_range:
-                for child in cell.range.cells:
-                    self.evaluate(child.address())
             else:
                 cell.value = 0
-            
             
             cell.need_update = False
             
