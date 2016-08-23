@@ -323,6 +323,7 @@ class Spreadsheet(object):
             
             try:
                 volatile_value = eval(expression)
+
             except Exception as e:
                 if self.debug:
                     print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
@@ -735,8 +736,8 @@ class Spreadsheet(object):
                         return abs(float(a) - float(b)) <= precision
                     elif (a is None or a == 'None') and (b is None or b == 'None'):
                         return True
-                    else:
-                        return a == b
+                    else: # booleans or strings
+                        return str(a) == str(b)
 
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
