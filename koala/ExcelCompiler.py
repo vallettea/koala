@@ -52,47 +52,50 @@ class ExcelCompiler(object):
         else:
             preseeds = set(outputs)
         
-        preseeds = list(preseeds) # to be able to modify the list
+        processed_preseeds = set()
+        seeds = set()
 
-        seeds = []
-        for o in preseeds:
-            if o in self.named_ranges:
-                reference = self.named_ranges[o]
+        while len(preseeds) > 0:
+            preseed = preseeds.pop()
+            if preseed not in processed_preseeds:
+                processed_preseeds.add(preseed)
 
-                if is_range(reference):
-                    if 'OFFSET' in reference or 'INDEX' in reference:
-                        start_end = prepare_volatile(reference, self.named_ranges)
-                        rng = self.Range(start_end)
-                        self.volatiles.add(o)
+                if preseed in self.named_ranges:
+                    reference = self.named_ranges[preseed]
+
+                    if is_range(reference):
+                        if 'OFFSET' in reference or 'INDEX' in reference:
+                            start_end = prepare_volatile(reference, self.named_ranges)
+                            rng = self.Range(start_end)
+                            self.volatiles.add(preseed)
+                        else:
+                            rng = self.Range(reference)
+
+                        # rng = self.Range(reference)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            preseeds.add(address)
+                        virtual_cell = Cell(preseed, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                        seeds.add(virtual_cell)
                     else:
-                        rng = self.Range(reference)
+                        # might need to be changed to actual self.cells Cell, not a copy
+                        if 'OFFSET' in reference or 'INDEX' in reference:
+                            self.volatiles.add(preseed)
 
-                    # rng = self.Range(reference)
-                    for address in rng.addresses: # this is avoid pruning deletion
-                        preseeds.append(address)
-                    virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
-                    seeds.append(virtual_cell)
+                        value = self.cells[reference].value if reference in self.cells else None
+                        virtual_cell = Cell(preseed, None, value = value, formula = reference, is_range = False, is_named_range = True)
+                        seeds.add(virtual_cell)
                 else:
-                    # might need to be changed to actual self.cells Cell, not a copy
-                    if 'OFFSET' in reference or 'INDEX' in reference:
-                        self.volatiles.add(o)
+                    if is_range(preseed):
+                        rng = self.Range(preseed)
+                        for address in rng.addresses: # this is avoid pruning deletion
+                            preseeds.add(address)
+                        virtual_cell = Cell(preseed, None, value = rng, formula = preseed, is_range = True, is_named_range = True )
+                        seeds.add(virtual_cell)
+                    else:
+                        seeds.add(self.cells[preseed])
 
-                    value = self.cells[reference].value if reference in self.cells else None
-                    virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
-                    seeds.append(virtual_cell)
-            else:
-                if is_range(o):
-                    rng = self.Range(o)
-                    for address in rng.addresses: # this is avoid pruning deletion
-                        preseeds.append(address)
-                    virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
-                    seeds.append(virtual_cell)
-                else:
-                    seeds.append(self.cells[o])
-
-        seeds = set(seeds)
         print "Seeds %s cells" % len(seeds)
-        outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
+        outputs = set(preseeds) if len(outputs) > 0 else set() # seeds and outputs are the same when you don't specify outputs
 
         cellmap, G = graph_from_seeds(seeds, self)
 
