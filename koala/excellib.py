@@ -173,7 +173,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
 
-    row = int(row)
+    row = int(row) if row is not None else row
     col = int(col) if col is not None else col
 
     if isinstance(my_range, Range):
@@ -202,6 +202,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
     if nr == 1:
+        col = row if col is None else col
         return cells[int(col) - 1]
 
     if nc == 1:
