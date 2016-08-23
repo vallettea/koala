@@ -20,6 +20,8 @@ from koala.Range import RangeCore, RangeFactory, parse_cell_address, get_cell_ad
 from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
+from datetime import datetime, timedelta
+
 class Spreadsheet(object):
     def __init__(self, G, cellmap, named_ranges, volatiles = set(), outputs = set(), inputs = set(), debug = False):
         super(Spreadsheet,self).__init__()
@@ -56,6 +58,13 @@ class Spreadsheet(object):
         self.debug = debug
         self.pending = {}
         self.fixed_cells = {}
+
+        self.nb_updates = 0
+        self.temp = dict()
+        self.time = timedelta(0)
+        self.time2 = timedelta(0)
+        self.time3 = timedelta(0)
+        self.time4 = timedelta(0)
 
     def activate_history(self):
         self.save_history = True
@@ -264,6 +273,7 @@ class Spreadsheet(object):
                 code = root.emit(ast)
                 
                 cell = {"formula": formula, "address": address, "sheet": sheet}
+
                 replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
                 new_formula = formula
@@ -508,8 +518,8 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol_range in self.volatiles: # reset all volatiles
-            self.reset(self.cellmap[vol_range])
+        for vol in self.volatiles: # reset all volatiles
+            self.reset(self.cellmap[vol])
 
     def reset(self, cell):
         addr = cell.address()
@@ -567,6 +577,7 @@ class Spreadsheet(object):
             self.print_value_tree(c.address(), indent+1)
 
     def build_volatile(self, volatile):
+        starttime = datetime.now()
         if not isinstance(volatile, RangeCore):
             vol_range = self.cellmap[volatile].range
         else:
@@ -575,7 +586,13 @@ class Spreadsheet(object):
         start = eval(vol_range.reference['start'])
         end = eval(vol_range.reference['end'])
 
+        endtime = datetime.now() - starttime
+        self.time += endtime
+
+        starttime = datetime.now()
         vol_range.build('%s:%s' % (start, end), debug = True)
+        endtime = datetime.now() - starttime
+        self.time2 += endtime
 
     def build_volatiles(self):
 
@@ -606,6 +623,7 @@ class Spreadsheet(object):
 
                     if cell1.range.is_volatile:
                         self.build_volatile(cell1.range)
+                        # print 'NEED UPDATE', cell1.need_update
 
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
@@ -614,7 +632,16 @@ class Spreadsheet(object):
                     else:
                         range_name = cell1.address()
                         if cell1.need_update:
+                            if cell1.range.is_volatile:
+                                self.nb_updates += 1
+
+                            start = datetime.now()
                             self.update_range(cell1.range)
+                            if cell1.range.is_volatile:
+                                end = datetime.now() - start
+                                self.time3 += end
+
+
                             range_need_update = True
                             
                             for c in self.G.successors_iter(cell1): # if a parent doesnt need update, then cell1 doesnt need update
@@ -655,18 +682,22 @@ class Spreadsheet(object):
         
         debug = False
 
-        if range.name not in self.pending.keys():
-            self.pending[range.name] = []
+        # if range.name not in self.pending.keys():
+        #     self.pending[range.name] = []
 
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
-            if addr not in self.pending[range.name]:
-                self.pending[range.name].append(addr)
+            # if addr not in self.pending[range.name]:
+            #     self.pending[range.name].append(addr)
 
-                if self.cellmap[addr].need_update:
-                    new_value = self.evaluate(addr)
+            if self.cellmap[addr].need_update:
+                start = datetime.now()
+                new_value = self.evaluate(addr)
+                if range.is_volatile:
+                    end = datetime.now() - start
+                    self.time4 += end
 
-        self.pending[range.name] = []
+        # self.pending[range.name] = []
             
 
     def evaluate(self,cell,is_addr=True):
