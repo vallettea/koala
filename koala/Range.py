@@ -543,14 +543,20 @@ class RangeCore(dict):
     @staticmethod
     def is_superior_or_equal(a, b):
         try:
-            return check_value(a) >= check_value(b)
+            a = check_value(a)
+            b = check_value(b)
+
+            return a > b or is_almost_equal(a, b)
         except Exception as e:
             return ExcelError('#N/A', e)
 
     @staticmethod
     def is_inferior_or_equal(a, b):
         try:
-            return check_value(a) <= check_value(b)
+            a = check_value(a)
+            b = check_value(b)
+
+            return a < b or is_almost_equal(a, b)
         except Exception as e:
             return ExcelError('#N/A', e)
 
