@@ -219,9 +219,8 @@ class Spreadsheet(object):
 
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatiles, self.outputs, self.inputs, debug = self.debug)
 
-    def clean_volatile(self, with_cache = True):
+    def clean_volatile(self):
         print '___### Cleaning Volatiles ###___'
-        # with_cache = False
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -255,45 +254,35 @@ class Spreadsheet(object):
             # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         ### 3) evaluate all volatiles
-        if with_cache:
-            cache = {} # formula => new_formula
-        
+
         for formula, address, sheet in all_volatiles:
 
-            if with_cache and formula in cache:
-                # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
-                new_formula = cache[formula]
+            if sheet:
+                parsed = parse_cell_address(address)
             else:
-                if sheet:
-                    parsed = parse_cell_address(address)
-                else:
-                    parsed = ""
-                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-                ast,root = build_ast(e)
-                code = root.emit(ast)
-                
-                cell = {"formula": formula, "address": address, "sheet": sheet}
+                parsed = ""
+            e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+            ast,root = build_ast(e)
+            code = root.emit(ast)
+            
+            cell = {"formula": formula, "address": address, "sheet": sheet}
 
-                replacements = self.eval_volatiles_from_ast(ast, root, cell)
+            replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
-                new_formula = formula
-                if type(replacements) == list:
-                    for repl in replacements:
-                        if type(repl["value"]) == ExcelError:
-                            if self.debug:
-                                print 'WARNING: Excel error found => replacing with #N/A'
-                            repl["value"] = "#N/A"
+            new_formula = formula
+            if type(replacements) == list:
+                for repl in replacements:
+                    if type(repl["value"]) == ExcelError:
+                        if self.debug:
+                            print 'WARNING: Excel error found => replacing with #N/A'
+                        repl["value"] = "#N/A"
 
-                        if repl["expression_type"] == "value":
-                            new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
-                        else:
-                            new_formula = new_formula.replace(repl["formula"], repl["value"])
-                else:
-                    new_formula = None
-
-                if with_cache:
-                    # print 'Caching', cell["address"], cell["formula"], new_formula
-                    cache[formula] = new_formula
+                    if repl["expression_type"] == "value":
+                        new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
+                    else:
+                        new_formula = new_formula.replace(repl["formula"], repl["value"])
+            else:
+                new_formula = None
 
             if address in new_named_ranges:
                 new_named_ranges[address] = new_formula
@@ -732,7 +721,7 @@ class Spreadsheet(object):
             if self.save_history:
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
-                    
+
                     if 'new' not in self.history[cell.address()].keys():
                         if type(ori_value) == list and type(cell.value) == list \
                                 and all(map(lambda (x, y): not is_almost_equal(x, y), zip(ori_value, cell.value))) \
