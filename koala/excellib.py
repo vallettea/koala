@@ -307,6 +307,9 @@ def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
     
+    if not isinstance(lookup_range, Range):
+        return ExcelError('#VALUE!', 'Lookup_range is not a Range')
+
     def type_convert(value):
         if type(value) == str:
             value = value.lower()
