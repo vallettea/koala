@@ -790,7 +790,6 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
         if not isinstance(arg, (float, int, long)):
             return ExcelError('#VALUE', 'Arg %s should be an int, float or long, instead: %s' % (arg, type(arg)))
 
-    life = int(life)
     start_period = start_period
     end_period = end_period
 
@@ -806,7 +805,12 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
     result = 0
 
     start_life = 0
-    end_life = life
+
+    delta_life = life % 1
+    if delta_life > 0: # to handle cases when life is not an integer
+        end_life = int(life + 1)
+    else:
+        end_life = int(life)
     periods = range(start_life, end_life)
 
     if int(start_period) != start_period:
@@ -819,7 +823,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
         periods = map(lambda x: x + 0.5, periods)
 
-    for current_year in periods:
+    for index, current_year in enumerate(periods):
         
         if not no_switch: # no_switch = False (Default Case)
             if switch_to_sln:
