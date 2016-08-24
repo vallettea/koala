@@ -56,15 +56,7 @@ class Spreadsheet(object):
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
-        self.pending = {}
         self.fixed_cells = {}
-
-        self.nb_updates = 0
-        self.temp = dict()
-        self.time = timedelta(0)
-        self.time2 = timedelta(0)
-        self.time3 = timedelta(0)
-        self.time4 = timedelta(0)
 
     def activate_history(self):
         self.save_history = True
@@ -672,13 +664,8 @@ class Spreadsheet(object):
         
         debug = False
 
-        # if range.name not in self.pending.keys():
-        #     self.pending[range.name] = []
-
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
-            # if addr not in self.pending[range.name]:
-            #     self.pending[range.name].append(addr)
 
             if self.cellmap[addr].need_update:
                 start = datetime.now()
@@ -686,8 +673,6 @@ class Spreadsheet(object):
                 if range.is_volatile:
                     end = datetime.now() - start
                     self.time4 += end
-
-        # self.pending[range.name] = []
             
 
     def evaluate(self,cell,is_addr=True):
