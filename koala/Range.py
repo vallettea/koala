@@ -510,7 +510,7 @@ class RangeCore(dict):
             if not isinstance(b, (str, unicode)):
                 b = check_value(b)
 
-            return a == b
+            return is_almost_equal(a, b, precision = 0.00001)
         except Exception as e:
             return ExcelError('#N/A', e)
 

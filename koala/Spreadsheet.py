@@ -730,15 +730,6 @@ class Spreadsheet(object):
             
             # DEBUG: saving differences
             if self.save_history:
-
-                def is_almost_equal(a, b, precision = 0.001):
-                    if is_number(a) and is_number(b):
-                        return abs(float(a) - float(b)) <= precision
-                    elif (a is None or a == 'None') and (b is None or b == 'None'):
-                        return True
-                    else: # booleans or strings
-                        return str(a) == str(b)
-
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
                     
