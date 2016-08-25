@@ -552,7 +552,7 @@ def graph_from_seeds(seeds, cell_source):
                 if len(rng.keys()) != 0: # could be better, but can't check on Exception types here...
                     for child in rng.addresses:
                         if child not in cellmap:
-                            origins.append(cells[child])  
+                            origins.append(cells[child])
                         else:
                             origins.append(cellmap[child])   
             else:

@@ -18,6 +18,14 @@ CELL_REF_RE = re.compile(r"(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 
 # We might need to test these util functions
 
+def is_almost_equal(a, b, precision = 0.0001):
+    if is_number(a) and is_number(b):
+        return abs(float(a) - float(b)) <= precision
+    elif (a is None or a == 'None') and (b is None or b == 'None'):
+        return True
+    else: # booleans or strings
+        return str(a) == str(b)
+
 def is_range(address):
     if isinstance(address, Exception):
         return address

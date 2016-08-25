@@ -173,7 +173,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         if isinstance(i, ExcelError) or i in ErrorCodes:
             return i
 
-    row = int(row)
+    row = int(row) if row is not None else row
     col = int(col) if col is not None else col
 
     if isinstance(my_range, Range):
@@ -202,6 +202,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
     if nr == 1:
+        col = row if col is None else col
         return cells[int(col) - 1]
 
     if nc == 1:
@@ -306,6 +307,9 @@ def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
     
+    if not isinstance(lookup_range, Range):
+        return ExcelError('#VALUE!', 'Lookup_range is not a Range')
+
     def type_convert(value):
         if type(value) == str:
             value = value.lower()
@@ -789,7 +793,6 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
         if not isinstance(arg, (float, int, long)):
             return ExcelError('#VALUE', 'Arg %s should be an int, float or long, instead: %s' % (arg, type(arg)))
 
-    life = int(life)
     start_period = start_period
     end_period = end_period
 
@@ -805,7 +808,12 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
     result = 0
 
     start_life = 0
-    end_life = life
+
+    delta_life = life % 1
+    if delta_life > 0: # to handle cases when life is not an integer
+        end_life = int(life + 1)
+    else:
+        end_life = int(life)
     periods = range(start_life, end_life)
 
     if int(start_period) != start_period:
@@ -818,7 +826,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
         periods = map(lambda x: x + 0.5, periods)
 
-    for current_year in periods:
+    for index, current_year in enumerate(periods):
         
         if not no_switch: # no_switch = False (Default Case)
             if switch_to_sln:

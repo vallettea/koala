@@ -51,11 +51,12 @@ class Spreadsheet(object):
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
         self.volatiles = volatiles
+        self.volatiles_to_reset = volatiles
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
-        self.pending = {}
         self.fixed_cells = {}
+
 
     def activate_history(self):
         self.save_history = True
@@ -210,9 +211,8 @@ class Spreadsheet(object):
 
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatiles, self.outputs, self.inputs, debug = self.debug)
 
-    def clean_volatile(self, with_cache = True):
+    def clean_volatile(self):
         print '___### Cleaning Volatiles ###___'
-        # with_cache = False
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -246,44 +246,35 @@ class Spreadsheet(object):
             # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
 
         ### 3) evaluate all volatiles
-        if with_cache:
-            cache = {} # formula => new_formula
-        
+
         for formula, address, sheet in all_volatiles:
 
-            if with_cache and formula in cache:
-                # print 'Retrieving', cell["address"], cell["formula"], cache[cell["formula"]]
-                new_formula = cache[formula]
+            if sheet:
+                parsed = parse_cell_address(address)
             else:
-                if sheet:
-                    parsed = parse_cell_address(address)
-                else:
-                    parsed = ""
-                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-                ast,root = build_ast(e)
-                code = root.emit(ast)
-                
-                cell = {"formula": formula, "address": address, "sheet": sheet}
-                replacements = self.eval_volatiles_from_ast(ast, root, cell)
+                parsed = ""
+            e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+            ast,root = build_ast(e)
+            code = root.emit(ast)
+            
+            cell = {"formula": formula, "address": address, "sheet": sheet}
 
-                new_formula = formula
-                if type(replacements) == list:
-                    for repl in replacements:
-                        if type(repl["value"]) == ExcelError:
-                            if self.debug:
-                                print 'WARNING: Excel error found => replacing with #N/A'
-                            repl["value"] = "#N/A"
+            replacements = self.eval_volatiles_from_ast(ast, root, cell)
 
-                        if repl["expression_type"] == "value":
-                            new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
-                        else:
-                            new_formula = new_formula.replace(repl["formula"], repl["value"])
-                else:
-                    new_formula = None
+            new_formula = formula
+            if type(replacements) == list:
+                for repl in replacements:
+                    if type(repl["value"]) == ExcelError:
+                        if self.debug:
+                            print 'WARNING: Excel error found => replacing with #N/A'
+                        repl["value"] = "#N/A"
 
-                if with_cache:
-                    # print 'Caching', cell["address"], cell["formula"], new_formula
-                    cache[formula] = new_formula
+                    if repl["expression_type"] == "value":
+                        new_formula = new_formula.replace(repl["formula"], str(repl["value"]))
+                    else:
+                        new_formula = new_formula.replace(repl["formula"], repl["value"])
+            else:
+                new_formula = None
 
             if address in new_named_ranges:
                 new_named_ranges[address] = new_formula
@@ -313,6 +304,7 @@ class Spreadsheet(object):
             
             try:
                 volatile_value = eval(expression)
+
             except Exception as e:
                 if self.debug:
                     print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
@@ -348,6 +340,8 @@ class Spreadsheet(object):
                     todo.append(child)
   
                 done.add(cell)
+
+        self.volatiles_to_reset = alive
         return alive
 
 
@@ -508,8 +502,8 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol_range in self.volatiles: # reset all volatiles
-            self.reset(self.cellmap[vol_range])
+        for vol in self.volatiles_to_reset: # reset all volatiles
+            self.reset(self.cellmap[vol])
 
     def reset(self, cell):
         addr = cell.address()
@@ -577,6 +571,7 @@ class Spreadsheet(object):
 
         vol_range.build('%s:%s' % (start, end), debug = True)
 
+
     def build_volatiles(self):
 
         for volatile in self.volatiles:
@@ -606,6 +601,7 @@ class Spreadsheet(object):
 
                     if cell1.range.is_volatile:
                         self.build_volatile(cell1.range)
+                        # print 'NEED UPDATE', cell1.need_update
 
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)
 
@@ -615,6 +611,7 @@ class Spreadsheet(object):
                         range_name = cell1.address()
                         if cell1.need_update:
                             self.update_range(cell1.range)
+
                             range_need_update = True
                             
                             for c in self.G.successors_iter(cell1): # if a parent doesnt need update, then cell1 doesnt need update
@@ -655,18 +652,11 @@ class Spreadsheet(object):
         
         debug = False
 
-        if range.name not in self.pending.keys():
-            self.pending[range.name] = []
-
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
-            if addr not in self.pending[range.name]:
-                self.pending[range.name].append(addr)
 
-                if self.cellmap[addr].need_update:
-                    new_value = self.evaluate(addr)
-
-        self.pending[range.name] = []
+            if self.cellmap[addr].need_update:
+                new_value = self.evaluate(addr)
             
 
     def evaluate(self,cell,is_addr=True):
@@ -698,18 +688,9 @@ class Spreadsheet(object):
             
             # DEBUG: saving differences
             if self.save_history:
-
-                def is_almost_equal(a, b, precision = 0.001):
-                    if is_number(a) and is_number(b):
-                        return abs(float(a) - float(b)) <= precision
-                    elif (a is None or a == 'None') and (b is None or b == 'None'):
-                        return True
-                    else:
-                        return a == b
-
                 if cell.address() in self.history:
                     ori_value = self.history[cell.address()]['original']
-                    
+
                     if 'new' not in self.history[cell.address()].keys():
                         if type(ori_value) == list and type(cell.value) == list \
                                 and all(map(lambda (x, y): not is_almost_equal(x, y), zip(ori_value, cell.value))) \
