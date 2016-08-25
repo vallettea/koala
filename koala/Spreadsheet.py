@@ -51,6 +51,7 @@ class Spreadsheet(object):
         self.count = 0
         self.volatile_to_remove = ["INDEX", "OFFSET"]
         self.volatiles = volatiles
+        self.volatiles_to_reset = volatiles
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -339,6 +340,8 @@ class Spreadsheet(object):
                     todo.append(child)
   
                 done.add(cell)
+
+        self.volatiles_to_reset = alive
         return alive
 
 
@@ -499,7 +502,7 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol in self.volatiles: # reset all volatiles
+        for vol in self.volatiles_to_reset: # reset all volatiles
             self.reset(self.cellmap[vol])
 
     def reset(self, cell):
