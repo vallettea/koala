@@ -59,5 +59,8 @@ print 'A1 = 30, but D1 was freed ==> D1 =', sp.evaluate('Sheet1!D1')
 sp.set_formula('Sheet1!D1', 'Sheet1!A1 * 1000')
 print 'D1 formula was changed to A1 * 1000 ==> D1 =', sp.evaluate('Sheet1!D1')
 
+# change formulas
+alive = sp.detect_alive(inputs = inputs, outputs = outputs)
+print 'There are %s alive pointers' % len(alive)
 
 

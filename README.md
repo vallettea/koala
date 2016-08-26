@@ -102,15 +102,15 @@ WIP: we are working on automatic detection of the required pointers.
 You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size wil be reduced.
 
 ```
-sp = c.gen_graph(outputs=['Sheet1!D1', Sheet1!D2])
+sp = c.gen_graph(inputs = ['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
 ```
 
 #### Pruning inputs
 
-You can also specify the inputs you want to modify. In this case, all Cells not impacted by these inputs Cells will be discarded, and your graph size wil be reduced.
+In this case, all Cells not impacted by inputs Cells will be discarded, and your graph size wil be reduced.
 
 ```
-sp = sp.prune_graph([Sheet1!A1])
+sp = sp.prune_graph()
 ```
 
 #### Fix and free Cells
@@ -145,6 +145,14 @@ The `string` you pass as argument needs to be written with Excel syntax.
 
 ** You will find more examples and sample excel files in the directory `examples`.**
 
+#### Detect alive
+To check if you have "alive pointers", i.e, pointer functions that have one of your inputs as argument, you can use:
+
+```
+sp.detect_alive(inputs = [...], outputs = [...])
+```
+
+This will also change the `Spreadsheet.pointers_to_reset` list, so that only alive pointers are resetted on `set_value()`.
 
 ## Origins
 This project is a "double fork" of two awesome projects:
