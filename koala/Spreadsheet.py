@@ -212,7 +212,7 @@ class Spreadsheet(object):
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
     def clean_pointer(self):
-        print '___### Cleaning Volatiles ###___'
+        print '___### Cleaning Pointers ###___'
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
