@@ -18,7 +18,7 @@ from koala.Cell import Cell
 # file_name = "./tests/ast/basic_evaluation.xlsx"
 
 # c = ExcelCompiler(file_name, debug = True)
-# # c.clean_volatile()
+# # c.clean_pointer()
 # sp = c.gen_graph()
 
 # alive, relations = sp.detect_alive()
@@ -38,7 +38,7 @@ class Test_Excel(unittest.TestCase):
         file_name = "./tests/ast/basic_evaluation.xlsx"
 
         c = ExcelCompiler(file_name, debug = True)
-        # c.clean_volatile()
+        # c.clean_pointer()
         self.sp = c.gen_graph()
 
     def test_detect_alive(self):

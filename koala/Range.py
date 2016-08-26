@@ -64,16 +64,16 @@ class RangeCore(dict):
 
     def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
 
-        is_volatile = False
+        is_pointer = False
 
         if type(reference) == dict:
-            is_volatile = True
+            is_pointer = True
 
-        self.__volatile = is_volatile
+        self.__pointer = is_pointer
         self.__reference = reference
         self.__cellmap = cellmap
 
-        if not is_volatile:
+        if not is_pointer:
             result = self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
         else:
             self.__name = '%s:%s' % (reference['start'], reference['end'])
@@ -137,7 +137,7 @@ class RangeCore(dict):
         # dont allow messing with these params
         if type(reference) == list:
             self.__name = name
-        elif not self.is_volatile: # when building volatiles, name shouldn't be updated, but in that case reference is not a dict
+        elif not self.is_pointer: # when building pointers, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
         self.__origin = origin
         self.__addresses = cells
@@ -182,8 +182,8 @@ class RangeCore(dict):
     def length(self):
         return self.__length
     @property
-    def is_volatile(self):
-        return self.__volatile
+    def is_pointer(self):
+        return self.__pointer
     @property
     def nrows(self):
         return self.__nrows

@@ -10,7 +10,7 @@ from networkx.algorithms import number_connected_components
 from koala.reader import read_archive, read_named_ranges, read_cells
 from koala.excellib import *
 from koala.utils import *
-from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_volatile
+from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
 from koala.ExcelError import *
 from koala.Cell import Cell
 from koala.Range import RangeFactory
@@ -33,16 +33,16 @@ class ExcelCompiler(object):
         # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
         self.named_ranges = read_named_ranges(archive)
         self.Range = RangeFactory(self.cells)
-        self.volatiles = set()
+        self.pointers = set()
         self.debug = debug
 
-    def clean_volatile(self):
+    def clean_pointer(self):
         sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
 
-        cleaned_cells, cleaned_ranged_names = sp.clean_volatile()
+        cleaned_cells, cleaned_ranged_names = sp.clean_pointer()
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
-        self.volatiles = set()
+        self.pointers = set()
             
     def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
@@ -61,9 +61,9 @@ class ExcelCompiler(object):
 
                 if is_range(reference):
                     if 'OFFSET' in reference or 'INDEX' in reference:
-                        start_end = prepare_volatile(reference, self.named_ranges)
+                        start_end = prepare_pointer(reference, self.named_ranges)
                         rng = self.Range(start_end)
-                        self.volatiles.add(o)
+                        self.pointers.add(o)
                     else:
                         rng = self.Range(reference)
 
@@ -75,7 +75,7 @@ class ExcelCompiler(object):
                 else:
                     # might need to be changed to actual self.cells Cell, not a copy
                     if 'OFFSET' in reference or 'INDEX' in reference:
-                        self.volatiles.add(o)
+                        self.pointers.add(o)
 
                     value = self.cells[reference].value if reference in self.cells else None
                     virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
@@ -138,4 +138,4 @@ class ExcelCompiler(object):
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, volatiles = self.volatiles, outputs = outputs, inputs = inputs, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)

@@ -30,9 +30,9 @@ def dump(self, fname):
         is_range = "1" if cell.is_range else "0"
         is_named_range = "1" if cell.is_named_range else "0"
         if cell.is_range:
-            is_volatile = "1" if cell.range.is_volatile else "0"
+            is_pointer = "1" if cell.range.is_pointer else "0"
         else:
-            is_volatile = "0"
+            is_pointer = "0"
 
         compiled_expressions[cell.address()] = cell.compiled_expression
 
@@ -43,7 +43,7 @@ def dump(self, fname):
             python_expression,
             is_range,
             is_named_range,
-            is_volatile,
+            is_pointer,
             should_eval
         ]) + "\n")
 
@@ -62,7 +62,7 @@ def dump(self, fname):
     for cell in range_cells:
         parse_cell_info(cell)
 
-        if cell.range.is_volatile:
+        if cell.range.is_pointer:
             outfile.write(json.dumps(cell.range.reference) + "\n")
         else:
             outfile.write(cell.range.name + "\n")
@@ -115,7 +115,7 @@ def load(fname):
     mode = "node0"
     nodes = []
     edges = []
-    volatiles = set()
+    pointers = set()
     outputs = None
     inputs = None
     named_ranges = {}
@@ -146,25 +146,25 @@ def load(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, is_volatile, should_eval] = line.split(SEP)
+            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
-            is_volatile = to_bool(is_volatile)
+            is_pointer = to_bool(is_pointer)
             should_eval = should_eval
             mode = "node1"
         elif mode == "node1":
             if is_range:
 
-                reference = json.loads(line) if is_volatile else line # in order to be able to parse dicts
+                reference = json.loads(line) if is_pointer else line # in order to be able to parse dicts
                 vv = Range(reference)
 
-                if is_volatile:
+                if is_pointer:
                     if not is_named_range:
                         address = vv.name
 
-                    volatiles.add(address)
+                    pointers.add(address)
 
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
@@ -177,7 +177,7 @@ def load(fname):
                 cell.python_expression = python_expression
                 if formula:
                     if 'OFFSET' in formula or 'INDEX' in formula:
-                        volatiles.add(address)
+                        pointers.add(address)
 
 
                     cell.compile()               
@@ -197,7 +197,7 @@ def load(fname):
 
     print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
-    return (G, cellmap, named_ranges, volatiles, outputs, inputs)
+    return (G, cellmap, named_ranges, pointers, outputs, inputs)
 
 ########### based on json #################
 def dump_json(self, fname):

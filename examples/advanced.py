@@ -19,7 +19,7 @@ print file
 
 ### Graph Generation ###
 c = ExcelCompiler(file, ignore_sheets = ['Sheet2'], ignore_hidden = True, debug = True)
-c.clean_volatile()
+c.clean_pointer()
 sp = c.gen_graph(inputs= inputs, outputs = outputs)
 
 ### Graph Pruning ###

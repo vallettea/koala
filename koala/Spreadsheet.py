@@ -21,7 +21,7 @@ from koala.tokenizer import reverse_rpn
 from koala.serializer import *
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, volatiles = set(), outputs = set(), inputs = set(), debug = False):
+    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -49,9 +49,9 @@ class Spreadsheet(object):
         self.save_history = False
         self.history = dict()
         self.count = 0
-        self.volatile_to_remove = ["INDEX", "OFFSET"]
-        self.volatiles = volatiles
-        self.volatiles_to_reset = volatiles
+        self.pointer_to_remove = ["INDEX", "OFFSET"]
+        self.pointers = pointers
+        self.pointers_to_reset = pointers
         self.Range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
@@ -209,9 +209,9 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.volatiles, self.outputs, self.inputs, debug = self.debug)
+        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
-    def clean_volatile(self):
+    def clean_pointer(self):
         print '___### Cleaning Volatiles ###___'
 
         new_named_ranges = self.named_ranges.copy()
@@ -232,22 +232,22 @@ class Spreadsheet(object):
                 else:
                     self.cellmap[n] = Cell(n, None, value = None, formula = reference, is_range = False, is_named_range = True )
         
-        ### 2) gather all occurence of volatile functions in cells or named_range
-        all_volatiles = set()
+        ### 2) gather all occurence of pointer functions in cells or named_range
+        all_pointers = set()
 
-        for volatile_name in self.volatile_to_remove:
+        for pointer_name in self.pointer_to_remove:
             for k,v in self.named_ranges.items():
-                if volatile_name in v:
-                    all_volatiles.add((v, k, None))
+                if pointer_name in v:
+                    all_pointers.add((v, k, None))
             for k,cell in self.cellmap.items():
-                if cell.formula and volatile_name in cell.formula:
-                    all_volatiles.add((cell.formula, cell.address(), cell.sheet))
+                if cell.formula and pointer_name in cell.formula:
+                    all_pointers.add((cell.formula, cell.address(), cell.sheet))
 
-            # print "%s %s to parse" % (str(len(all_volatiles)), volatile_name)
+            # print "%s %s to parse" % (str(len(all_pointers)), pointer_name)
 
-        ### 3) evaluate all volatiles
+        ### 3) evaluate all pointers
 
-        for formula, address, sheet in all_volatiles:
+        for formula, address, sheet in all_pointers:
 
             if sheet:
                 parsed = parse_cell_address(address)
@@ -259,7 +259,7 @@ class Spreadsheet(object):
             
             cell = {"formula": formula, "address": address, "sheet": sheet}
 
-            replacements = self.eval_volatiles_from_ast(ast, root, cell)
+            replacements = self.eval_pointers_from_ast(ast, root, cell)
 
             new_formula = formula
             if type(replacements) == list:
@@ -289,12 +289,12 @@ class Spreadsheet(object):
         for c in node.children(ast):
             self.print_value_ast(ast, c, indent+1)
 
-    def eval_volatiles_from_ast(self, ast, node, cell):
+    def eval_pointers_from_ast(self, ast, node, cell):
         results = []
         context = cell["sheet"]
 
         if (node.token.tvalue == "INDEX" or node.token.tvalue == "OFFSET"):
-            volatile_string = reverse_rpn(node, ast)
+            pointer_string = reverse_rpn(node, ast)
             expression = node.emit(ast, context=context)
 
             if expression.startswith("self.eval_ref"):
@@ -303,28 +303,28 @@ class Spreadsheet(object):
                 expression_type = "formula"
             
             try:
-                volatile_value = eval(expression)
+                pointer_value = eval(expression)
 
             except Exception as e:
                 if self.debug:
-                    print 'EXCEPTION raised in eval_volatiles: EXPR', expression, cell["address"]
+                    print 'EXCEPTION raised in eval_pointers: EXPR', expression, cell["address"]
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression))
 
-            return {"formula":volatile_string, "value": volatile_value, "expression_type": expression_type}      
+            return {"formula":pointer_string, "value": pointer_value, "expression_type": expression_type}      
         else:
             for c in node.children(ast):
-                results.append(self.eval_volatiles_from_ast(ast, c, cell))
+                results.append(self.eval_pointers_from_ast(ast, c, cell))
         return list(flatten(results, only_lists = True))
 
 
     def detect_alive(self, inputs = None, outputs = None):
 
-        volatile_arguments = self.find_volatile_arguments(outputs)
+        pointer_arguments = self.find_pointer_arguments(outputs)
 
         if inputs is None:
             inputs = self.inputs
 
-        # go down the tree and list all cells that are volatile arguments
+        # go down the tree and list all cells that are pointer arguments
         todo = [self.cellmap[input] for input in inputs]
         done = set()
         alive = set()
@@ -333,7 +333,7 @@ class Spreadsheet(object):
             cell = todo.pop()
 
             if cell not in done:
-                if cell.address() in volatile_arguments:
+                if cell.address() in pointer_arguments:
                     alive.add(cell.address())
 
                 for child in self.G.successors_iter(cell):
@@ -341,21 +341,21 @@ class Spreadsheet(object):
   
                 done.add(cell)
 
-        self.volatiles_to_reset = alive
+        self.pointers_to_reset = alive
         return alive
 
 
-    def find_volatile_arguments(self, outputs = None):
+    def find_pointer_arguments(self, outputs = None):
         
-        # 1) gather all occurence of volatile 
-        all_volatiles = set()
+        # 1) gather all occurence of pointer 
+        all_pointers = set()
 
         if outputs is None:
             # 1.1) from all cells
-            for volatile_name in self.volatile_to_remove:
+            for pointer_name in self.pointer_to_remove:
                 for k, cell in self.cellmap.items():
-                    if cell.formula and volatile_name in cell.formula:
-                        all_volatiles.add((cell.formula, cell.address(), cell.sheet))
+                    if cell.formula and pointer_name in cell.formula:
+                        all_pointers.add((cell.formula, cell.address(), cell.sheet))
 
         else:
             # 1.2) from the outputs while climbing up the tree
@@ -365,9 +365,9 @@ class Spreadsheet(object):
                 cell = todo.pop()
 
                 if cell not in done:
-                    if cell.address() in self.volatiles:
+                    if cell.address() in self.pointers:
                         if cell.formula:
-                            all_volatiles.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
+                            all_pointers.add((cell.formula, cell.address(), cell.sheet if cell.sheet is not None else None))
                         else:
                             raise Exception('Volatiles should always have a formula')
 
@@ -376,13 +376,13 @@ class Spreadsheet(object):
 
                     done.add(cell)
 
-        # 2) extract the arguments from these volatiles
+        # 2) extract the arguments from these pointers
         done = set()
-        volatile_arguments = set()
+        pointer_arguments = set()
 
-        #print 'All vol %i / %i' % (len(all_volatiles), len(self.volatiles))
+        #print 'All vol %i / %i' % (len(all_pointers), len(self.pointers))
 
-        for formula, address, sheet in all_volatiles:
+        for formula, address, sheet in all_pointers:
             if formula not in done:
                 if sheet:
                     parsed = parse_cell_address(address)
@@ -392,12 +392,12 @@ class Spreadsheet(object):
                 ast,root = build_ast(e)
                 code = root.emit(ast)
                 
-                for a in list(flatten(self.get_volatile_arguments_from_ast(ast, root, sheet))):
-                    volatile_arguments.add(a)
+                for a in list(flatten(self.get_pointer_arguments_from_ast(ast, root, sheet))):
+                    pointer_arguments.add(a)
 
                 done.add(formula)
             
-        return volatile_arguments
+        return pointer_arguments
 
 
     def get_arguments_from_ast(self, ast, node, sheet):
@@ -419,10 +419,10 @@ class Spreadsheet(object):
 
         return arguments
 
-    def get_volatile_arguments_from_ast(self, ast, node, sheet):
+    def get_pointer_arguments_from_ast(self, ast, node, sheet):
         arguments = []
 
-        if node.token.tvalue in self.volatile_to_remove:
+        if node.token.tvalue in self.pointer_to_remove:
             for c in node.children(ast)[1:]:
                 if c.ttype == "operand":
                     if not is_number(c.tvalue):
@@ -434,7 +434,7 @@ class Spreadsheet(object):
                         arguments += [self.get_arguments_from_ast(ast, c, sheet)]
         else:
             for c in node.children(ast):
-                arguments += [self.get_volatile_arguments_from_ast(ast, c, sheet)]
+                arguments += [self.get_pointer_arguments_from_ast(ast, c, sheet)]
 
         return arguments
 
@@ -502,7 +502,7 @@ class Spreadsheet(object):
                 # set the value
                 cell.value = val
 
-        for vol in self.volatiles_to_reset: # reset all volatiles
+        for vol in self.pointers_to_reset: # reset all pointers
             self.reset(self.cellmap[vol])
 
     def reset(self, cell):
@@ -560,11 +560,11 @@ class Spreadsheet(object):
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
-    def build_volatile(self, volatile):
-        if not isinstance(volatile, RangeCore):
-            vol_range = self.cellmap[volatile].range
+    def build_pointer(self, pointer):
+        if not isinstance(pointer, RangeCore):
+            vol_range = self.cellmap[pointer].range
         else:
-            vol_range = volatile
+            vol_range = pointer
 
         start = eval(vol_range.reference['start'])
         end = eval(vol_range.reference['end'])
@@ -572,10 +572,10 @@ class Spreadsheet(object):
         vol_range.build('%s:%s' % (start, end), debug = True)
 
 
-    def build_volatiles(self):
+    def build_pointers(self):
 
-        for volatile in self.volatiles:
-            vol_range = self.cellmap[volatile].range
+        for pointer in self.pointers:
+            vol_range = self.cellmap[pointer].range
 
             start = eval(vol_range.reference['start'])
             end = eval(vol_range.reference['end'])
@@ -599,8 +599,8 @@ class Spreadsheet(object):
             if addr2 == None:
                 if cell1.is_range:
 
-                    if cell1.range.is_volatile:
-                        self.build_volatile(cell1.range)
+                    if cell1.range.is_pointer:
+                        self.build_pointer(cell1.range)
                         # print 'NEED UPDATE', cell1.need_update
 
                     associated_addr = RangeCore.find_associated_cell(ref, cell1.range)

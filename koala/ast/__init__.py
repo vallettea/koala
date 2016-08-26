@@ -17,7 +17,7 @@ from astnodes import *
 def create_node(t, ref = None, debug = False):
     """Simple factory function"""
     if t.ttype == "operand":
-        if t.tsubtype in ["range", "named_range", "volatile"] :
+        if t.tsubtype in ["range", "named_range", "pointer"] :
             # print 'Creating Node', t.tvalue, t.tsubtype
             return RangeNode(t, ref, debug = debug)
         else:
@@ -156,7 +156,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                             if depth == 0:
                                 break
 
-                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
+                    new_tokens.append(f_token(expr, 'operand', 'pointer'))
 
                 elif ':OFFSET' in token.tvalue or ':INDEX' in token.tvalue: # example -> A1:OFFSET(
                     depth = 0
@@ -178,7 +178,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                             new_tokens.pop()
                             break
 
-                    new_tokens.append(f_token(expr, 'operand', 'volatile'))
+                    new_tokens.append(f_token(expr, 'operand', 'pointer'))
 
 
     tokens = new_tokens if new_tokens else tokens
@@ -378,8 +378,8 @@ def cell2code(cell, named_ranges):
     return code,ast
 
 
-def prepare_volatile(code, names, ref_cell = None):
-    # if ref_cell is None, it means that the volatile is a named_range
+def prepare_pointer(code, names, ref_cell = None):
+    # if ref_cell is None, it means that the pointer is a named_range
 
     try:
         start, end = code.split('):')
@@ -405,13 +405,13 @@ def prepare_volatile(code, names, ref_cell = None):
         e = shunting_yard(formula, names, ref = ref, tokenize_range = False)
         debug = False
         ast,root = build_ast(e, debug = debug)
-        code = root.emit(ast, context = sheet, volatile = True)
+        code = root.emit(ast, context = sheet, pointer = True)
 
         return code
 
     [start_code, end_code] = map(build_code, [start, end])
 
-    # string replacements so that cellmap keys and volatile Range names are coherent
+    # string replacements so that cellmap keys and pointer Range names are coherent
     if ref_cell:
         start_code = start_code.replace("'", '"')
         end_code = end_code.replace("'", '"')
@@ -467,8 +467,8 @@ def graph_from_seeds(seeds, cell_source):
         c1.python_expression = pystr.replace('"', "'") # compilation is done later
         
         if 'OFFSET' in c1.formula or 'INDEX' in c1.formula:
-            if c1.address() not in cell_source.named_ranges: # volatiles names already treated in ExcelCompiler
-                cell_source.volatiles.add(c1.address())
+            if c1.address() not in cell_source.named_ranges: # pointers names already treated in ExcelCompiler
+                cell_source.pointers.add(c1.address())
 
         # get all the cells/ranges this formula refers to
         deps = [x for x in ast.nodes() if isinstance(x,RangeNode)]
@@ -499,12 +499,12 @@ def graph_from_seeds(seeds, cell_source):
         for dep in deps:
             dep_name = dep.tvalue.replace('$','')
 
-            # this is to avoid :A1 or A1: dep due to clean_volatiles() returning an ExcelError
+            # this is to avoid :A1 or A1: dep due to clean_pointers() returning an ExcelError
             if dep_name.startswith(':') or dep_name.endswith(':'):
                 dep_name = dep_name.replace(':', '')
 
-            # if not volatile, we need an absolute address
-            if dep.tsubtype != 'volatile' and dep_name not in names and "!" not in dep_name and cursheet != None:
+            # if not pointer, we need an absolute address
+            if dep.tsubtype != 'pointer' and dep_name not in names and "!" not in dep_name and cursheet != None:
                 dep_name = cursheet + "!" + dep_name
 
             # Named_ranges + ranges already parsed (previous iterations)
@@ -519,17 +519,17 @@ def graph_from_seeds(seeds, cell_source):
                     reference = dep_name
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
-                    start_end = prepare_volatile(reference, names, ref_cell = c1)
+                    start_end = prepare_pointer(reference, names, ref_cell = c1)
                     rng = cell_source.Range(start_end)
 
-                    if dep_name in names: # dep is a volatile range
+                    if dep_name in names: # dep is a pointer range
                         address = dep_name 
                     else:
-                        if c1.address() in names: # c1 holds is a volatile range
+                        if c1.address() in names: # c1 holds is a pointer range
                             address = c1.address()
-                        else: # a volatile range with no name, its address will be its name
+                        else: # a pointer range with no name, its address will be its name
                             address = '%s:%s' % (start_end["start"], start_end["end"])
-                            cell_source.volatiles.add(address)
+                            cell_source.pointers.add(address)
                 else:
                     address = dep_name
                     rng = cell_source.Range(reference)
@@ -577,7 +577,7 @@ def graph_from_seeds(seeds, cell_source):
                     cell = origins[0]
                     
                     if cell.formula is not None and ('OFFSET' in cell.formula or 'INDEX' in cell.formula):
-                        cell_source.volatiles.add(cell.address())
+                        cell_source.pointers.add(cell.address())
                 else:
                     virtual_cell = Cell(dep_name, None, value = None, formula = None, is_range = False, is_named_range = True )
                     origins = [virtual_cell]
@@ -610,7 +610,7 @@ def graph_from_seeds(seeds, cell_source):
                     # print "Adding edge %s --> %s" % (c2.address(), target.address())
                     G.add_edge(c2,target)
         
-        c1.compile() # cell compilation is done here because volatile ranges might update python_expressions 
+        c1.compile() # cell compilation is done here because pointer ranges might update python_expressions 
     
 
     return (cellmap, G)

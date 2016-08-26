@@ -69,7 +69,7 @@ class ASTNode(object):
             return False      
 
 
-    def emit(self,ast,context=None, volatile = False):
+    def emit(self,ast,context=None, pointer = False):
         """Emit code"""
         self.token.tvalue
     
@@ -99,7 +99,7 @@ class OperatorNode(ASTNode):
             "<=": "is_inferior_or_equal"
         }
 
-    def emit(self,ast,context=None, volatile = False):
+    def emit(self,ast,context=None, pointer = False):
         xop = self.tvalue
         
         # Get the arguments
@@ -154,7 +154,7 @@ class OperatorNode(ASTNode):
 class OperandNode(ASTNode):
     def __init__(self,*args):
         super(OperandNode,self).__init__(*args)
-    def emit(self,ast,context=None, volatile = False):
+    def emit(self,ast,context=None, pointer = False):
         t = self.tsubtype
         
         if t == "logical":
@@ -176,7 +176,7 @@ class RangeNode(OperandNode):
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
     
-    def emit(self,ast,context=None, volatile = False):
+    def emit(self,ast,context=None, pointer = False):
         if isinstance(self.tvalue, ExcelError):
             if self.debug:
                 print 'WARNING: Excel Error Code found', self.tvalue
@@ -193,7 +193,7 @@ class RangeNode(OperandNode):
 
             is_a_range = is_range(rng)
 
-            if self.tsubtype == 'volatile':
+            if self.tsubtype == 'pointer':
                 my_str = '"' + rng + '"'
             else:
                 if is_a_range:
@@ -219,7 +219,7 @@ class RangeNode(OperandNode):
             (parent.tvalue == ':' or
             (parent.tvalue == 'OFFSET' and parent.children(ast)[0] == self) or
             (parent.tvalue == 'CHOOSE' and parent.children(ast)[0] != self and self.tsubtype == "named_range")) or
-            volatile):
+            pointer):
 
             to_eval = False
 
@@ -273,7 +273,7 @@ class FunctionNode(ASTNode):
         # map  excel functions onto their python equivalents
         self.funmap = FUNCTION_MAP
         
-    def emit(self,ast,context=None, volatile = False):
+    def emit(self,ast,context=None, pointer = False):
         fun = self.tvalue.lower()
 
         # Get the arguments
@@ -329,12 +329,12 @@ class FunctionNode(ASTNode):
         elif fun == "or":
             return "any([" + ",".join([n.emit(ast,context=context) for n in args]) + "])"
         elif fun == "index":
-            if volatile or self.parent(ast) is not None and self.parent(ast).tvalue == ':':
+            if pointer or self.parent(ast) is not None and self.parent(ast).tvalue == ':':
                 return 'index(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
                 return 'self.eval_ref(index(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
         elif fun == "offset":
-            if volatile or self.parent(ast) is None or self.parent(ast).tvalue == ':':
+            if pointer or self.parent(ast) is None or self.parent(ast).tvalue == ':':
                 return 'offset(' + ",".join([n.emit(ast,context=context) for n in args]) + ")"
             else:
                 return 'self.eval_ref(offset(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
