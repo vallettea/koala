@@ -167,4 +167,4 @@ This module has been enriched by [Ants](http://WeAreAnts.fr), but is part of a m
 
 ## Licence
 
-MIT
+GPL
