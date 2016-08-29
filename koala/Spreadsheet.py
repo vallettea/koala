@@ -670,7 +670,7 @@ class Spreadsheet(object):
 
         # no formula, fixed value
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
-            return cell.value
+            return cell.value if cell.value != '' else None
         try:
             if cell.is_range:
                 for child in cell.range.cells:
@@ -680,7 +680,7 @@ class Spreadsheet(object):
                 if isinstance(vv, RangeCore): # this should mean that vv is the result of RangeCore.apply_all, but with only one value inside
                     cell.value = vv.values[0]
                 else:
-                    cell.value = vv
+                    cell.value = vv if vv != '' else None
             else:
                 cell.value = 0
             
