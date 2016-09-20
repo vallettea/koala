@@ -51,7 +51,7 @@ class Cell(object):
             self.__row = None
             self.__col_idx = None
             
-        self.__formula = str(formula) if formula else None
+        self.__formula = str(formula.encode('utf-8')) if formula else None
         self.__value = value
         self.python_expression = None
         self.need_update = False
