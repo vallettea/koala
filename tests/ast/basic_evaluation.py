@@ -14,23 +14,6 @@ from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
 from koala.Cell import Cell
 
-
-# file_name = "./tests/ast/basic_evaluation.xlsx"
-
-# c = ExcelCompiler(file_name, debug = True)
-# # c.clean_pointer()
-# sp = c.gen_graph()
-
-# alive, relations = sp.detect_alive()
-
-# if len(alive) > 0:
-#     print 'Nb alive', len(alive)
-#     print 'Nb relations', len(relations)
-#     print 'ALIVE', alive
-
-# import sys
-# sys.exit(0)
-
 class Test_Excel(unittest.TestCase):
     
     def setUp(self):
