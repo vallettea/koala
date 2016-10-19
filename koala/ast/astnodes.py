@@ -8,6 +8,22 @@ from koala.excellib import FUNCTION_MAP, IND_FUN
 from koala.utils import is_range, split_range, split_address
 from koala.ExcelError import *
 
+def to_str(my_string):
+    if type(my_string) == str:
+        return unicode(my_string, 'utf-8')
+    elif type(my_string) == unicode:
+        return my_string
+    else:
+        try:
+            return str(my_string)
+        except:
+            print 'Couldnt parse as string', type(my_string)
+            return my_string
+    # elif isinstance(my_string, (int, float, tuple, Ra):
+    #     return str(my_string)
+    # else:
+    #     return my_string
+
 class ASTNode(object):
     """A generic node in the AST"""
     
@@ -16,6 +32,8 @@ class ASTNode(object):
         self.token = token
         self.debug = debug
     def __str__(self):
+        # if type(self.token.tvalue) == unicode:
+
         return self.token.tvalue
     def __getattr__(self,name):
         return getattr(self.token,name)
@@ -120,7 +138,7 @@ class OperatorNode(ASTNode):
 
          
         if self.ttype == "operator-prefix":
-            return 'RangeCore.apply_one("minus", %s, None, %s)' % (args[0].emit(ast,context=context), str(self.ref))
+            return 'RangeCore.apply_one("minus", %s, None, %s)' % (args[0].emit(ast,context=context), to_str(self.ref))
 
         if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
             is_special = self.find_special_function(ast)
@@ -130,7 +148,7 @@ class OperatorNode(ASTNode):
             arg1 = args[0]
             arg2 = args[1]
 
-            return "RangeCore." + call + "(%s)" % ','.join(['"'+function+'"', str(arg1.emit(ast,context=context)), str(arg2.emit(ast,context=context)), str(self.ref)])
+            return "RangeCore." + call + "(%s)" % ','.join(['"'+function+'"', to_str(arg1.emit(ast,context=context)), to_str(arg2.emit(ast,context=context)), to_str(self.ref)])
 
         parent = self.parent(ast)
 
@@ -158,13 +176,12 @@ class OperandNode(ASTNode):
         t = self.tsubtype
         
         if t == "logical":
-            return str(self.tvalue.lower() == "true")
+            return to_str(self.tvalue.lower() == "true")
         elif t == "text" or t == "error":
-            #if the string contains quotes, escape them
-            val = self.tvalue.replace('"','\\"')
-            return '"' + val + '"'
+            val = self.tvalue.replace('"','\\"').replace("'","\\'")
+            return to_str('"' + val + '"')
         else:
-            return str(self.tvalue)
+            return to_str(self.tvalue)
 
 class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
@@ -186,7 +203,7 @@ class RangeNode(OperandNode):
         is_a_named_range = self.tsubtype == "named_range"
 
         if is_a_named_range:
-            my_str = '"' + str(self) + '"' 
+            my_str = '"%s"' % self.token.tvalue 
         else:
             rng = self.tvalue.replace('$','')
             sheet = context + "!" if context else ""
@@ -203,7 +220,7 @@ class RangeNode(OperandNode):
                         sh,col,row = split_address(rng)
                     except:
                         if self.debug:
-                            print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % str(rng)
+                            print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % to_str(rng)
                         sh = None
 
                 if sh:
@@ -224,18 +241,21 @@ class RangeNode(OperandNode):
             to_eval = False
 
         # if parent is None and is_a_named_range: # When a named range is referenced in a cell without any prior operation
-        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
-                        
+        #     return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+
         if to_eval == False:
-            return my_str
+            output = my_str
+            # return my_str
 
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
@@ -245,24 +265,33 @@ class RangeNode(OperandNode):
 
             # we don't use eval_ref here to avoid empty cells (which are not included in Ranges)
             if is_a_named_range:
-                return 'resolve_range(self.named_ranges[%s])' % my_str
+                output = 'resolve_range(self.named_ranges[%s])' % my_str
+                # return 'resolve_range(self.named_ranges[%s])' % my_str
             else:
-                return 'resolve_range(%s)' % my_str
+                output = 'resolve_range(%s)' % my_str
+                # return 'resolve_range(%s)' % my_str
         
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         # MATCH HANDLER
         elif parent is not None and parent.tvalue == 'MATCH' \
              and (parent.children(ast)[0] == self or len(parent.children(ast)) == 3 and parent.children(ast)[2] == self):
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
-            return 'self.eval_ref(%s)' % my_str
+            output = 'self.eval_ref(%s)' % my_str
+            # return 'self.eval_ref(%s)' % my_str
         else:
-            return 'self.eval_ref(%s, ref = %s)' % (my_str, str(self.ref))
+            output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
+
+        return output
     
 class FunctionNode(ASTNode):
     """AST node representing a function call"""

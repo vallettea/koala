@@ -67,7 +67,6 @@ class ExcelCompiler(object):
                     else:
                         rng = self.Range(reference)
 
-                    # rng = self.Range(reference)
                     for address in rng.addresses: # this is avoid pruning deletion
                         preseeds.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )

@@ -79,14 +79,13 @@ def read_named_ranges(archive):
         # if name in dict:
         #     raise Exception('Named_range %s is defined in multiple sheets' % name)
 
-        if name_node.get('name') == 'tR':
-            dict[name_node.get('name')] = 'Depreciation!A1:A1000'
-        elif '!#REF' in name_node.text:
-            dict[name_node.get('name')] = '#REF!'
-        else:
-            dict[name_node.get('name')] = name_node.text.replace('$','').replace(" ","")
-
-        
+        if not name_node.get('hidden'):
+            if name_node.get('name') == 'tR':
+                dict[name_node.get('name')] = 'Depreciation!A1:A1000'
+            elif '!#REF' in name_node.text:
+                dict[name_node.get('name')] = '#REF!'
+            else:
+                dict[name_node.get('name')] = name_node.text.replace('$','').replace(" ","")
 
     return dict
     # return {

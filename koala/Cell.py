@@ -37,7 +37,7 @@ class Cell(object):
                 pass
                     
             # we assume a cell's location can never change
-            self.__sheet = str(sheet)
+            self.__sheet = sheet.encode('utf-8') if sheet is not None else sheet
             
             self.__sheet = sh
             self.__col = c
@@ -51,7 +51,14 @@ class Cell(object):
             self.__row = None
             self.__col_idx = None
             
-        self.__formula = str(formula) if formula else None
+        # self.__formula = formula.encode('utf-8') if formula else None
+        #if type(formula) != unicode:
+
+        if type(formula) == str:
+            self.__formula = unicode(formula, 'utf-8') if formula else None
+        else:
+            self.__formula = formula if formula else None
+
         self.__value = value
         self.python_expression = None
         self.need_update = False
