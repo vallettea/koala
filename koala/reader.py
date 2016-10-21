@@ -1,5 +1,7 @@
 from io import BytesIO
 import re
+import os
+import json
 
 from koala.openpyxl.formula.translate import Translator 
 from koala.openpyxl.cell.text import Text
@@ -17,6 +19,11 @@ from koala.openpyxl.xml.constants import (
     WORKSHEET_TYPE,
     SHARED_STRINGS
 )
+
+curfile = os.path.abspath(os.path.dirname(__file__))
+
+with open('%s/functions.json' % curfile, 'r') as file:
+    existing = json.load(file)
 
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
@@ -88,10 +95,6 @@ def read_named_ranges(archive):
                 dict[name_node.get('name')] = name_node.text.replace('$','').replace(" ","")
 
     return dict
-    # return {
-    #     name_node.get('name') : name_node.text.replace('$','')
-    #     for name_node in safe_iterator(root, '{%s}definedName' % SHEET_MAIN_NS)
-    # }
 
 def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     global debug
@@ -99,6 +102,8 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     print '___### Reading Cells from XLSX ###___'
 
     cells = {}
+
+    functions = set()
 
     cts = dict(read_content_types(archive))
 
@@ -185,6 +190,13 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                     elif child.text is None:
                         continue
 
+                if cell['f'] is not None:
+
+                    pattern = re.compile(r"([A-Z][A-Z0-9]*)\(")
+                    found = re.findall(pattern, cell['f'])
+
+                    map(lambda x: functions.add(x), found)
+
                 if cell['f'] is not None or cell['v'] is not None:
                     should_eval = 'always' if cell['f'] is not None and 'OFFSET' in cell['f'] else 'normal'
                     
@@ -197,6 +209,13 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
 
         if nb_hidden > 0:
             print 'Ignored %i hidden cells in sheet %s' % (nb_hidden, sheet_name)
+
+    print 'Nb of different functions %i' % len(functions)
+    print functions
+
+    for f in functions:
+        if f not in existing:
+            print '== Missing function: %s' % f
 
     return cells
 
