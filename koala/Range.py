@@ -89,14 +89,15 @@ class RangeCore(dict):
 
     # A separate function from __init__ is necessary so that it can be called from outside
     def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
-        
+    
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         else:
             reference = reference.replace('$','')
             try:
                 cells, nrows, ncols = resolve_range(reference, should_flatten = True)
-            except:
+            except Exception as e:
+                print 'Pb with ref', reference, e
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
@@ -106,7 +107,7 @@ class RangeCore(dict):
 
         if values:
             if len(cells) != len(values):
-                raise ValueError("cells and values in a Range must have the same size")
+                raise Exception("Cells and values in a Range must have the same size", reference)
 
         result = []
         order = []
@@ -139,6 +140,8 @@ class RangeCore(dict):
             self.__name = name
         elif not self.is_pointer: # when building pointers, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
+        else:
+            print 'Pb with Name', reference, name
         self.__origin = origin
         self.__addresses = cells
         self.__order = order
