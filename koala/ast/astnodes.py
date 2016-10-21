@@ -245,51 +245,39 @@ class RangeNode(OperandNode):
 
         if to_eval == False:
             output = my_str
-            # return my_str
 
         # OFFSET HANDLER
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         elif (parent is not None and parent.tvalue == 'OFFSET' and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
 
         # INDEX HANDLER
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[0] == self):
 
-            # return 'self.eval_ref(%s)' % my_str
-
             # we don't use eval_ref here to avoid empty cells (which are not included in Ranges)
             if is_a_named_range:
                 output = 'resolve_range(self.named_ranges[%s])' % my_str
-                # return 'resolve_range(self.named_ranges[%s])' % my_str
             else:
                 output = 'resolve_range(%s)' % my_str
-                # return 'resolve_range(%s)' % my_str
         
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-        elif (parent is not None and parent.tvalue == 'INDEX' and
+        elif (parent is not None and parent.tvalue == 'INDEX' and len(parent.children(ast)) == 3 and
              parent.children(ast)[2] == self and self.tsubtype == "named_range"):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         # MATCH HANDLER
         elif parent is not None and parent.tvalue == 'MATCH' \
              and (parent.children(ast)[0] == self or len(parent.children(ast)) == 3 and parent.children(ast)[2] == self):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
         elif self.find_special_function(ast) or self.has_ind_func_parent(ast):
             output = 'self.eval_ref(%s)' % my_str
-            # return 'self.eval_ref(%s)' % my_str
         else:
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
-            # return 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
 
         return output
     
