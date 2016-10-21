@@ -50,9 +50,6 @@ class Cell(object):
             self.__col = None
             self.__row = None
             self.__col_idx = None
-            
-        # self.__formula = formula.encode('utf-8') if formula else None
-        #if type(formula) != unicode:
 
         if type(formula) == str:
             self.__formula = unicode(formula, 'utf-8') if formula else None

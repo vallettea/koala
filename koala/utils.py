@@ -90,7 +90,6 @@ def split_address(address):
 
 resolve_range_cache = {}
 def resolve_range(rng, should_flatten = False, sheet=''):
-    
     # print 'RESOLVE RANGE splitting', rng
     if ':' not in rng:
         if '!' in rng:
@@ -109,7 +108,12 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         sheet += "!"
     else:
         pass
-
+    
+    if type(sheet) == str:
+        sheet = unicode(sheet, 'utf-8')
+    if type(rng) == str:
+        rng = unicode(rng, 'utf-8')
+    
     key = rng+str(should_flatten)+sheet
     
     if key in resolve_range_cache:    
