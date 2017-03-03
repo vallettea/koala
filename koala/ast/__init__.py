@@ -115,7 +115,8 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
         for index, token in enumerate(tokens):
             new_tokens.append(token)
 
-            if type(token.tvalue) == str:
+            if type(token.tvalue) == str or type(token.tvalue) == unicode:
+
                 if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
                     depth = 0
                     expr = ''
