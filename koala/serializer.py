@@ -63,7 +63,7 @@ def dump(self, fname):
         parse_cell_info(cell)
 
         if cell.range.is_pointer:
-            outfile.write(json.dumps((cell.range.reference) + u"\n").encode('utf-8'))
+            outfile.write((json.dumps(cell.range.reference) + u"\n").encode('utf-8'))
         else:
             outfile.write((cell.range.name + u"\n").encode('utf-8'))
 
