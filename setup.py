@@ -17,7 +17,7 @@ setup(
 
     url = "https://github.com/anthill/koala",
 
-    license = "MIT",
+    license = "GNU GPL3",
     description = "A python module to extract all the content of an Excel document and enable calculation without Excel",
 
     long_description = open("README.md").read(),
