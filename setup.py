@@ -1,32 +1,30 @@
-from setuptools import setup
-from setuptools import Extension
-from setuptools import find_packages
-from Cython.Build import cythonize
+"""Setup script."""
 
-setup(
-    name = "koala2",
-
-    version = "0.0.14",
-
-    author = "Ants, open innovation lab",
-    author_email = "contact@ants.builders",
-
-    packages = find_packages(),
-
-    include_package_data = True,
-
-    url = "https://github.com/anthill/koala",
-
-    license = "GNU GPL3",
-    description = "A python module to extract all the content of an Excel document and enable calculation without Excel",
-
-    long_description = open("README.md").read(),
-
-    install_requires = [
-        "lxml"
-    ],
-
-    # ext_modules = cythonize(["koala/*.py", "koala/ast/*.py"]),
+from setuptools import setup, find_packages
 
 
-)
+if __name__ == '__main__':
+    setup(
+        name = "koala2",
+
+        version = "0.0.14",
+
+        author = "Ants, open innovation lab",
+        author_email = "contact@ants.builders",
+
+        packages = find_packages(),
+
+        include_package_data = True,
+
+        url = "https://github.com/anthill/koala",
+
+        license = "GNU GPL3",
+        description = (
+            "A python module to extract all the content of an Excel document "
+            "and enable calculation without Excel"
+        ),
+
+        long_description = open("README.md").read(),
+
+        install_requires = open('requirements.txt').readlines(),
+    )
