@@ -874,7 +874,26 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     return result
 
+def xnpv(*args): # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
+    rate = args[0]
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(args[1])
+    dates = extract_numeric_values(args[2])
+    if len(values) != len(dates):
+        return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
+    xnpv = 0
+    for v, d in zip(values, dates):
+        xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+    return xnpv
 
+def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-function-0214da64-9a63-4996-bc20-214433fa6441
+    rate = args[0]
+    num_payments = args[1]
+    present_value = args[2]
+    # WARNING fv & type not used yet - both are assumed to be their defaults (0)
+    # fv = args[3]
+    # type = args[4]
+    return -present_value * rate / (1 - np.power(1 + rate, -num_payments))
 
 
 if __name__ == '__main__':

@@ -41,5 +41,7 @@
 "IRR",
 "VLOOKUP",
 "VDB",
-"SLN"
+"SLN",
+"XNPV",
+"PMT"
 ]
