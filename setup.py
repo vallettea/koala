@@ -7,10 +7,10 @@ if __name__ == '__main__':
     setup(
         name = "koala2",
 
-        version = "0.0.14",
+        version = "0.0.15",
 
         author = "Ants, open innovation lab",
-        author_email = "contact@ants.builders",
+        author_email = "contact@weareants.fr",
 
         packages = find_packages(),
 
