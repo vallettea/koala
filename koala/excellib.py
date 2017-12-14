@@ -9,8 +9,8 @@ Python equivalents of various excel functions
 from __future__ import division
 import numpy as np
 from datetime import datetime
-from math import log
-from decimal import Decimal, ROUND_HALF_UP
+from math import log, ceil
+from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 import re
 
 from koala.utils import *
@@ -56,6 +56,7 @@ IND_FUN = [
     "SUMIF",
     "XNPV",
     "PMT",
+    "ROUNDUP",
 ]
 
 ######################################################################################
@@ -487,6 +488,24 @@ def xround(number, num_digits = 0): # Excel reference: https://support.office.co
 
     else:
         return round(number, num_digits)
+
+
+def roundup(number, num_digits = 0): # Excel reference: https://support.office.com/en-us/article/ROUNDUP-function-f8bc9b23-e795-47db-8703-db171d0c42a7
+
+    if not is_number(number):
+        return ExcelError('#VALUE!', '%s is not a number' % str(number))
+    if not is_number(num_digits):
+        return ExcelError('#VALUE!', '%s is not a number' % str(num_digits))
+
+    number = float(number) # if you don't Spreadsheet.dump/load, you might end up with Long numbers, which Decimal doesn't accept
+
+    if num_digits >= 0: # round to the right side of the point
+        return float(Decimal(repr(number)).quantize(Decimal(repr(pow(10, -num_digits))), rounding=ROUND_UP))
+        # see https://docs.python.org/2/library/functions.html#round
+        # and https://gist.github.com/ejamesc/cedc886c5f36e2d075c5
+
+    else:
+        return ceil(number / pow(10, -num_digits)) * pow(10, -num_digits)
 
 
 def mid(text, start_num, num_chars): # Excel reference: https://support.office.com/en-us/article/MID-MIDB-functions-d5f9e25c-d7d6-472e-b568-4ecb12433028
