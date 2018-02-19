@@ -3,3 +3,4 @@ openpyxl==2.4.9
 numpy==1.13.3
 Cython==0.27.2
 lxml==4.1.1
+six==1.11.0

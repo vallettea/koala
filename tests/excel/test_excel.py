@@ -20,7 +20,7 @@ class Test_SharedFormula(unittest.TestCase):
 
     @unittest.skip('This test fails.')
     def test_nb_formulas(self):
-        self.assertEqual(len(filter(lambda (ref, cell): cell.formula is not None, self.cells.items())), 13)
+        self.assertEqual(len([ref_cell for ref_cell in list(self.cells.items()) if ref_cell[1].formula is not None]), 13)
 
     def test_shared_formulas_content(self):
         self.assertEqual(self.cells[('Shared_formula!G2')].formula, 'G1 + 10 * L1 + $A$1')
@@ -30,10 +30,10 @@ class Test_SharedFormula(unittest.TestCase):
 
     @unittest.skip('This test fails.')
     def test_types(self):
-        nb_int = len(filter(lambda (ref, cell): type(cell.value) == int, self.cells.items()))
-        nb_float = len(filter(lambda (ref, cell): type(cell.value) == float, self.cells.items()))
-        nb_bool = len(filter(lambda (ref, cell): type(cell.value) == bool, self.cells.items()))
-        nb_str = len(filter(lambda (ref, cell): type(cell.value) == str, self.cells.items()))
+        nb_int = len([ref_cell1 for ref_cell1 in list(self.cells.items()) if type(ref_cell1[1].value) == int])
+        nb_float = len([ref_cell2 for ref_cell2 in list(self.cells.items()) if type(ref_cell2[1].value) == float])
+        nb_bool = len([ref_cell3 for ref_cell3 in list(self.cells.items()) if type(ref_cell3[1].value) == bool])
+        nb_str = len([ref_cell4 for ref_cell4 in list(self.cells.items()) if type(ref_cell4[1].value) == str])
 
         self.assertTrue(nb_int == 21 and nb_float == 3 and nb_bool == 2 and nb_str == 10)
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 # cython: profile=True
 
 import os.path
@@ -18,7 +19,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
-        print "___### Initializing Excel Compiler ###___"
+        print("___### Initializing Excel Compiler ###___")
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -40,10 +41,10 @@ class ExcelCompiler(object):
         self.pointers = set()
 
     def gen_graph(self, outputs = [], inputs = []):
-        print '___### Generating Graph ###___'
+        print('___### Generating Graph ###___')
 
         if len(outputs) == 0:
-            preseeds = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
+            preseeds = set(list(flatten(self.cells.keys())) + list(self.named_ranges.keys())) # to have unicity
         else:
             preseeds = set(outputs)
 
@@ -85,7 +86,7 @@ class ExcelCompiler(object):
                     seeds.append(self.cells[o])
 
         seeds = set(seeds)
-        print "Seeds %s cells" % len(seeds)
+        print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
         cellmap, G = graph_from_seeds(seeds, self)
@@ -127,7 +128,7 @@ class ExcelCompiler(object):
             inputs = set(inputs)
 
 
-        print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+        print("Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))

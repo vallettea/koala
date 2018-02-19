@@ -1,12 +1,15 @@
 # cython: profile=True
 
-from __future__ import division
-from itertools import izip
-import collections
-import re
-# import numpy as np
+from __future__ import absolute_import, division
 
-from ExcelError import ExcelError
+import collections
+import numbers
+import re
+from six import string_types
+
+from openpyxl.compat import unicode
+
+from .ExcelError import ExcelError
 
 ASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -47,10 +50,10 @@ def split_range(rng):
         else:
             sh = None
             start,end = rng.split(':')
-        
+
         split_range_cache[rng] = (sh, start, end)
         return (sh,start,end)
-       
+
 
 split_address_cache = {}
 
@@ -65,13 +68,13 @@ def split_address(address):
             sheet,addr = address.split('!')
         else:
             addr = address
-        
+
         #ignore case
         addr = addr.upper()
-        
-        # regular <col><row> format    
+
+        # regular <col><row> format
         if re.match('^[A-Z\$]+[\d\$]+$', addr):
-            col,row = filter(None,re.split('([A-Z\$]+)',addr))
+            col,row = [_f for _f in re.split('([A-Z\$]+)',addr) if _f]
         # R<row>C<col> format
         elif re.match('^R\d+C\d+$', addr):
             row,col = addr.split('C')
@@ -83,7 +86,7 @@ def split_address(address):
             col = col[2:-1]
         else:
             raise Exception('Invalid address format ' + addr)
-        
+
         split_address_cache[address] = (sheet, col, row)
         return (sheet,col,row)
 
@@ -96,7 +99,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             rng = rng.split('!')
         return ExcelError('#REF!', info = '%s is not a regular range, nor a named_range' % rng)
     sh, start, end = split_range(rng)
-    
+
     if sh and sheet:
         if sh != sheet:
             raise Exception("Mismatched sheets %s and %s" % (sh,sheet))
@@ -108,15 +111,16 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         sheet += "!"
     else:
         pass
-    
-    if type(sheet) == str:
+
+    # `unicode` != `str` in Python2. See `from openpyxl.compat import unicode`
+    if type(sheet) == str and str != unicode:
         sheet = unicode(sheet, 'utf-8')
-    if type(rng) == str:
+    if type(rng) == str and str != unicode:
         rng = unicode(rng, 'utf-8')
-    
+
     key = rng+str(should_flatten)+sheet
-    
-    if key in resolve_range_cache:    
+
+    if key in resolve_range_cache:
         return resolve_range_cache[key]
     else:
         if not is_range(rng):  return ([sheet + rng],1,1)
@@ -130,7 +134,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         start_row = int(start_row)
         end_row = int(end_row)
 
-        # Attempt to use Numpy, not relevant for now 
+        # Attempt to use Numpy, not relevant for now
 
         # num2col_vec = np.vectorize(num2col)
         # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
@@ -141,7 +145,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         #     c = np.core.defchararray.add(s, c)
         # B = np.core.defchararray.add(c, r)
 
-        
+
         # if start_col == end_col:
         #     data = B.T.tolist()[0]
         #     return data, len(data), 1
@@ -157,16 +161,16 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         # single column
         if  start_col == end_col:
             nrows = end_row - start_row + 1
-            data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,range(start_row,end_row+1))]
-            
+            data = [ "%s%s%s" % (s,c,r) for (s,c,r) in zip([sheet]*nrows,[start_col]*nrows,list(range(start_row,end_row+1)))]
+
             output = data,len(data),1
-        
+
         # single row
         elif start_row == end_row:
             ncols = end_col_idx - start_col_idx + 1
-            data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,range(start_col_idx,end_col_idx+1),[start_row]*ncols)]
+            data = [ "%s%s%s" % (s,num2col(c),r) for (s,c,r) in zip([sheet]*ncols,list(range(start_col_idx,end_col_idx+1)),[start_row]*ncols)]
             output = data,1,len(data)
-        
+
         # rectangular range
         else:
             cells = []
@@ -174,9 +178,9 @@ def resolve_range(rng, should_flatten = False, sheet=''):
                 row = []
                 for c in range(start_col_idx,end_col_idx+1):
                     row.append(sheet + num2col(c) + str(r))
-                    
+
                 cells.append(row)
-        
+
             if should_flatten:
                 # flatten into one list
                 l = list(flatten(cells, only_lists = True))
@@ -191,30 +195,30 @@ def resolve_range(rng, should_flatten = False, sheet=''):
 col2num_cache = {}
 # e.g., convert BA -> 53
 def col2num(col):
-    
+
     if col in col2num_cache:
         return col2num_cache[col]
     else:
         if not col:
             raise Exception("Column may not be empty")
-        
+
         tot = 0
         for i,c in enumerate([c for c in col[::-1] if c != "$"]):
             if c == '$': continue
             tot += (ord(c)-64) * 26 ** i
-        
+
         col2num_cache[col] = tot
         return tot
 
 num2col_cache = {}
 # convert back
-def num2col(num):    
+def num2col(num):
     if num in num2col_cache:
         return num2col_cache[num]
     else:
         if num < 1:
             raise Exception("Number must be larger than 0: %s" % num)
-        
+
         s = ''
         q = num
         while q > 0:
@@ -223,7 +227,7 @@ def num2col(num):
                 q = q - 1
                 r = 26
             s = ASCII[r-1] + s
-        
+
         num2col_cache[num] = s
         return s
 
@@ -249,7 +253,7 @@ def get_linest_degree(excel,cl):
             break
         else:
             i = i - 1
-        
+
     # to the right
     j = ci + 1
     while True:
@@ -258,12 +262,12 @@ def get_linest_degree(excel,cl):
             break
         else:
             j = j + 1
-    
+
     # assume the degree is the number of linest's
     degree =  (j - i - 1) - 1  #last -1 is because an n degree polynomial has n+1 coefs
 
     # which coef are we (left most coef is the coef for the highest power)
-    coef = ci - i 
+    coef = ci - i
 
     # no linests left or right, try looking up/down
     if degree == 0:
@@ -275,7 +279,7 @@ def get_linest_degree(excel,cl):
                 break
             else:
                 i = i - 1
-            
+
         # down
         j = r + 1
         while True:
@@ -287,15 +291,15 @@ def get_linest_degree(excel,cl):
 
         degree =  (j - i - 1) - 1
         coef = r - i
-    
+
     # if degree is zero -> only one linest formula -> linear regression -> degree should be one
-    return (max(degree,1),coef) 
+    return (max(degree,1),coef)
 
 def flatten(l, only_lists = False):
     instance = list if only_lists else collections.Iterable
 
     for el in l:
-        if isinstance(el, instance) and not isinstance(el, basestring):
+        if isinstance(el, instance) and not isinstance(el, string_types):
             for sub in flatten(el, only_lists = only_lists):
                 yield sub
         else:
@@ -392,7 +396,7 @@ def date_from_int(nb):
         else:
             current_month += 1
             max_days = get_max_days_in_month(current_month, current_year)
-            
+
             if nb > max_days:
                 nb -= max_days
             else:
@@ -460,7 +464,7 @@ def find_corresponding_index(list, criteria):
     return valid
 
 def check_length(range1, range2):
-    
+
     if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
     else:
@@ -475,13 +479,27 @@ def extract_numeric_values(*args):
                 if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
                     values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            for x in arg: 
+            for x in arg:
                 if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
                     values.append(x)
         elif is_number(arg):
             values.append(arg)
 
     return values
+
+
+def old_div(a, b):
+    """
+    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
+    division``.
+
+    Copied from:
+    https://github.com/PythonCharmers/python-future/blob/master/src/past/utils/__init__.py
+    """
+    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
+        return a // b
+    else:
+        return a / b
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
-import re
-import string
+from __future__ import absolute_import, division, print_function
 
-from koala.ExcelError import ExcelError
+from openpyxl.compat import unicode
+
 from koala.utils import *
 from koala.Cell import Cell
 
@@ -69,23 +69,26 @@ class RangeCore(dict):
         if type(reference) == dict:
             is_pointer = True
 
+            name = '%s:%s' % (reference['start'], reference['end'])
+
         self.__pointer = is_pointer
         self.__reference = reference
         self.__cellmap = cellmap
 
+        # These get redefined in `__build()`
+        self.__name = name
+        self.__origin = None
+        self.__addresses = []
+        self.__order = []
+        self.__length = None
+        self.__nrows = None
+        self.__ncols = None
+        self.__type = None
+        self.__sheet = None
+        self.__empty = None
+
         if not is_pointer:
-            result = self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
-        else:
-            self.__name = '%s:%s' % (reference['start'], reference['end'])
-            self.__origin = None
-            self.__addresses = []
-            self.__order = []
-            self.__length = None
-            self.__nrows = None
-            self.__ncols = None
-            self.__type = None
-            self.__sheet = None
-            self.__empty = None
+            self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
 
     # A separate function from __init__ is necessary so that it can be called from outside
     def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
@@ -97,7 +100,7 @@ class RangeCore(dict):
             try:
                 cells, nrows, ncols = resolve_range(reference, should_flatten = True)
             except Exception as e:
-                print 'Pb with ref', reference, e
+                print('Pb with ref', reference, e)
                 return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
 
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
@@ -141,7 +144,7 @@ class RangeCore(dict):
         elif not self.is_pointer: # when building pointers, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
         else:
-            print 'Pb with Name', reference, name
+            print('Pb with Name', reference, name)
         self.__origin = origin
         self.__addresses = cells
         self.__order = order
@@ -225,7 +228,7 @@ class RangeCore(dict):
 
     @property
     def cells(self):
-        return map(lambda c: self[c], self.order)
+        return [self[c] for c in self.order]
 
 
     def get(self, row, col = None):
@@ -501,7 +504,7 @@ class RangeCore(dict):
     @staticmethod
     def divide(a, b):
         try:
-            return float(check_value(a)) / float(check_value(b))
+            return old_div(float(check_value(a)), float(check_value(b)))
         except Exception as e:
             return ExcelError('#DIV/0!', e)
 

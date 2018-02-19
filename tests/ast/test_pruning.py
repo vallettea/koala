@@ -42,7 +42,7 @@ class Test_without_range(unittest.TestCase):
 
     @unittest.skip('This test fails.')
     def test_pruning_cellmap(self):
-        self.assertEqual(len(self.sp.cellmap.keys()), 9)
+        self.assertEqual(len(list(self.sp.cellmap.keys())), 9)
 
     @unittest.skip('This test fails.')
     def test_eval(self):
@@ -70,7 +70,7 @@ class Test_with_range(unittest.TestCase):
 
     @unittest.skip('This test fails.')
     def test_pruning_cellmap(self):
-        self.assertEqual(len(self.sp.cellmap.keys()), 13)
+        self.assertEqual(len(list(self.sp.cellmap.keys())), 13)
 
     @unittest.skip('This test fails.')
     def test_A1(self):

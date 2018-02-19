@@ -1,7 +1,8 @@
 # cython: profile=True
 
-from __future__ import division
-from itertools import izip
+from __future__ import absolute_import, division
+
+from openpyxl.compat import unicode
 
 from koala.utils import *
 
@@ -52,7 +53,8 @@ class Cell(object):
             self.__row = None
             self.__col_idx = None
 
-        if type(formula) == str:
+        # `unicode` != `str` in Python2. See `from openpyxl.compat import unicode`
+        if type(formula) == str and str != unicode:
             self.__formula = unicode(formula, 'utf-8') if formula else None
         else:
             self.__formula = formula if formula else None
@@ -225,7 +227,7 @@ class Cell(object):
             fs = r.Formula
             vs = r.Value
 
-            for it in (list(izip(*x)) for x in izip(ads,fs,vs)):
+            for it in (list(zip(*x)) for x in zip(ads,fs,vs)):
                 row = []
                 for c in it:
                     a = c[0]

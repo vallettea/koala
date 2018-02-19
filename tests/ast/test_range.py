@@ -1,3 +1,4 @@
+from __future__ import print_function
 import unittest
 import os
 import sys
@@ -17,12 +18,12 @@ class Test_Excel(unittest.TestCase):
         cellmap = {'A1': 25, 'B1': 34, 'C1': 79}
         Range = RangeFactory(cellmap)
         range = Range('A1:C1')
-        print 'RANGE', range
+        print('RANGE', range)
         self.assertEqual(range[(1, 'B')], 34)
 
     def test_Range_getter(self):
         range = Range('Sheet1!A1:A3', [10, 20, 30])
-        print 'RANGE2', range
+        print('RANGE2', range)
         self.assertEqual(range.values, [10, 20, 30])
 
     def test_Range_setter(self):

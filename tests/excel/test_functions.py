@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import pyximport; pyximport.install()
 
 import os
@@ -51,7 +53,7 @@ class Test_VDB(unittest.TestCase):
 
 class Test_SLN(unittest.TestCase):
     def test_sln_basic(self):
-		self.assertEqual(sln(30000, 5000, 10), 2500)
+        self.assertEqual(sln(30000, 5000, 10), 2500)
 
 
 class Test_Choose(unittest.TestCase):
