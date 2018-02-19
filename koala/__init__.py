@@ -1,12 +1,14 @@
-import openpyxl
-import ast
-import Cell
-import ExcelCompiler
-import ExcelError
-import excellib
-import Range
-import reader
-import serializer
-import Spreadsheet
-import tokenizer
-import utils
+from __future__ import absolute_import
+
+from .openpyxl import *
+from .ast import *
+from .Cell import *
+from .ExcelCompiler import *
+from .ExcelError import *
+from .excellib import *
+from .Range import *
+from .reader import *
+from .serializer import *
+from .Spreadsheet import *
+from .tokenizer import *
+from .utils import *

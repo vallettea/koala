@@ -1,12 +1,13 @@
+from __future__ import absolute_import, print_function
+
 import json
 import gzip
 import networkx
 
 from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
-from networkx.algorithms import number_connected_components
 from networkx.drawing.nx_pydot import write_dot
-from networkx.drawing.nx_pylab import draw, draw_circular
+from openpyxl.compat import unicode
 
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
@@ -19,8 +20,8 @@ def dump(self, fname):
 
 
     # write simple cells first
-    simple_cells = filter(lambda cell: cell.is_range == False, self.cellmap.values())
-    range_cells = filter(lambda cell: cell.is_range, self.cellmap.values())
+    simple_cells = [cell for cell in list(self.cellmap.values()) if cell.is_range == False]
+    range_cells = [cell for cell in list(self.cellmap.values()) if cell.is_range]
     compiled_expressions = {}
 
     def parse_cell_info(cell):
@@ -69,7 +70,7 @@ def dump(self, fname):
 
         outfile.write("====" + "\n")
         outfile.write("====" + "\n")
-    
+
     # writing the edges
     outfile.write("edges" + "\n")
     for source, target in self.G.edges():
@@ -85,7 +86,7 @@ def dump(self, fname):
     outfile.write("named_ranges" + "\n")
     for k in self.named_ranges:
         outfile.write((k + SEP + self.named_ranges[k] + u"\n").encode('utf-8'))
-    
+
 
     outfile.close()
 
@@ -171,16 +172,16 @@ def load(fname):
                 nodes.append(cell)
             else:
                 value = to_bool(to_float(line))
-                
+
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
-                
+
                 cell.python_expression = python_expression
                 if formula:
                     if 'OFFSET' in formula or 'INDEX' in formula:
                         pointers.add(address)
 
 
-                    cell.compile()               
+                    cell.compile()
                 nodes.append(cell)
         elif mode == "edges":
             source, target = line.split(SEP)
@@ -195,7 +196,7 @@ def load(fname):
 
     G = DiGraph(data = edges)
 
-    print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, named_ranges, pointers, outputs, inputs)
 
@@ -250,7 +251,7 @@ def load_json(fname):
 
     def _decode_dict(data):
         rv = {}
-        for key, value in data.iteritems():
+        for key, value in data.items():
             if isinstance(key, unicode):
                 key = key.encode('utf-8')
             if isinstance(value, unicode):
@@ -277,13 +278,13 @@ def load_json(fname):
         new_cell.compile()
         return {"id": new_cell}
 
-    nodes = map(cell_from_dict, data["nodes"])
+    nodes = list(map(cell_from_dict, data["nodes"]))
     data["nodes"] = nodes
 
     G = json_graph.node_link_graph(data)
     cellmap = {n.address():n for n in G.nodes()}
 
-    print "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
+    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
@@ -291,7 +292,7 @@ def load_json(fname):
 ########### based on dot #################
 def export_to_dot(self,fname):
     write_dot(self.G,fname)
-                
+
 
 ########### plotting #################
 def plot_graph(self):

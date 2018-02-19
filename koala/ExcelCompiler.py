@@ -1,17 +1,13 @@
+from __future__ import print_function
 # cython: profile=True
 
 import os.path
-import textwrap
-from math import *
 
 import networkx
-from networkx.algorithms import number_connected_components
 
 from koala.reader import read_archive, read_named_ranges, read_cells
-from koala.excellib import *
 from koala.utils import *
 from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
-from koala.ExcelError import *
 from koala.Cell import Cell
 from koala.Range import RangeFactory
 from koala.Spreadsheet import Spreadsheet
@@ -23,7 +19,7 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
-        print "___### Initializing Excel Compiler ###___"
+        print("___### Initializing Excel Compiler ###___")
 
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
@@ -43,15 +39,15 @@ class ExcelCompiler(object):
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
         self.pointers = set()
-            
+
     def gen_graph(self, outputs = [], inputs = []):
-        print '___### Generating Graph ###___'
+        print('___### Generating Graph ###___')
 
         if len(outputs) == 0:
-            preseeds = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
+            preseeds = set(list(flatten(self.cells.keys())) + list(self.named_ranges.keys())) # to have unicity
         else:
             preseeds = set(outputs)
-        
+
         preseeds = list(preseeds) # to be able to modify the list
 
         seeds = []
@@ -90,7 +86,7 @@ class ExcelCompiler(object):
                     seeds.append(self.cells[o])
 
         seeds = set(seeds)
-        print "Seeds %s cells" % len(seeds)
+        print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
         cellmap, G = graph_from_seeds(seeds, self)
@@ -132,8 +128,8 @@ class ExcelCompiler(object):
             inputs = set(inputs)
 
 
-        print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-        
+        print("Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 

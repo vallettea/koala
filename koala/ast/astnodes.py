@@ -1,15 +1,16 @@
+from __future__ import print_function
 # cython: profile=True
 
-import os.path
-
-# import networkx
+from openpyxl.compat import unicode
 
 from koala.excellib import FUNCTION_MAP, IND_FUN
 from koala.utils import is_range, split_range, split_address
 from koala.ExcelError import *
 
+
 def to_str(my_string):
-    if type(my_string) == str:
+    # `unicode` != `str` in Python2. See `from openpyxl.compat import unicode`
+    if type(my_string) == str and str != unicode:
         return unicode(my_string, 'utf-8')
     elif type(my_string) == unicode:
         return my_string
@@ -17,16 +18,17 @@ def to_str(my_string):
         try:
             return str(my_string)
         except:
-            print 'Couldnt parse as string', type(my_string)
+            print('Couldnt parse as string', type(my_string))
             return my_string
     # elif isinstance(my_string, (int, float, tuple, Ra):
     #     return str(my_string)
     # else:
     #     return my_string
 
+
 class ASTNode(object):
     """A generic node in the AST"""
-    
+
     def __init__(self,token, debug = False):
         super(ASTNode,self).__init__()
         self.token = token
@@ -79,22 +81,23 @@ class ASTNode(object):
 
         return found
 
-    def has_ind_func_parent(self, ast):     
-      
-        if self.parent(ast) is not None and self.parent(ast).tvalue in IND_FUN:       
-            return True       
-        else:     
-            return False      
+    def has_ind_func_parent(self, ast):
+
+        if self.parent(ast) is not None and self.parent(ast).tvalue in IND_FUN:
+            return True
+        else:
+            return False
 
 
     def emit(self,ast,context=None, pointer = False):
         """Emit code"""
         self.token.tvalue
-    
+
+
 class OperatorNode(ASTNode):
     def __init__(self, args, ref, debug = False):
         super(OperatorNode,self).__init__(args)
-        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell
         self.debug = debug
         # convert the operator to python equivalents
         self.opmap = {
@@ -119,24 +122,24 @@ class OperatorNode(ASTNode):
 
     def emit(self,ast,context=None, pointer = False):
         xop = self.tvalue
-        
+
         # Get the arguments
         args = self.children(ast)
-        
+
         op = self.opmap.get(xop,xop)
-        
+
         parent = self.parent(ast)
         # convert ":" operator to a range function
         if op == ":":
             # OFFSET HANDLER, when the first argument of OFFSET is a range i.e "A1:A2"
             if (parent is not None and
-            (parent.tvalue == 'OFFSET' and 
+            (parent.tvalue == 'OFFSET' and
              parent.children(ast)[0] == self)):
                 return '"%s"' % ':'.join([a.emit(ast,context=context).replace('"', '') for a in args])
             else:
                 return "self.eval_ref(%s, ref = %s)" % (','.join([a.emit(ast,context=context) for a in args]), self.ref)
 
-         
+
         if self.ttype == "operator-prefix":
             return 'RangeCore.apply_one("minus", %s, None, %s)' % (args[0].emit(ast,context=context), to_str(self.ref))
 
@@ -161,20 +164,21 @@ class OperatorNode(ASTNode):
             ss =  args[0].emit(ast,context=context) + op + '(' + aa + ' if ' + aa + ' is not None else float("inf"))'
         else:
             ss = args[0].emit(ast,context=context) + op + args[1].emit(ast,context=context)
-                    
+
 
         #avoid needless parentheses
         if parent and not isinstance(parent,FunctionNode):
-            ss = "("+ ss + ")"          
+            ss = "("+ ss + ")"
 
         return ss
+
 
 class OperandNode(ASTNode):
     def __init__(self,*args):
         super(OperandNode,self).__init__(*args)
     def emit(self,ast,context=None, pointer = False):
         t = self.tsubtype
-        
+
         if t == "logical":
             return to_str(self.tvalue.lower() == "true")
         elif t == "text" or t == "error":
@@ -187,23 +191,23 @@ class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range, e.g., A5, B3:C20 or INPUT """
     def __init__(self,args, ref, debug = False):
         super(RangeNode,self).__init__(args)
-        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell  
+        self.ref = ref if ref != '' else 'None' # ref is the address of the reference cell
         self.debug = debug
 
     def get_cells(self):
         return resolve_range(self.tvalue)[0]
-    
+
     def emit(self,ast,context=None, pointer = False):
         if isinstance(self.tvalue, ExcelError):
             if self.debug:
-                print 'WARNING: Excel Error Code found', self.tvalue
+                print('WARNING: Excel Error Code found', self.tvalue)
             return self.tvalue
 
         is_a_range = False
         is_a_named_range = self.tsubtype == "named_range"
 
         if is_a_named_range:
-            my_str = '"%s"' % self.token.tvalue 
+            my_str = '"%s"' % self.token.tvalue
         else:
             rng = self.tvalue.replace('$','')
             sheet = context + "!" if context else ""
@@ -220,7 +224,7 @@ class RangeNode(OperandNode):
                         sh,col,row = split_address(rng)
                     except:
                         if self.debug:
-                            print 'WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % to_str(rng)
+                            print('WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % to_str(rng))
                         sh = None
 
                 if sh:
@@ -263,7 +267,7 @@ class RangeNode(OperandNode):
                 output = 'resolve_range(self.named_ranges[%s])' % my_str
             else:
                 output = 'resolve_range(%s)' % my_str
-        
+
         elif (parent is not None and parent.tvalue == 'INDEX' and
              parent.children(ast)[1] == self and self.tsubtype == "named_range"):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
@@ -280,7 +284,8 @@ class RangeNode(OperandNode):
             output = 'self.eval_ref(%s, ref = %s)' % (my_str, to_str(self.ref))
 
         return output
-    
+
+
 class FunctionNode(ASTNode):
     """AST node representing a function call"""
     def __init__(self,args, ref, debug = False):
@@ -289,7 +294,7 @@ class FunctionNode(ASTNode):
         self.debug = False
         # map  excel functions onto their python equivalents
         self.funmap = FUNCTION_MAP
-        
+
     def emit(self,ast,context=None, pointer = False):
         fun = self.tvalue.lower()
 
@@ -333,7 +338,7 @@ class FunctionNode(ASTNode):
             else:
                 # multiple rows
                 my_str += ",".join(['[' + n.emit(ast,context=context) + ']' for n in args])
-                     
+
             my_str += ']'
 
             return my_str

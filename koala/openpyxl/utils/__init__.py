@@ -9,11 +9,10 @@ from __future__ import absolute_import
 Collection of utilities used within the package and also available for client code
 """
 
-import datetime
 import re
+from six import string_types
 
 from .formulas import FORMULAE
-from openpyxl.compat import basestring
 from openpyxl.utils.exceptions import CellCoordinatesException
 
 # constants
@@ -31,9 +30,9 @@ SHEETRANGE_RE = re.compile("""
 
 
 def get_column_interval(start, end):
-    if isinstance(start, basestring):
+    if isinstance(start, string_types):
         start = column_index_from_string(start)
-    if isinstance(end, basestring):
+    if isinstance(end, string_types):
         end = column_index_from_string(end)
     return [get_column_letter(x) for x in range(start, end + 1)]
 

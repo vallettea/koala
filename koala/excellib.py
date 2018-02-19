@@ -6,26 +6,29 @@ Python equivalents of various excel functions
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excellib.py
 
-from __future__ import division
+from __future__ import absolute_import, division
+
 import numpy as np
 from datetime import datetime
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
-import re
+
+from openpyxl.compat import unicode
 
 from koala.utils import *
 from koala.Range import RangeCore as Range
 from koala.ExcelError import *
+from functools import reduce
 
 ######################################################################################
 # A dictionary that maps excel function names onto python equivalents. You should
 # only add an entry to this map if the python name is different to the excel name
-# (which it may need to be to  prevent conflicts with existing python functions 
+# (which it may need to be to  prevent conflicts with existing python functions
 # with that name, e.g., max).
 
 # So if excel defines a function foobar(), all you have to do is add a function
 # called foobar to this module.  You only need to add it to the function map,
-# if you want to use a different name in the python code. 
+# if you want to use a different name in the python code.
 
 # Note: some functions (if, pi, atan2, and, or, array, ...) are already taken care of
 # in the FunctionNode code, so adding them here will have no effect.
@@ -39,20 +42,20 @@ FUNCTION_MAP = {
     "round": "xround"
 }
 
-IND_FUN = [        
-    "SUM",        
-    "MIN",        
-    "MAX",        
-    "SUMPRODUCT",     
-    "IRR",        
-    "COUNT",      
-    "COUNTA",     
-    "COUNTIF",        
-    "COUNTIFS",       
-    "MATCH",      
-    "LOOKUP",     
-    "INDEX",      
-    "AVERAGE",        
+IND_FUN = [
+    "SUM",
+    "MIN",
+    "MAX",
+    "SUMPRODUCT",
+    "IRR",
+    "COUNT",
+    "COUNTA",
+    "COUNTIF",
+    "COUNTIFS",
+    "MATCH",
+    "LOOKUP",
+    "INDEX",
+    "AVERAGE",
     "SUMIF",
     "XNPV",
     "PMT",
@@ -116,7 +119,7 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
         return sum(values)
 
 def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
-    
+
     index = int(index_num)
 
     if index <= 0 or index > 254:
@@ -125,18 +128,18 @@ def choose(index_num, *values): # Excel reference: https://support.office.com/en
         return ExcelError('#VALUE!', '%s must not be larger than the number of values: %s' % (str(index_num), len(values)))
     else:
         return values[index - 1]
-    
+
 
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
 
-    # WARNING: 
+    # WARNING:
     # - wildcards not supported
     # - doesn't really follow 2nd remark about sum_range length
 
     if not isinstance(range, Range):
         return TypeError('%s must be a Range' % str(range))
 
-    if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly... 
+    if isinstance(criteria, Range) and not isinstance(criteria , (str, bool)): # ugly...
         return 0
 
     indexes = find_corresponding_index(range.values, criteria)
@@ -147,12 +150,12 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
 
         def f(x):
             return sum_range.values[x] if x < sum_range.length else 0
-        
+
         return sum(map(f, indexes))
 
     else:
-        return sum(map(lambda x: range.values[x], indexes))
-        
+        return sum([range.values[x] for x in indexes])
+
 
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
     # ignore non numeric cells and boolean cells
@@ -168,7 +171,7 @@ def right(text,n):
     else:
         # TODO: get rid of the decimal
         return str(int(text))[-n:]
-        
+
 
 def index(my_range, row, col = None): # Excel reference: https://support.office.com/en-us/article/INDEX-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
 
@@ -210,7 +213,7 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
 
     if nc == 1:
         return cells[int(row) - 1]
-        
+
     else: # could be optimised
         if col is None or row is None:
             return ExcelError('#VALUE!', 'Range is 2 dimensional, can not reach value with 1 arg as None')
@@ -221,32 +224,32 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
         if col > nc:
             return ExcelError('#VALUE!', 'Index %i out of range' % col)
 
-        indices = range(len(cells))
+        indices = list(range(len(cells)))
 
         if row == 0: # get column
-            filtered_indices = filter(lambda x: x % nc == col - 1, indices)
-            filtered_cells = map(lambda i: cells[i], filtered_indices)
+            filtered_indices = [x for x in indices if x % nc == col - 1]
+            filtered_cells = [cells[i] for i in filtered_indices]
 
             return filtered_cells
 
         elif col == 0: # get row
-            filtered_indices = filter(lambda x: int(x / nc) == row - 1, indices)
-            filtered_cells = map(lambda i: cells[i], filtered_indices)
+            filtered_indices = [x for x in indices if int(x / nc) == row - 1]
+            filtered_cells = [cells[i] for i in filtered_indices]
 
             return filtered_cells
 
         else:
-            return cells[(row - 1)* nc + (col - 1)]    
+            return cells[(row - 1)* nc + (col - 1)]
 
 
 def lookup(value, lookup_range, result_range = None): # Excel reference: https://support.office.com/en-us/article/LOOKUP-function-446d94af-663b-451d-8251-369d5e3864cb
-    
+
     # TODO
     if not isinstance(value,(int,float)):
         return Exception("Non numeric lookups (%s) not supported" % value)
-    
+
     # TODO: note, may return the last equal value
-    
+
     # index of the last numeric value
     lastnum = -1
     for i,v in enumerate(lookup_range.values):
@@ -270,35 +273,35 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
             else:
                 return output_range[i-1]
 
-# NEEDS TEST 
+# NEEDS TEST
 def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us/article/LINEST-function-84d7d0d9-6e50-4101-977a-fa7abf772b6d
 
-    Y = args[0].values()
-    X = args[1].values()
-    
+    Y = list(args[0].values())
+    X = list(args[1].values())
+
     if len(args) == 3:
         const = args[2]
         if isinstance(const,str):
             const = (const.lower() == "true")
     else:
         const = True
-        
+
     degree = kwargs.get('degree',1)
-    
+
     # build the vandermonde matrix
     A = np.vander(X, degree+1)
-    
+
     if not const:
         # force the intercept to zero
         A[:,-1] = np.zeros((1,len(X)))
-    
+
     # perform the fit
     (coefs, residuals, rank, sing_vals) = np.linalg.lstsq(A, Y)
-        
+
     return coefs
 
 # NEEDS TEST
-def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568 
+def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
     discount_rate = args[0]
     cashflow = args[1]
 
@@ -309,7 +312,7 @@ def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-
 
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
-    
+
     if not isinstance(lookup_range, Range):
         return ExcelError('#VALUE!', 'Lookup_range is not a Range')
 
@@ -325,7 +328,7 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
 
     lookup_value = type_convert(lookup_value)
 
-    range_values = filter(lambda x: x is not None, lookup_range.values) # filter None values to avoid asc/desc order errors
+    range_values = [x for x in lookup_range.values if x is not None] # filter None values to avoid asc/desc order errors
     range_length = len(range_values)
 
     if match_type == 1:
@@ -335,12 +338,10 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         for i in range(range_length):
             current = type_convert(range_values[i])
 
-
-
             if i is not range_length-1 and current > type_convert(range_values[i+1]):
                 return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
-                posMax = i 
+                posMax = i
         if posMax == -1:
             return ExcelError('#VALUE!','no result in lookup_range for match_type 1')
         return posMax +1 #Excel starts at 1
@@ -361,16 +362,16 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             if i is not range_length-1 and current < type_convert(range_values[i+1]):
                return ExcelError('#VALUE!','for match_type -1, lookup_range must be sorted descending')
             if current >= lookup_value:
-               posMin = i 
+               posMin = i
         if posMin == -1:
             return ExcelError('#VALUE!', 'no result in lookup_range for match_type -1')
         return posMin +1 #Excel starts at 1
 
 
 def mod(nb, q): # Excel Reference: https://support.office.com/en-us/article/MOD-function-9b6cd169-b6ee-406a-a97b-edf2a9dc24f3
-    if not isinstance(nb, (int, long)):
+    if not isinstance(nb, int):
         return ExcelError('#VALUE!', '%s is not an integer' % str(nb))
-    elif not isinstance(q, (int, long)):
+    elif not isinstance(q, int):
         return ExcelError('#VALUE!', '%s is not an integer' % str(q))
     else:
         return nb % q
@@ -383,7 +384,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
     for arg in l:
         if isinstance(arg, Range):
-            total += len(filter(lambda x: is_number(x) and type(x) is not bool, arg.values)) # count inside a list
+            total += len([x for x in arg.values if is_number(x) and type(x) is not bool]) # count inside a list
         elif is_number(arg): # int() is used for text representation of numbers
             total += 1
 
@@ -397,11 +398,11 @@ def counta(range):
             return range # return the Excel Error
             # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
-        return len(filter(lambda x: x != None, range.values))
+        return len([x for x in range.values if x != None])
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
-    
-    # WARNING: 
+
+    # WARNING:
     # - wildcards not supported
     # - support of strings with >, <, <=, =>, <> not provided
 
@@ -509,7 +510,7 @@ def roundup(number, num_digits = 0): # Excel reference: https://support.office.c
 
 
 def mid(text, start_num, num_chars): # Excel reference: https://support.office.com/en-us/article/MID-MIDB-functions-d5f9e25c-d7d6-472e-b568-4ecb12433028
-    
+
     text = str(text)
 
     if type(start_num) != int:
@@ -556,7 +557,7 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
 
 
 def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://support.office.com/en-us/article/YEARFRAC-function-3844141e-c76d-4143-82b6-208454ddc6a8
-    
+
     def actual_nb_days_ISDA(start, end): # needed to separate days_in_leap_year from days_not_leap_year
         y1, m1, d1 = start
         y2, m2, d2 = end
@@ -564,7 +565,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
         days_in_leap_year = 0
         days_not_in_leap_year = 0
 
-        year_range = range(y1, y2 + 1)
+        year_range = list(range(y1, y2 + 1))
 
         for y in year_range:
 
@@ -600,7 +601,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
             else:
                 denom = 365
         else:
-            year_range = range(y1, y2 + 1)
+            year_range = list(range(y1, y2 + 1))
             nb = 0
 
             for y in year_range:
@@ -622,7 +623,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
     if start_date > end_date: # switch dates if start_date > end_date
         temp = end_date
         end_date = start_date
-        start_date = temp 
+        start_date = temp
 
     y1, m1, d1 = date_from_int(start_date)
     y2, m2, d2 = date_from_int(end_date)
@@ -738,7 +739,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
             # If there is an ExcelError inside a Range, sumproduct should output an ExcelError
             if isinstance(item, ExcelError):
                 return ExcelError("#N/A", "ExcelErrors are present in the sumproduct items")
-    
+
     reduce(check_length, range_list) # check that all ranges have the same size
 
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values)
@@ -764,7 +765,7 @@ def irr(values, guess = None): # Excel reference: https://support.office.com/en-
             return ExcelError('#NUM!', e)
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
-    
+
     if not isinstance(table_array, Range):
         return ExcelError('#VALUE', 'table_array should be a Range')
 
@@ -774,8 +775,6 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
     first_column = table_array.get(0, 1)
     result_column = table_array.get(0, col_index_num)
 
-    list = zip(first_column.order, first_column.values)
-    
     if not range_lookup:
         if lookup_value not in first_column.values:
             return ExcelError('#N/A', 'lookup_value not in first column of table_array')
@@ -811,7 +810,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
             return arg
 
     for arg in [cost, salvage, life, start_period, end_period, factor]:
-        if not isinstance(arg, (float, int, long)):
+        if not isinstance(arg, (float, int)):
             return ExcelError('#VALUE', 'Arg %s should be an int, float or long, instead: %s' % (arg, type(arg)))
 
     start_period = start_period
@@ -835,7 +834,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
         end_life = int(life + 1)
     else:
         end_life = int(life)
-    periods = range(start_life, end_life)
+    periods = list(range(start_life, end_life))
 
     if int(start_period) != start_period:
         delta_start = abs(int(start_period) - start_period)
@@ -845,10 +844,10 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
         start_life = 1
 
-        periods = map(lambda x: x + 0.5, periods)
+        periods = [x + 0.5 for x in periods]
 
     for index, current_year in enumerate(periods):
-        
+
         if not no_switch: # no_switch = False (Default Case)
             if switch_to_sln:
                 depr = sln_depr
@@ -879,13 +878,13 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
         else: # no_switch = True
             depr = (cost - acc_depr) * depr_rate
             acc_depr += depr
-        
+
         delta_start = abs(current_year - start_period)
-        
+
         if delta_start < 1 and delta_start != 0:
             result += depr * (1 - delta_start)
         elif current_year >= start_period and current_year < end_period:
-        
+
             delta_end = abs(end_period - current_year)
 
             if delta_end < 1 and delta_end != 0:
