@@ -25,7 +25,7 @@ def parse_cell_address(ref):
             return parse_cell_addr_cache[ref]
     except:
         raise Exception('Couldn\'t find match in cell ref')
-    
+
 get_cell_addr_cache = {}
 
 def get_cell_address(sheet, tuple):
@@ -36,7 +36,7 @@ def get_cell_address(sheet, tuple):
         col = tuple[1]
 
         if sheet is not None:
-            addr = sheet + '!' + col + str(row)
+            addr = sheet + '!' + str(col) + str(row)
             get_cell_addr_cache[(sheet, tuple)] = addr
             return addr
         else:
@@ -89,7 +89,7 @@ class RangeCore(dict):
 
     # A separate function from __init__ is necessary so that it can be called from outside
     def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
-    
+
         if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         else:
@@ -211,7 +211,7 @@ class RangeCore(dict):
             return values
         else:
             return self.cells
-    
+
     @values.setter
     def values(self, new_values):
         if self.__cellmap:
@@ -240,7 +240,7 @@ class RangeCore(dict):
                 raise Exception('Trying to access 1-dim range value with 2 coordinates')
             else:
                 return values[row - 1]
-            
+
         else: # could be optimised
             origin_col = col2num(self.origin[1])
             origin_row = self.origin[0]
@@ -347,12 +347,12 @@ class RangeCore(dict):
                     return range.addresses[range.order.index((row, col))]
                 else:
                     return None
-                
+
             else:
                 return None
         else:
             return None
-            
+
     @staticmethod
     def find_associated_value(ref, item):
         # This function is ALMOST equivalent to RangeCore.find_associated_cell, but retrieves the value and not the Cell.
@@ -368,7 +368,7 @@ class RangeCore(dict):
                     else:
                         item_value = item[(row, item.origin[1])] if (row, item.origin[1]) in item else None
                 elif item.type == "horizontal":
-                    
+
                     if item.__cellmap is not None:
                         try:
                             item_value = item[(item.origin[0], col)].value if (item.origin[0], col) in item else None
@@ -441,14 +441,14 @@ class RangeCore(dict):
         if isinstance(first, RangeCore) and isinstance(second, RangeCore):
             if first.length != second.length:
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
-            
+
             vals = [function(
                 x.value if type(x) == Cell else x,
                 y.value if type(y) == Cell else y
             ) for x,y in zip(first.cells, second.cells)]
 
             return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
-        
+
         elif isinstance(first, RangeCore):
             vals = [function(
                 x.value if type(x) == Cell else x,
@@ -507,7 +507,7 @@ class RangeCore(dict):
 
     @staticmethod
     def is_equal(a, b):
-        try:            
+        try:
             if not isinstance(a, (str, unicode)):
                 a = check_value(a)
             if not isinstance(b, (str, unicode)):
@@ -583,6 +583,6 @@ def RangeFactory(cellmap = None):
     class Range(RangeCore):
 
         def __init__(self, reference, values = None):
-            super(Range, self).__init__(reference, values, cellmap = cellmap)       
+            super(Range, self).__init__(reference, values, cellmap = cellmap)
 
     return Range

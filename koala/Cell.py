@@ -2,8 +2,9 @@
 
 from __future__ import division
 from itertools import izip
-    
+
 from koala.utils import *
+
 
 class Cell(object):
     ctr = 0
@@ -13,7 +14,7 @@ class Cell(object):
     def next_id(cls):
         cls.ctr += 1
         return cls.ctr
-    
+
 
     def __init__(self, address, sheet = None, value=None, formula=None, is_range = False, is_named_range=False, should_eval='normal'):
         super(Cell,self).__init__()
@@ -22,9 +23,9 @@ class Cell(object):
 
             # remove $'s
             address = address.replace('$','')
-            
+
             sh,c,r = split_address(address)
-            
+
             # both are empty
             if not sheet and not sh:
                 raise Exception("Sheet name may not be empty for cell address %s" % address)
@@ -32,13 +33,13 @@ class Cell(object):
             elif sh and sheet and sh != sheet:
                 raise Exception("Sheet name mismatch for cell address %s: %s vs %s" % (address,sheet, sh))
             elif not sh and sheet:
-                sh = sheet 
+                sh = sheet
             else:
                 pass
-                    
+
             # we assume a cell's location can never change
             self.__sheet = sheet.encode('utf-8') if sheet is not None else sheet
-            
+
             self.__sheet = sh
             self.__col = c
             self.__row = int(r)
@@ -62,7 +63,7 @@ class Cell(object):
         self.should_eval = should_eval
         self.__compiled_expression = None
         self.__is_range = is_range
-        
+
         # every cell has a unique id
         self.__id = Cell.next_id()
 
@@ -92,12 +93,12 @@ class Cell(object):
         if self.__is_range:
             self.__value = new_range
         else:
-            raise Exception('Setting a range as non-range Cell %s value' % self.address()) 
+            raise Exception('Setting a range as non-range Cell %s value' % self.address())
 
     @property
     def is_named_range(self):
         return self.__named_range is not None
-    
+
     @property
     def is_range(self):
         return self.__is_range
@@ -148,11 +149,11 @@ class Cell(object):
 
     def __setstate__(self, d):
         self.__dict__.update(d)
-        self.compile() 
-    
+        self.compile()
+
     def clean_name(self):
         return self.address().replace('!','_').replace(' ','_')
-        
+
     def address(self, absolute=True):
         if self.__named_range is not None:
             return self.__named_range
@@ -160,22 +161,22 @@ class Cell(object):
             return "%s!%s%s" % (self.__sheet,self.__col,self.__row)
         else:
             return "%s%s" % (self.__col,self.__row)
-    
+
     def address_parts(self):
         return (self.__sheet,self.__col,self.__row,self.__col_idx)
-        
+
     def compile(self):
         if not self.python_expression: return
-        
+
         # if we are a constant string, surround by quotes
         if isinstance(self.value,(str,unicode)) and not self.formula and not self.python_expression.startswith('"'):
             self.python_expression='"' + self.python_expression + '"'
-        
+
         try:
             self.__compiled_expression = compile(self.python_expression,'<string>','eval')
         except Exception as e:
-            raise Exception("Failed to compile cell %s with expression %s: %s\nFormula: %s" % (self.address(),self.python_expression,e, self.formula)) 
-    
+            raise Exception("Failed to compile cell %s with expression %s: %s\nFormula: %s" % (self.address(),self.python_expression,e, self.formula))
+
     def __str__(self):
         return self.address()
 
@@ -188,15 +189,15 @@ class Cell(object):
     def inc_row_address(address,inc):
         sh,col,row = split_address(address)
         return "%s!%s%s" % (sh,col,row+inc)
-        
+
     @staticmethod
     def resolve_cell(excel, address, sheet=None):
         r = excel.get_range(address)
         f = r.Formula if r.Formula.startswith('=') else None
         v = r.Value
-        
+
         sh,c,r = split_address(address)
-        
+
         # use the sheet specified in the cell, else the passed sheet
         if sh: sheet = sh
 
@@ -218,12 +219,12 @@ class Cell(object):
                 ads = [ads]
             elif numcols == 1:
                 ads = [[x] for x in ads]
-                
+
             # get everything in blocks, is faster
             r = excel.get_range(range)
             fs = r.Formula
             vs = r.Value
-            
+
             for it in (list(izip(*x)) for x in izip(ads,fs,vs)):
                 row = []
                 for c in it:
@@ -233,7 +234,7 @@ class Cell(object):
                     cl = Cell(a,sheet,value=v, formula=f)
                     row.append(cl)
                 cells.append(row)
-            
+
             #return as vector
             if numrows == 1:
                 cells = cells[0]
@@ -247,5 +248,5 @@ class Cell(object):
 
             numrows = 1
             numcols = 1
-            
+
         return (cells,numrows,numcols)

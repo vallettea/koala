@@ -3,10 +3,9 @@ import re
 import os
 import json
 
-from koala.openpyxl.formula.translate import Translator 
+from koala.openpyxl.formula.translate import Translator
 from koala.openpyxl.cell.text import Text
 from koala.openpyxl.utils.indexed_list import IndexedList
-import koala.openpyxl.xml.functions
 from koala.openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
 from koala.openpyxl.xml.constants import (
     SHEET_MAIN_NS,
@@ -33,7 +32,7 @@ from koala.utils import CELL_REF_RE, col2num
 FLOAT_REGEX = re.compile(r"\.|[E-e]")
 CENTRAL_DIRECTORY_SIGNATURE = b'\x50\x4b\x05\x06'
 
-def repair_central_directory(zipFile, is_file_instance): # source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/reader/excel.py?at=default&fileviewer=file-view-default 
+def repair_central_directory(zipFile, is_file_instance): # source: https://bitbucket.org/openpyxl/openpyxl/src/93604327bce7aac5e8270674579af76d390e09c0/openpyxl/reader/excel.py?at=default&fileviewer=file-view-default
     ''' trims trailing data from the central directory
     code taken from http://stackoverflow.com/a/7457686/570216, courtesy of Uri Cohen
     '''
@@ -121,7 +120,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
         function_map = {}
 
         if sheet_name in ignore_sheets: continue
-        
+
         root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
         hidden_cols = False
@@ -145,7 +144,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
 
             if hidden_cols:
                 found = re.search(CELL_REF_RE, cell_address)
-                col = col2num(found.group(1)) 
+                col = col2num(found.group(1))
 
                 if col >= hidden_col_min and col <= hidden_col_max:
                     nb_hidden += 1
@@ -165,8 +164,8 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
                             # else:
                             #     print "Encountered cell with ref but not si: ", sheet_name, child.attrib['ref']
                         if child_data_type == 'shared':
-                            if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si']) 
-                            
+                            if debug: print '*** Found child %s of shared formula %s ***' % (cell_address, child.attrib['si'])
+
                             ref = function_map[child.attrib['si']][0]
                             formula = function_map[child.attrib['si']][1]
 
@@ -199,7 +198,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
 
                 if cell['f'] is not None or cell['v'] is not None:
                     should_eval = 'always' if cell['f'] is not None and 'OFFSET' in cell['f'] else 'normal'
-                    
+
                     # cleaned_formula = cell['f']
                     cleaned_formula = cell['f'].replace(", ", ",") if cell['f'] is not None else None
                     if "!" in cell_address:

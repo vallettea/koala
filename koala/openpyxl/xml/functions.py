@@ -29,28 +29,27 @@ if LXML is True:
     QName,
     xmlfile
     )
-    # from xml.etree.cElementTree import iterparse
     from xml.etree import cElementTree
 else:
     try:
         from xml.etree.cElementTree import (
-        ElementTree,
-        Element,
-        SubElement,
-        fromstring,
-        tostring,
-        iterparse,
-        QName
+            ElementTree,
+            Element,
+            SubElement,
+            fromstring,
+            tostring,
+            iterparse,
+            QName
         )
     except ImportError:
         from xml.etree.ElementTree import (
-        ElementTree,
-        Element,
-        SubElement,
-        fromstring,
-        tostring,
-        iterparse,
-        QName
+            ElementTree,
+            Element,
+            SubElement,
+            fromstring,
+            tostring,
+            iterparse,
+            QName
         )
     from .namespace import register_namespace
     from et_xmlfile import xmlfile

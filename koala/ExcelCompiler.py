@@ -1,17 +1,12 @@
 # cython: profile=True
 
 import os.path
-import textwrap
-from math import *
 
 import networkx
-from networkx.algorithms import number_connected_components
 
 from koala.reader import read_archive, read_named_ranges, read_cells
-from koala.excellib import *
 from koala.utils import *
 from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
-from koala.ExcelError import *
 from koala.Cell import Cell
 from koala.Range import RangeFactory
 from koala.Spreadsheet import Spreadsheet
@@ -43,7 +38,7 @@ class ExcelCompiler(object):
         self.cells = cleaned_cells
         self.named_ranges = cleaned_ranged_names
         self.pointers = set()
-            
+
     def gen_graph(self, outputs = [], inputs = []):
         print '___### Generating Graph ###___'
 
@@ -51,7 +46,7 @@ class ExcelCompiler(object):
             preseeds = set(list(flatten(self.cells.keys())) + self.named_ranges.keys()) # to have unicity
         else:
             preseeds = set(outputs)
-        
+
         preseeds = list(preseeds) # to be able to modify the list
 
         seeds = []
@@ -133,7 +128,7 @@ class ExcelCompiler(object):
 
 
         print "Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
-        
+
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 

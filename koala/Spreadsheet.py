@@ -1,24 +1,16 @@
 # cython: profile=True
 
-import os.path
-import textwrap
-from math import *
-
 import networkx
-from networkx.algorithms import number_connected_components
-
-import json
-import re
 
 from koala.openpyxl.formula.translate import Translator
 
 from koala.excellib import *
 from koala.utils import *
 from koala.ast import *
-from koala.Cell import Cell
-from koala.Range import RangeCore, RangeFactory, parse_cell_address, get_cell_address
+from koala.Range import parse_cell_address, get_cell_address
 from koala.tokenizer import reverse_rpn
 from koala.serializer import *
+
 
 class Spreadsheet(object):
     def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
@@ -32,7 +24,7 @@ class Spreadsheet(object):
             addr_to_name[named_ranges[name]] = name
         self.addr_to_name = addr_to_name
 
-        addr_to_range = {}        
+        addr_to_range = {}
         for c in self.cellmap.values():
             if c.is_range and len(c.range.keys()) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
@@ -62,10 +54,10 @@ class Spreadsheet(object):
         self.save_history = True
 
     def add_cell(self, cell, value = None):
-        
+
         if type(cell) != Cell:
             cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
-        
+
         addr = cell.address()
         if addr in self.cellmap:
             raise Exception('Cell %s already in cellmap' % addr)
@@ -111,7 +103,7 @@ class Spreadsheet(object):
         print "Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap))
 
 
-    def prune_graph(self):
+    def prune_graph(self, *args):
         print '___### Pruning Graph ###___'
 
         G = self.G
@@ -148,7 +140,7 @@ class Spreadsheet(object):
                         new_cellmap[current.address()] = current
 
                         nexts = G.predecessors(pred)
-                        for n in nexts:            
+                        for n in nexts:
                             if (pred,n) not in done:
                                 todo += [(pred,n)]
                                 done.add((pred,n))
@@ -162,7 +154,7 @@ class Spreadsheet(object):
 
                         const_node = new_cellmap[pred.address()]
                         subgraph.add_edge(const_node, current)
-                        
+
                 else:
                     # case of range independant of input, we add all children as const
                     if pred.address() not in new_cellmap:
@@ -231,7 +223,7 @@ class Spreadsheet(object):
                     self.cellmap[n] = Cell(n, None, value = self.cellmap[reference].value, formula = reference, is_range = False, is_named_range = True )
                 else:
                     self.cellmap[n] = Cell(n, None, value = None, formula = reference, is_range = False, is_named_range = True )
-        
+
         ### 2) gather all occurence of pointer functions in cells or named_range
         all_pointers = set()
 
@@ -256,7 +248,7 @@ class Spreadsheet(object):
             e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
             ast,root = build_ast(e)
             code = root.emit(ast)
-            
+
             cell = {"formula": formula, "address": address, "sheet": sheet}
 
             replacements = self.eval_pointers_from_ast(ast, root, cell)
@@ -278,7 +270,7 @@ class Spreadsheet(object):
 
             if address in new_named_ranges:
                 new_named_ranges[address] = new_formula
-            else: 
+            else:
                 old_cell = self.cellmap[address]
                 new_cells[address] = Cell(old_cell.address(), old_cell.sheet, value=old_cell.value, formula=new_formula, is_range = old_cell.is_range, is_named_range=old_cell.is_named_range, should_eval=old_cell.should_eval)
 
@@ -301,7 +293,7 @@ class Spreadsheet(object):
                 expression_type = "value"
             else:
                 expression_type = "formula"
-            
+
             try:
                 pointer_value = eval(expression)
 
@@ -310,7 +302,7 @@ class Spreadsheet(object):
                     print 'EXCEPTION raised in eval_pointers: EXPR', expression, cell["address"]
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression))
 
-            return {"formula":pointer_string, "value": pointer_value, "expression_type": expression_type}      
+            return {"formula":pointer_string, "value": pointer_value, "expression_type": expression_type}
         else:
             for c in node.children(ast):
                 results.append(self.eval_pointers_from_ast(ast, c, cell))
@@ -338,7 +330,7 @@ class Spreadsheet(object):
 
                 for child in self.G.successors_iter(cell):
                     todo.append(child)
-  
+
                 done.add(cell)
 
         self.pointers_to_reset = alive
@@ -346,8 +338,8 @@ class Spreadsheet(object):
 
 
     def find_pointer_arguments(self, outputs = None):
-        
-        # 1) gather all occurence of pointer 
+
+        # 1) gather all occurence of pointer
         all_pointers = set()
 
         if outputs is None:
@@ -371,7 +363,7 @@ class Spreadsheet(object):
                         else:
                             raise Exception('Volatiles should always have a formula')
 
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree      
+                    for parent in self.G.predecessors_iter(cell): # climb up the tree
                         todo.append(parent)
 
                     done.add(cell)
@@ -391,12 +383,12 @@ class Spreadsheet(object):
                 e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
                 ast,root = build_ast(e)
                 code = root.emit(ast)
-                
+
                 for a in list(flatten(self.get_pointer_arguments_from_ast(ast, root, sheet))):
                     pointer_arguments.add(a)
 
                 done.add(formula)
-            
+
         return pointer_arguments
 
 
@@ -452,7 +444,7 @@ class Spreadsheet(object):
     @staticmethod
     def load_json(fname):
         return Spreadsheet(*load_json(fname))
-    
+
     def set_value(self, address, val):
 
         self.reset_buffer = set()
@@ -467,7 +459,7 @@ class Spreadsheet(object):
         self.fix_cell(address)
 
         # case where the address refers to a range
-        if self.cellmap[address].is_range: 
+        if self.cellmap[address].is_range:
             cells_to_set = []
             # for a in self.cellmap[address].range.addresses:
                 # if a in self.cellmap:
@@ -484,7 +476,7 @@ class Spreadsheet(object):
         else:
             if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
                 ref_address = self.named_ranges[address]
-                
+
                 if ref_address in self.cellmap:
                     ref_cell = self.cellmap[ref_address]
                 else:
@@ -538,7 +530,7 @@ class Spreadsheet(object):
                 cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
                 if cell.python_expression is not None:
                     self.eval_ref(addr)
-                
+
                 cell.should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
 
@@ -548,7 +540,7 @@ class Spreadsheet(object):
             cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
             if cell.python_expression is not None:
                 self.eval_ref(address)
-            
+
             cell.should_eval = self.fixed_cells[address]
             self.fixed_cells.pop(address, None)
         else:
@@ -613,7 +605,7 @@ class Spreadsheet(object):
                             self.update_range(cell1.range)
 
                             range_need_update = True
-                            
+
                             for c in self.G.successors_iter(cell1): # if a parent doesnt need update, then cell1 doesnt need update
                                 if not c.need_update:
                                     range_need_update = False
@@ -649,7 +641,7 @@ class Spreadsheet(object):
     def update_range(self, range):
         # This function loops through its Cell references to evaluate the ones that need so
         # This uses Spreadsheet.pending dictionary, that holds the addresses of the Cells that are being calculated
-        
+
         debug = False
 
         for index, key in enumerate(range.order):
@@ -657,7 +649,7 @@ class Spreadsheet(object):
 
             if self.cellmap[addr].need_update:
                 new_value = self.evaluate(addr)
-            
+
 
     def evaluate(self,cell,is_addr=True):
         if is_addr:
@@ -666,7 +658,7 @@ class Spreadsheet(object):
             except:
                 if self.debug:
                     print 'WARNING: Empty cell at ' + cell
-                return ExcelError('#NULL', 'Cell %s is empty' % cell)    
+                return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
@@ -683,9 +675,9 @@ class Spreadsheet(object):
                     cell.value = vv if vv != '' else None
             else:
                 cell.value = 0
-            
+
             cell.need_update = False
-            
+
             # DEBUG: saving differences
             if self.save_history:
                 if cell.address() in self.history:
@@ -713,6 +705,6 @@ class Spreadsheet(object):
             if e.message is not None and e.message.startswith("Problem evalling"):
                 raise e
             else:
-                raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression)) 
+                raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression))
 
         return cell.value
