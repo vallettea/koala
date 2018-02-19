@@ -1,5 +1,7 @@
 # Koala
 
+[![Build Status](https://travis-ci.org/anthill/koala.svg?branch=master)](https://travis-ci.org/anthill/koala)
+
 Koala converts any Excel workbook into a python object that enables on the fly calculation without the need of Excel.
 
 Koala parses an Excel workbook and creates network of all the cells with their dependencies. It is then possible to change any value of a node and recompute all the depending cells.
