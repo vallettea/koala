@@ -8,7 +8,11 @@ import json
 from koala.openpyxl.formula.translate import Translator
 from koala.openpyxl.cell.text import Text
 from koala.openpyxl.utils.indexed_list import IndexedList
-from koala.openpyxl.xml.functions import iterparse, fromstring, safe_iterator, cElementTree as ET
+from koala.openpyxl.xml.functions import iterparse, fromstring, safe_iterator
+try:
+    from xml.etree.cElementTree import ElementTree as ET
+except ImportError:
+    from xml.etree.ElementTree import ElementTree as ET
 from koala.openpyxl.xml.constants import (
     SHEET_MAIN_NS,
     REL_NS,
@@ -123,7 +127,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
 
         if sheet_name in ignore_sheets: continue
 
-        root = ET.fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
+        root = fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
         hidden_cols = False
         nb_hidden = 0

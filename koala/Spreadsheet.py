@@ -332,7 +332,7 @@ class Spreadsheet(object):
                 if cell.address() in pointer_arguments:
                     alive.add(cell.address())
 
-                for child in self.G.successors_iter(cell):
+                for child in self.G.successors(cell):
                     todo.append(child)
 
                 done.add(cell)
@@ -513,7 +513,7 @@ class Spreadsheet(object):
             self.reset_buffer.add(cell)
             cell.need_update = True
 
-        for child in self.G.successors_iter(cell):
+        for child in self.G.successors(cell):
             if child not in self.reset_buffer:
                 self.reset(child)
 
@@ -609,8 +609,7 @@ class Spreadsheet(object):
                             self.update_range(cell1.range)
 
                             range_need_update = True
-
-                            for c in self.G.successors_iter(cell1): # if a parent doesnt need update, then cell1 doesnt need update
+                            for c in self.G.successors(cell1): # if a parent doesnt need update, then cell1 doesnt need update
                                 if not c.need_update:
                                     range_need_update = False
                                     break

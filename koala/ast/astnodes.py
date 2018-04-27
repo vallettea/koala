@@ -46,8 +46,9 @@ class ASTNode(object):
         return args
 
     def parent(self,ast):
-        args = ast.successors(self)
+        args = list(ast.successors(self))
         return args[0] if args else None
+
 
     def find_special_function(self, ast):
         found = False
