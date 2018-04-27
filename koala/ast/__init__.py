@@ -287,13 +287,13 @@ def build_ast(expression, debug = False):
                     if '!' in arg1.tvalue and arg2.ttype == 'operand' and '!' not in arg2.tvalue:
                         arg2.tvalue = arg1.tvalue.split('!')[0] + '!' + arg2.tvalue
 
-                G.add_node(arg1,{'pos':1})
-                G.add_node(arg2,{'pos':2})
+                G.add_node(arg1,pos = 1)
+                G.add_node(arg2,pos = 2)
                 G.add_edge(arg1, n)
                 G.add_edge(arg2, n)
             else:
                 arg1 = stack.pop()
-                G.add_node(arg1,{'pos':1})
+                G.add_node(arg1,pos = 1)
                 G.add_edge(arg1, n)
 
         elif isinstance(n,FunctionNode):
@@ -310,11 +310,10 @@ def build_ast(expression, debug = False):
             #        raise Exception('prut')
             args.reverse()
             for i,a in enumerate(args):
-                G.add_node(a,{'pos':i})
+                G.add_node(a,pos = i)
                 G.add_edge(a,n)
-
         else:
-            G.add_node(n,{'pos':0})
+            G.add_node(n,pos=0)
 
         stack.append(n)
 
