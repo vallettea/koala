@@ -29,6 +29,7 @@ class Spreadsheet(object):
         self.addr_to_name = addr_to_name
 
         addr_to_range = {}
+        
         for c in list(self.cellmap.values()):
             if c.is_range and len(list(c.range.keys())) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
@@ -367,7 +368,7 @@ class Spreadsheet(object):
                         else:
                             raise Exception('Volatiles should always have a formula')
 
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree
+                    for parent in self.G.predecessors(cell): # climb up the tree
                         todo.append(parent)
 
                     done.add(cell)
@@ -455,7 +456,7 @@ class Spreadsheet(object):
 
         if address not in self.cellmap:
             raise Exception("Address not present in graph.")
-
+            
         address = address.replace('$','')
         cell = self.cellmap[address]
 
