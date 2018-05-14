@@ -52,10 +52,7 @@ def dump(self, fname):
         parse_cell_info(cell)
         value = cell.value
         if isinstance(value, unicode):
-            #raji-j added
             outfile.write(cell.value.encode('utf-8') + b"\n")
-            #eol
-            #outfile.write(cell.value.encode('utf-8')+ "\n")
         else:
             outfile.write((str(cell.value) + u"\n").encode('utf-8'))
         outfile.write(b"====" + b"\n")
@@ -125,9 +122,9 @@ def load(fname):
     infile = gzip.GzipFile(fname, 'rb')
         
     for line in infile.read().splitlines():
-        #raji-j added
+
         line= line.decode("utf-8")
-        #eol
+
         if line == "====":            
             mode = "node0"
             continue
@@ -190,10 +187,7 @@ def load(fname):
             k,v = line.split(SEP)
             named_ranges[k] = v
 
-    #G = DiGraph(data=edges)
-    #raji-j added
     G = DiGraph(edges)
-    #eol
     
     print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
