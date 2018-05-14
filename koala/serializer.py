@@ -16,8 +16,8 @@ SEP = ";;"
 
 ########### based on custom format #################
 def dump(self, fname):
-    outfile = gzip.GzipFile(fname, 'w')
 
+    outfile = gzip.GzipFile(fname,'w')
 
     # write simple cells first
     simple_cells = [cell for cell in list(self.cellmap.values()) if cell.is_range == False]
@@ -50,15 +50,14 @@ def dump(self, fname):
 
     for cell in simple_cells:
         parse_cell_info(cell)
-
         value = cell.value
         if isinstance(value, unicode):
-            outfile.write(cell.value.encode('utf-8') + "\n")
+            outfile.write(cell.value.encode('utf-8') + b"\n")
         else:
-            outfile.write(str(cell.value) + "\n")
-        outfile.write("====" + "\n")
+            outfile.write((str(cell.value) + u"\n").encode('utf-8'))
+        outfile.write(b"====" + b"\n")
 
-    outfile.write("-----" + "\n")
+    outfile.write(b"-----" + b"\n")
 
     for cell in range_cells:
         parse_cell_info(cell)
@@ -68,22 +67,22 @@ def dump(self, fname):
         else:
             outfile.write((cell.range.name + u"\n").encode('utf-8'))
 
-        outfile.write("====" + "\n")
-        outfile.write("====" + "\n")
+        outfile.write(b"====" + b"\n")
+        outfile.write(b"====" + b"\n")
 
     # writing the edges
-    outfile.write("edges" + "\n")
+    outfile.write(b"edges" + b"\n")
     for source, target in self.G.edges():
         outfile.write((source.address() + SEP + target.address() + u"\n").encode('utf-8'))
 
     # writing the rest
     if self.outputs is not None:
-        outfile.write("outputs" + "\n")
+        outfile.write(b"outputs" + b"\n")
         outfile.write((SEP.join(self.outputs) + u"\n").encode('utf-8'))
     if self.inputs is not None:
-        outfile.write("inputs" + "\n")
+        outfile.write(b"inputs" + b"\n")
         outfile.write((SEP.join(self.inputs) + u"\n").encode('utf-8'))
-    outfile.write("named_ranges" + "\n")
+    outfile.write(b"named_ranges" + b"\n")
     for k in self.named_ranges:
         outfile.write((k + SEP + self.named_ranges[k] + u"\n").encode('utf-8'))
 
@@ -120,11 +119,13 @@ def load(fname):
     outputs = None
     inputs = None
     named_ranges = {}
-    infile = gzip.GzipFile(fname, 'r')
-
+    infile = gzip.GzipFile(fname, 'rb')
+        
     for line in infile.read().splitlines():
 
-        if line == "====":
+        line= line.decode("utf-8")
+
+        if line == "====":            
             mode = "node0"
             continue
         if line == "-----":
@@ -132,7 +133,7 @@ def load(fname):
             Range = RangeFactory(cellmap_temp)
             mode = "node0"
             continue
-        elif line == "edges":
+        elif line == "edges":   
             cellmap = {n.address(): n for n in nodes}
             mode = "edges"
             continue
@@ -147,40 +148,32 @@ def load(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)
+            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)            
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
             is_pointer = to_bool(is_pointer)
-            should_eval = should_eval
+            should_eval = should_eval            
             mode = "node1"
-        elif mode == "node1":
+        elif mode == "node1":            
             if is_range:
-
                 reference = json.loads(line) if is_pointer else line # in order to be able to parse dicts
                 vv = Range(reference)
-
                 if is_pointer:
                     if not is_named_range:
                         address = vv.name
-
                     pointers.add(address)
-
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 nodes.append(cell)
             else:
                 value = to_bool(to_float(line))
-
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
-
                 cell.python_expression = python_expression
                 if formula:
                     if 'OFFSET' in formula or 'INDEX' in formula:
                         pointers.add(address)
-
-
                     cell.compile()
                 nodes.append(cell)
         elif mode == "edges":
@@ -194,8 +187,8 @@ def load(fname):
             k,v = line.split(SEP)
             named_ranges[k] = v
 
-    G = DiGraph(data = edges)
-
+    G = DiGraph(edges)
+    
     print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, named_ranges, pointers, outputs, inputs)
