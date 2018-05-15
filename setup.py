@@ -7,7 +7,7 @@ if __name__ == '__main__':
     setup(
         name = "koala2",
 
-        version = "0.0.19",
+        version = "0.0.20",
 
         author = "Ants, open innovation lab",
         author_email = "contact@weareants.fr",
