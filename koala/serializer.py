@@ -196,11 +196,8 @@ def load(fname):
 ########### based on json #################
 def dump_json(self, fname):
     data = json_graph.node_link_data(self.G)
-    # save nodes as simple objects
-    nodes = []
-    for node in data["nodes"]:
-        cell = node["id"]
 
+    def cell_to_dict(cell):
         if isinstance(cell.range, RangeCore):
             range = cell.range
             value = {
@@ -212,18 +209,33 @@ def dump_json(self, fname):
         else:
             value = cell.value
 
-        nodes += [{
+        node = {
             "address": cell.address(),
             "formula": cell.formula,
             "value": value,
             "python_expression": cell.python_expression,
             "is_named_range": cell.is_named_range,
             "should_eval": cell.should_eval
-        }]
+        }
+        return node
+
+    # save nodes as simple objects
+    nodes = []
+    for node in data["nodes"]:
+        cell = node["id"]
+        nodes.append(cell_to_dict(cell))
+
+    links = []
+    for el in data['links']:
+        link = {key: cell.address() for key, cell in el.iteritems()}
+        links.append(link)
+
     data["nodes"] = nodes
+    data["links"] = links
     data["outputs"] = self.outputs
     data["inputs"] = self.inputs
     data["named_ranges"] = self.named_ranges
+
     with gzip.GzipFile(fname, 'w') as outfile:
         outfile.write(json.dumps(data))
 
@@ -257,16 +269,23 @@ def load_json(fname):
         return rv
     with gzip.GzipFile(fname, 'r') as infile:
         data = json.loads(infile.read(), object_hook=_decode_dict)
+
     def cell_from_dict(d):
         cell_is_range = type(d["value"]) == dict
         if cell_is_range:
             range = d["value"]
             if len(range["values"]) == 0:
                 range["values"] = [None] * len(range["cells"])
-            value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
+            value = RangeCore(
+                range["cells"], range["values"],
+                nrows=range["nrows"], ncols=range["ncols"])
         else:
             value = d["value"]
-        new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], should_eval=d["should_eval"])
+        new_cell = Cell(
+            d["address"], None, value=value, formula=d["formula"],
+            is_range=cell_is_range,
+            is_named_range=d["is_named_range"],
+            should_eval=d["should_eval"])
         new_cell.python_expression = d["python_expression"]
         new_cell.compile()
         return {"id": new_cell}
@@ -274,10 +293,33 @@ def load_json(fname):
     nodes = list(map(cell_from_dict, data["nodes"]))
     data["nodes"] = nodes
 
-    G = json_graph.node_link_graph(data)
-    cellmap = {n.address():n for n in G.nodes()}
+    def find_cell(nodes, address):
+        for node in nodes:
+            cell = node['id']
+            if cell.address() == address:
+                return cell
 
-    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+        assert False
+
+    links = []
+    for el in data['links']:
+        source_address = el['source']
+        target_address = el['target']
+        link = {
+            'source': find_cell(data['nodes'], source_address),
+            'target': find_cell(data['nodes'], target_address)
+        }
+        links.append(link)
+
+    data['links'] = links
+
+    G = json_graph.node_link_graph(data)
+    cellmap = {n.address(): n for n in G.nodes()}
+
+    print(
+        "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (
+            len(G.nodes()), len(G.edges()), len(cellmap))
+    )
 
     return (G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
 
