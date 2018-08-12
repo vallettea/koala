@@ -12,5 +12,6 @@ dist
 dist
 build
 eval*
+.pytest_cache
 
 article*.md
