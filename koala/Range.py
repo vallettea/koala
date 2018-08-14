@@ -48,7 +48,7 @@ def get_cell_address(sheet, tuple):
         return get_cell_addr_cache[(sheet, tuple)]
 
 def check_value(a):
-    if isinstance(a, str) and a in ErrorCodes:
+    if (isinstance(a, str) and a in ErrorCodes) or isinstance(a, ExcelError):
         return ExcelError(a)
 
     try: # This is to avoid None or Exception returned by Range operations
