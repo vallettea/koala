@@ -253,3 +253,47 @@ class Cell(object):
             numcols = 1
 
         return (cells,numrows,numcols)
+
+    def asdict(self):
+        if self.is_range:
+            cell_range = self.range
+            value = {
+                "cells": cell_range.addresses,
+                "values": cell_range.values,
+                "nrows": cell_range.nrows,
+                "ncols": cell_range.ncols
+            }
+        else:
+            value = self.value
+
+        data = {
+            "address": self.address(),
+            "formula": self.formula,
+            "value": value,
+            "python_expression": self.python_expression,
+            "is_named_range": self.is_named_range,
+            "should_eval": self.should_eval
+        }
+        return data
+
+    @staticmethod
+    def from_dict(d):
+        cell_is_range = type(d["value"]) == dict
+        if cell_is_range:
+            range = d["value"]
+            if len(range["values"]) == 0:
+                range["values"] = [None] * len(range["cells"])
+            value = RangeCore(
+                range["cells"], range["values"],
+                nrows=range["nrows"], ncols=range["ncols"])
+        else:
+            value = d["value"]
+        new_cell = Cell(
+            d["address"], None, value=value, formula=d["formula"],
+            is_range=cell_is_range,
+            is_named_range=d["is_named_range"],
+            should_eval=d["should_eval"])
+        new_cell.python_expression = d["python_expression"]
+        new_cell.compile()
+
+        return new_cell
