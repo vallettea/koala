@@ -1,19 +1,20 @@
 from __future__ import absolute_import, print_function
 # cython: profile=True
 
-import networkx
-from openpyxl.compat import unicode
+from koala.Range import get_cell_address, parse_cell_address
 
-from koala.openpyxl.formula.translate import Translator
-
+from koala.ast import *
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
-
-from koala.utils import *
-from koala.ast import *
-from koala.Range import parse_cell_address, get_cell_address
-from koala.tokenizer import reverse_rpn
+from koala.openpyxl.formula.translate import Translator
 from koala.serializer import *
+from koala.tokenizer import reverse_rpn
+from koala.utils import *
+
+import networkx
+from networkx.readwrite import json_graph
+
+from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
@@ -29,7 +30,7 @@ class Spreadsheet(object):
         self.addr_to_name = addr_to_name
 
         addr_to_range = {}
-        
+
         for c in list(self.cellmap.values()):
             if c.is_range and len(list(c.range.keys())) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
@@ -715,3 +716,87 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression))
 
         return cell.value
+
+    def asdict(self):
+        data = json_graph.node_link_data(self.G)
+
+        def cell_to_dict(cell):
+            if isinstance(cell.range, RangeCore):
+                range = cell.range
+                value = {
+                    "cells": range.addresses,
+                    "values": range.values,
+                    "nrows": range.nrows,
+                    "ncols": range.ncols
+                }
+            else:
+                value = cell.value
+
+            node = {
+                "address": cell.address(),
+                "formula": cell.formula,
+                "value": value,
+                "python_expression": cell.python_expression,
+                "is_named_range": cell.is_named_range,
+                "should_eval": cell.should_eval
+            }
+            return node
+
+        # save nodes as simple objects
+        nodes = []
+        for node in data["nodes"]:
+            cell = node["id"]
+            nodes.append(cell.asdict())
+
+        links = []
+        for el in data['links']:
+            link = {key: cell.address() for key, cell in el.iteritems()}
+            links.append(link)
+
+        data["nodes"] = nodes
+        data["links"] = links
+        data["outputs"] = self.outputs
+        data["inputs"] = self.inputs
+        data["named_ranges"] = self.named_ranges
+
+        return data
+
+    @staticmethod
+    def from_dict(input_data):
+        def cell_from_dict(d):
+            return {"id": Cell.from_dict(d)}
+
+        def find_cell(nodes, address):
+            for node in nodes:
+                cell = node['id']
+                if cell.address() == address:
+                    return cell
+
+            assert False
+
+        data = dict(input_data)
+
+        nodes = list(map(cell_from_dict, data["nodes"]))
+        data["nodes"] = nodes
+
+        links = []
+        for el in data['links']:
+            source_address = el['source']
+            target_address = el['target']
+            link = {
+                'source': find_cell(data['nodes'], source_address),
+                'target': find_cell(data['nodes'], target_address)
+            }
+            links.append(link)
+
+        data['links'] = links
+
+        G = json_graph.node_link_graph(data)
+        cellmap = {n.address(): n for n in G.nodes()}
+        named_ranges = data["named_ranges"]
+        inputs = data["inputs"]
+        outputs = data["outputs"]
+
+        return Spreadsheet(
+            G, cellmap, named_ranges,
+            inputs=inputs, outputs=outputs)
