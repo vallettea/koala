@@ -705,7 +705,10 @@ class Spreadsheet(object):
 
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:
-                    self.history[cell.address()] = {'new': str(cell.value)}
+                    if isinstance(cell.value, ExcelError):
+                        self.history[cell.address()] = {'new': str(cell.value), 'error': str(cell.value.info)}
+                    else:
+                        self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if str(e).startswith("Problem evalling"):
