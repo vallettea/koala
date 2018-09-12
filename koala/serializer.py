@@ -232,41 +232,7 @@ def load_json(fname):
     with gzip.GzipFile(fname, 'r') as infile:
         data = json.loads(infile.read(), object_hook=_decode_dict)
 
-    def cell_from_dict(d):
-        return {"id": Cell.from_dict(d)}
-
-    nodes = list(map(cell_from_dict, data["nodes"]))
-    data["nodes"] = nodes
-
-    def find_cell(nodes, address):
-        for node in nodes:
-            cell = node['id']
-            if cell.address() == address:
-                return cell
-
-        assert False
-
-    links = []
-    for el in data['links']:
-        source_address = el['source']
-        target_address = el['target']
-        link = {
-            'source': find_cell(data['nodes'], source_address),
-            'target': find_cell(data['nodes'], target_address)
-        }
-        links.append(link)
-
-    data['links'] = links
-
-    G = json_graph.node_link_graph(data)
-    cellmap = {n.address(): n for n in G.nodes()}
-
-    print(
-        "Graph loading done, %s nodes, %s edges, %s cellmap entries" % (
-            len(G.nodes()), len(G.edges()), len(cellmap))
-    )
-
-    return (G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
+    return data
 
 
 ########### based on dot #################

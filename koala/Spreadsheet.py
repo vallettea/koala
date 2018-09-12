@@ -449,10 +449,8 @@ class Spreadsheet(object):
 
     @staticmethod
     def load_json(fname):
-        G, cellmap, named_ranges, outputs, inputs = load_json(fname)
-        return Spreadsheet(
-            G, cellmap, named_ranges,
-            outputs=outputs, inputs=inputs)
+        data = load_json(fname)
+        return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
 
