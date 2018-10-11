@@ -453,7 +453,6 @@ class Spreadsheet(object):
         return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
-
         self.reset_buffer = set()
 
         try:
@@ -464,31 +463,28 @@ class Spreadsheet(object):
             self.fix_cell(address)
 
             # case where the address refers to a range
-            if self.cellmap[address].is_range:
+            if cell.is_range:
                 cells_to_set = []
-                # for a in self.cellmap[address].range.addresses:
-                    # if a in self.cellmap:
-                    #     cells_to_set.append(self.cellmap[a])
-                    #     self.fix_cell(a)
 
-                if type(val) != list:
-                    val = [val]*len(cells_to_set)
+                if not isinstance(val, list):
+                    val = [val] * len(cells_to_set)
 
                 self.reset(cell)
                 cell.range.values = val
 
             # case where the address refers to a single value
             else:
-                if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
+                if address in self.named_ranges:  # if the cell is a named range, we need to update and fix the reference cell
                     ref_address = self.named_ranges[address]
 
                     if ref_address in self.cellmap:
                         ref_cell = self.cellmap[ref_address]
                     else:
-                        ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
+                        ref_cell = Cell(
+                            ref_address, None, value=val,
+                            formula=None, is_range=False, is_named_range=False)
                         self.add_cell(ref_cell)
 
-                    # self.fix_cell(ref_address)
                     ref_cell.value = val
 
                 if cell.value != val:
@@ -502,7 +498,7 @@ class Spreadsheet(object):
             for vol in self.pointers_to_reset:  # reset all pointers
                 self.reset(self.cellmap[vol])
         except KeyError:
-            raise Exception('Cell %s not in cellmap' % address) 
+            raise Exception('Cell %s not in cellmap' % address)
 
     def reset(self, cell):
         addr = cell.address()
