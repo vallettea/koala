@@ -66,6 +66,8 @@ class Cell(object):
         self.__compiled_expression = None
         self.__is_range = is_range
 
+        self.is_range = self.__is_range
+
         # every cell has a unique id
         self.__id = Cell.next_id()
 
@@ -100,10 +102,6 @@ class Cell(object):
     @property
     def is_named_range(self):
         return self.__named_range is not None
-
-    @property
-    def is_range(self):
-        return self.__is_range
 
     @property
     def sheet(self):
