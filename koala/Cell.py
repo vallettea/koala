@@ -66,6 +66,13 @@ class Cell(object):
         self.__compiled_expression = None
         self.__is_range = is_range
 
+        self.is_range = self.__is_range
+        self.is_named_range = self.__named_range is not None
+
+        self.__absolute_address = (
+            "%s!%s%s" % (self.__sheet, self.__col, self.__row))
+        self.__address = "%s%s" % (self.__col, self.__row)
+
         # every cell has a unique id
         self.__id = Cell.next_id()
 
@@ -96,14 +103,6 @@ class Cell(object):
             self.__value = new_range
         else:
             raise Exception('Setting a range as non-range Cell %s value' % self.address())
-
-    @property
-    def is_named_range(self):
-        return self.__named_range is not None
-
-    @property
-    def is_range(self):
-        return self.__is_range
 
     @property
     def sheet(self):
@@ -157,12 +156,12 @@ class Cell(object):
         return self.address().replace('!','_').replace(' ','_')
 
     def address(self, absolute=True):
-        if self.__named_range is not None:
+        if self.is_named_range:
             return self.__named_range
         elif absolute:
-            return "%s!%s%s" % (self.__sheet,self.__col,self.__row)
+            return self.__absolute_address
         else:
-            return "%s%s" % (self.__col,self.__row)
+            return self.__address
 
     def address_parts(self):
         return (self.__sheet,self.__col,self.__row,self.__col_idx)

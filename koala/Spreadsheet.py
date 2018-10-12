@@ -453,60 +453,57 @@ class Spreadsheet(object):
         return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
-
         self.reset_buffer = set()
 
-        if address not in self.cellmap:
-            raise Exception("Address not present in graph.")
-            
-        address = address.replace('$','')
-        cell = self.cellmap[address]
+        try:
+            address = address.replace('$', '')
+            cell = self.cellmap[address]
 
-        # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
-        self.fix_cell(address)
+            # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
+            self.fix_cell(address)
 
-        # case where the address refers to a range
-        if self.cellmap[address].is_range:
-            cells_to_set = []
-            # for a in self.cellmap[address].range.addresses:
-                # if a in self.cellmap:
-                #     cells_to_set.append(self.cellmap[a])
-                #     self.fix_cell(a)
+            # case where the address refers to a range
+            if cell.is_range:
+                cells_to_set = []
 
-            if type(val) != list:
-                val = [val]*len(cells_to_set)
+                if not isinstance(val, list):
+                    val = [val] * len(cells_to_set)
 
-            self.reset(cell)
-            cell.range.values = val
-
-        # case where the address refers to a single value
-        else:
-            if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
-                ref_address = self.named_ranges[address]
-
-                if ref_address in self.cellmap:
-                    ref_cell = self.cellmap[ref_address]
-                else:
-                    ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
-                    self.add_cell(ref_cell)
-
-                # self.fix_cell(ref_address)
-                ref_cell.value = val
-
-            if cell.value != val:
-                if cell.value is None:
-                    cell.value = 'notNone' # hack to avoid the direct return in reset() when value is None
-                # reset the node + its dependencies
                 self.reset(cell)
-                # set the value
-                cell.value = val
+                cell.range.values = val
 
-        for vol in self.pointers_to_reset: # reset all pointers
-            self.reset(self.cellmap[vol])
+            # case where the address refers to a single value
+            else:
+                if address in self.named_ranges:  # if the cell is a named range, we need to update and fix the reference cell
+                    ref_address = self.named_ranges[address]
+
+                    if ref_address in self.cellmap:
+                        ref_cell = self.cellmap[ref_address]
+                    else:
+                        ref_cell = Cell(
+                            ref_address, None, value=val,
+                            formula=None, is_range=False, is_named_range=False)
+                        self.add_cell(ref_cell)
+
+                    ref_cell.value = val
+
+                if cell.value != val:
+                    if cell.value is None:
+                        cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
+                    # reset the node + its dependencies
+                    self.reset(cell)
+                    # set the value
+                    cell.value = val
+
+            for vol in self.pointers_to_reset:  # reset all pointers
+                self.reset(self.cellmap[vol])
+        except KeyError:
+            raise Exception('Cell %s not in cellmap' % address)
 
     def reset(self, cell):
         addr = cell.address()
-        if cell.value is None and addr not in self.named_ranges: return
+        if cell.value is None and addr not in self.named_ranges:
+            return
 
         # update cells
         if cell.should_eval != 'never':
@@ -521,15 +518,15 @@ class Spreadsheet(object):
                 self.reset(child)
 
     def fix_cell(self, address):
-        if address in self.cellmap:
+        try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
                 self.fixed_cells[address] = cell.should_eval
                 cell.should_eval = 'never'
-        else:
+        except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def free_cell(self, address = None):
+    def free_cell(self, address=None):
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
@@ -541,17 +538,18 @@ class Spreadsheet(object):
                 cell.should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
 
-        elif address in self.cellmap:
-            cell = self.cellmap[address]
-
-            cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-            if cell.python_expression is not None:
-                self.eval_ref(address)
-
-            cell.should_eval = self.fixed_cells[address]
-            self.fixed_cells.pop(address, None)
         else:
-            raise Exception('Cell %s not in cellmap' % address)
+            try:
+                cell = self.cellmap[address]
+
+                cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+                if cell.python_expression is not None:
+                    self.eval_ref(address)
+
+                cell.should_eval = self.fixed_cells[address]
+                self.fixed_cells.pop(address, None)
+            except KeyError:
+                raise Exception('Cell %s not in cellmap' % address)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
