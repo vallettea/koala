@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 from openpyxl.compat import unicode
 
 from koala.utils import *
-from koala.Cell import Cell
+from koala.CellBase import CellBase
 from koala.ExcelError import ExcelError, ErrorCodes
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
@@ -452,15 +452,15 @@ class RangeCore(dict):
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
 
             vals = [function(
-                x.value if type(x) == Cell else x,
-                y.value if type(y) == Cell else y
+                x.value if isinstance(x, CellBase) else x,
+                y.value if isinstance(x, CellBase) else y
             ) for x,y in zip(first.cells, second.cells)]
 
             return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
 
         elif isinstance(first, RangeCore):
             vals = [function(
-                x.value if type(x) == Cell else x,
+                x.value if isinstance(x, CellBase) else x,
                 second
             ) for x in first.cells]
 
@@ -469,7 +469,7 @@ class RangeCore(dict):
         elif isinstance(second, RangeCore):
             vals = [function(
                 first,
-                x.value if type(x) == Cell else x
+                x.value if isinstance(x, CellBase) else x
             ) for x in second.cells]
 
             return RangeCore(second.addresses, vals, nrows = second.nrows, ncols = second.ncols)
