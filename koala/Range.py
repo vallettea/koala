@@ -1,16 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
+from koala.CellBase import CellBase
+from koala.ExcelError import ErrorCodes, ExcelError
+from koala.utils import *
+
 from openpyxl.compat import unicode
 
-from koala.utils import *
-from koala.Cell import Cell
-from koala.ExcelError import ExcelError, ErrorCodes
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
 
 ### Range Utils ###
 
 parse_cell_addr_cache = {}
+
 
 def parse_cell_address(ref):
     # A1 => (1, 'A')
@@ -28,6 +30,7 @@ def parse_cell_address(ref):
         raise Exception('Couldn\'t find match in cell ref')
 
 get_cell_addr_cache = {}
+
 
 def get_cell_address(sheet, tuple):
     # Sheet1, (1, 'A') => Sheet1!A1
@@ -47,13 +50,14 @@ def get_cell_address(sheet, tuple):
     else:
         return get_cell_addr_cache[(sheet, tuple)]
 
+
 def check_value(a):
     if isinstance(a, ExcelError):
         return a
     elif isinstance(a, str) and a in ErrorCodes:
         return ExcelError(a)
 
-    try: # This is to avoid None or Exception returned by Range operations
+    try:  # This is to avoid None or Exception returned by Range operations
         if float(a) or isinstance(a, (unicode, str)):
             return a
         else:
@@ -66,9 +70,13 @@ def check_value(a):
         else:
             return 0
 
+
 class RangeCore(dict):
 
-    def __init__(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None):
+    def __init__(
+            self, reference,
+            values=None, cellmap=None, nrows=None, ncols=None,
+            name=None):
 
         is_pointer = False
 
@@ -94,29 +102,37 @@ class RangeCore(dict):
         self.__empty = None
 
         if not is_pointer:
-            self.__build(reference = reference, values = values, cellmap = cellmap, nrows = nrows, ncols = ncols, name = name)
+            self.__build(
+                reference=reference, values=values,
+                cellmap=cellmap, nrows=nrows, ncols=ncols, name=name)
 
     # A separate function from __init__ is necessary so that it can be called from outside
-    def __build(self, reference, values = None, cellmap = None, nrows = None, ncols = None, name = None, debug = False):
+    def __build(
+            self, reference,
+            values=None, cellmap=None, nrows=None, ncols=None,
+            name=None, debug=False):
 
-        if type(reference) == list: # some Range calculations such as excellib.countifs() use filtered keys
+        if type(reference) == list:  # some Range calculations such as excellib.countifs() use filtered keys
             cells = reference
         else:
-            reference = reference.replace('$','')
+            reference = reference.replace('$', '')
             try:
-                cells, nrows, ncols = resolve_range(reference, should_flatten = True)
+                cells, nrows, ncols = resolve_range(
+                    reference, should_flatten=True)
             except Exception as e:
                 print('Pb with ref', reference, e)
-                return ValueError('Range ERROR') # Will still be considered as a Range object, since we are inside __init__...
+                return ValueError('Range ERROR')  # Will still be considered as a Range object, since we are inside __init__...
 
-        origin = parse_cell_address(cells[0]) if len(cells) > 0 else None # origin of Range
+        origin = parse_cell_address(cells[0]) if len(cells) > 0 else None  # origin of Range
 
         if cellmap:
             cells = [cell for cell in cells if cell in cellmap]
 
         if values:
             if len(cells) != len(values):
-                raise Exception("Cells and values in a Range must have the same size", reference)
+                raise Exception(
+                    "Cells and values in a Range must have the same size",
+                    reference)
 
         result = []
         order = []
@@ -124,7 +140,7 @@ class RangeCore(dict):
         empty = True
 
         for index, cell in enumerate(cells):
-            row,col = parse_cell_address(cell)
+            row, col = parse_cell_address(cell)
             order.append((row, col))
             try:
                 if cellmap:
@@ -132,11 +148,13 @@ class RangeCore(dict):
                     empty = empty and cellmap[cell].value is None
                 else:
                     if isinstance(values[index], RangeCore):
-                        raise Exception('Range can\'t be values of Range', reference)
+                        raise Exception(
+                            'Range can\'t be values of Range',
+                            reference)
                     result.append(((row, col), values[index]))
                     empty = empty and values[index] is None
 
-            except: # when you don't provide any values
+            except:  # when you don't provide any values
                 result.append(((row, col), None))
 
         try:
@@ -147,7 +165,7 @@ class RangeCore(dict):
         # dont allow messing with these params
         if type(reference) == list:
             self.__name = name
-        elif not self.is_pointer: # when building pointers, name shouldn't be updated, but in that case reference is not a dict
+        elif not self.is_pointer:  # when building pointers, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
         else:
             print('Pb with Name', reference, name)
@@ -171,46 +189,62 @@ class RangeCore(dict):
 
         dict.__init__(self, result)
 
-    def build(self, reference = None, values = None, nrows = None, ncols = None, name = None, debug = False):
-        self.__build(reference = reference, values = values, cellmap = self.__cellmap, nrows = nrows, ncols = ncols, name = name, debug = debug)
-
+    def build(
+            self, reference=None, values=None,
+            nrows=None, ncols=None, name=None, debug=False):
+        self.__build(
+            reference=reference, values=values,
+            cellmap=self.__cellmap,
+            nrows=nrows, ncols=ncols, name=name, debug=debug)
 
     @property
     def reference(self):
         return self.__reference
+
     @property
     def name(self):
         return self.__name
+
     @property
     def origin(self):
         return self.__origin
+
     @property
     def addresses(self):
         return self.__addresses
+
     @property
     def order(self):
         return self.__order
+
     @property
     def length(self):
         return self.__length
+
     @property
     def is_pointer(self):
         return self.__pointer
+
     @property
     def nrows(self):
         return self.__nrows
+
     @property
     def ncols(self):
         return self.__ncols
+
     @property
     def is_empty(self):
         return self.__empty
+
     @property
     def type(self):
         return self.__type
+
     @property
     def sheet(self):
         return self.__sheet
+
     @property
     def values(self):
         if self.__cellmap:
@@ -236,29 +270,32 @@ class RangeCore(dict):
     def cells(self):
         return [self[c] for c in self.order]
 
-
-    def get(self, row, col = None):
+    def get(self, row, col=None):
         nr = self.nrows
         nc = self.ncols
 
         values = self.values
         cells = self.addresses
 
-        if nr == 1 or nc == 1: # 1-dim range
+        if nr == 1 or nc == 1:  # 1-dim range
             if col is not None:
-                raise Exception('Trying to access 1-dim range value with 2 coordinates')
+                raise Exception(
+                    'Trying to access 1-dim range value with 2 coordinates')
             else:
                 return values[row - 1]
 
-        else: # could be optimised
+        else:  # could be optimised
             origin_col = col2num(self.origin[1])
             origin_row = self.origin[0]
 
-            if row == 0: # get column
+            if row == 0:  # get column
 
                 out_col = num2col(int(col2num(self.origin[1]) + col - 1))
 
-                tuples = [(r, out_col) for r in range(origin_row, origin_row + self.nrows)]
+                tuples = [
+                    (r, out_col)
+                    for r in range(origin_row, origin_row + self.nrows)
+                ]
 
                 cells = []
                 values = []
@@ -270,13 +307,17 @@ class RangeCore(dict):
                         values.append(None)
                     cells.append(get_cell_address(self.sheet, t))
 
-                return RangeCore(cells, values = values, nrows = len(cells), ncols = 1)
+                return RangeCore(
+                    cells, values=values, nrows=len(cells), ncols=1)
 
-            elif col == 0: # get row
+            elif col == 0:  # get row
 
                 out_row = self.origin[0] + row - 1
 
-                tuples = [(out_row, c) for c in range(origin_col, origin_col + self.ncols)]
+                tuples = [
+                    (out_row, c)
+                    for c in range(origin_col, origin_col + self.ncols)
+                ]
 
                 cells = []
                 values = []
@@ -288,12 +329,13 @@ class RangeCore(dict):
                         values.append(None)
                     cells.append(get_cell_address(self.sheet, t))
 
-                return RangeCore(cells, values = values, nrows = 1, ncols = len(cells))
+                return RangeCore(
+                    cells, values=values, nrows=1, ncols=len(cells))
 
             else:
                 base_col_number = col2num(cells[0][0])
                 new_ref = num2col(col + base_col_number - 1) + str(row)
-                new_value = values[(row - 1)* nc + (col - 1)]
+                new_value = values[(row - 1) * nc + (col - 1)]
 
                 return new_value
 
@@ -310,7 +352,8 @@ class RangeCore(dict):
             test_value = bool_range.values[index]
 
             if type(test_value) != bool:
-                raise Exception('RangeCore.filter must be used with bool Range as a second argument')
+                raise Exception(
+                    'RangeCore.filter must be used with bool Range as a second argument')
 
             if test_value:
                 filtered_addresses.append(range.addresses[index])
@@ -324,7 +367,8 @@ class RangeCore(dict):
         elif range.type == 'horizontal':
             ncols = len(filtered_values)
 
-        return RangeCore(filtered_addresses, filtered_values, nrows = nrows, ncols = ncols)
+        return RangeCore(
+            filtered_addresses, filtered_values, nrows=nrows, ncols=ncols)
 
     @staticmethod
     def find_associated_cell(ref, range):
@@ -335,25 +379,35 @@ class RangeCore(dict):
         if ref is not None:
             row, col = ref
 
-            if (range.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+            if (range.length) == 0:  # if a Range is empty, it means normally that all its cells are empty
                 return None
             elif range.type == "vertical":
                 if (row, range.origin[1]) in range.order:
-                    return range.addresses[range.order.index((row, range.origin[1]))]
+                    return range.addresses[
+                        range.order.index((row, range.origin[1]))
+                    ]
                 else:
                     return None
             elif range.type == "horizontal":
                 if (range.origin[0], col) in range.order:
-                    return range.addresses[range.order.index((range.origin[0], col))]
+                    return range.addresses[
+                        range.order.index((range.origin[0], col))
+                    ]
                 else:
                     return None
             elif range.type == "scalar":
                 if (row, range.origin[1]) in range.order:
-                    return range.addresses[range.order.index((row, range.origin[1]))]
+                    return range.addresses[
+                        range.order.index((row, range.origin[1]))
+                    ]
                 elif (range.origin[0], col) in range.order:
-                    return range.addresses[range.order.index((range.origin[0], col))]
+                    return range.addresses[
+                        range.order.index((range.origin[0], col))
+                    ]
                 elif (row, col) in range.order:
-                    return range.addresses[range.order.index((row, col))]
+                    return range.addresses[
+                        range.order.index((row, col))
+                    ]
                 else:
                     return None
 
@@ -369,7 +423,7 @@ class RangeCore(dict):
 
         if isinstance(item, RangeCore):
             try:
-                if (item.length) == 0: # if a Range is empty, it means normally that all its cells are empty
+                if (item.length) == 0:  # if a Range is empty, it means normally that all its cells are empty
                     item_value = 0
                 elif item.type == "vertical":
                     if item.__cellmap is not None:
@@ -397,7 +451,7 @@ class RangeCore(dict):
         return item_value
 
     @staticmethod
-    def apply(func, first, second, ref = None):
+    def apply(func, first, second, ref=None):
         # This function decides whether RangeCore.apply_one or RangeCore.apply_all should be used
         # This is a necessary complement to what is decided in graph.py:OperandNode.emit()
 
@@ -425,7 +479,7 @@ class RangeCore(dict):
             return RangeCore.apply_all(func, first, second, ref)
 
     @staticmethod
-    def apply_one(func, first, second, ref = None):
+    def apply_one(func, first, second, ref=None):
         # This function applies a function to range operands, only for the cells associated to ref
         # Note that non-range operands are supported by RangeCore.find_associated_value()
 
@@ -441,7 +495,7 @@ class RangeCore(dict):
         return function(first_value, second_value)
 
     @staticmethod
-    def apply_all(func, first, second, ref = None):
+    def apply_all(func, first, second, ref=None):
         # This function applies a function to range operands, for all the cells in the Ranges
 
         function = func_dict[func]
@@ -452,27 +506,30 @@ class RangeCore(dict):
                 raise ExcelError('#VALUE!', 'apply_all must have 2 Ranges of identical length')
 
             vals = [function(
-                x.value if type(x) == Cell else x,
-                y.value if type(y) == Cell else y
-            ) for x,y in zip(first.cells, second.cells)]
+                x.value if isinstance(x, CellBase) else x,
+                y.value if isinstance(x, CellBase) else y
+            ) for x, y in zip(first.cells, second.cells)]
 
-            return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
+            return RangeCore(
+                first.addresses, vals, nrows=first.nrows, ncols=first.ncols)
 
         elif isinstance(first, RangeCore):
             vals = [function(
-                x.value if type(x) == Cell else x,
+                x.value if isinstance(x, CellBase) else x,
                 second
             ) for x in first.cells]
 
-            return RangeCore(first.addresses, vals, nrows = first.nrows, ncols = first.ncols)
+            return RangeCore(
+                first.addresses, vals, nrows=first.nrows, ncols=first.ncols)
 
         elif isinstance(second, RangeCore):
             vals = [function(
                 first,
-                x.value if type(x) == Cell else x
+                x.value if isinstance(x, CellBase) else x
             ) for x in second.cells]
 
-            return RangeCore(second.addresses, vals, nrows = second.nrows, ncols = second.ncols)
+            return RangeCore(
+                second.addresses, vals, nrows=second.nrows, ncols=second.ncols)
 
         else:
             return function(first, second)
@@ -492,13 +549,12 @@ class RangeCore(dict):
             return ExcelError('#N/A', e)
 
     @staticmethod
-    def minus(a, b = None):
+    def minus(a, b=None):
         # b is not used, but needed in the signature. Maybe could be better
         try:
             return -check_value(a)
         except Exception as e:
             return ExcelError('#N/A', e)
-
 
     @staticmethod
     def multiply(a, b):
@@ -522,7 +578,7 @@ class RangeCore(dict):
             if not isinstance(b, (str, unicode)):
                 b = check_value(b)
 
-            return is_almost_equal(a, b, precision = 0.00001)
+            return is_almost_equal(a, b, precision=0.00001)
         except Exception as e:
             return ExcelError('#N/A', e)
 
@@ -587,11 +643,11 @@ func_dict = {
 }
 
 
-def RangeFactory(cellmap = None):
+def RangeFactory(cellmap=None):
 
     class Range(RangeCore):
 
-        def __init__(self, reference, values = None):
-            super(Range, self).__init__(reference, values, cellmap = cellmap)
+        def __init__(self, reference, values=None):
+            super(Range, self).__init__(reference, values, cellmap=cellmap)
 
     return Range
