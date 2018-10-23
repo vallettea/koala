@@ -2,10 +2,11 @@
 
 from __future__ import absolute_import, division
 
-from openpyxl.compat import unicode
-
 from koala.CellBase import CellBase
+from koala.Range import RangeCore
 from koala.utils import *
+
+from openpyxl.compat import unicode
 
 
 class Cell(CellBase):
