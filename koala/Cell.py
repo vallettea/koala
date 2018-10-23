@@ -4,10 +4,11 @@ from __future__ import absolute_import, division
 
 from openpyxl.compat import unicode
 
+from koala.CellBase import CellBase
 from koala.utils import *
 
 
-class Cell(object):
+class Cell(CellBase):
     ctr = 0
     __named_range = None
 
@@ -18,7 +19,7 @@ class Cell(object):
 
 
     def __init__(self, address, sheet = None, value=None, formula=None, is_range = False, is_named_range=False, should_eval='normal'):
-        super(Cell,self).__init__()
+        super(Cell, self).__init__()
 
         if is_named_range == False:
 
