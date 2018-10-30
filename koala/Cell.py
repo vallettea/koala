@@ -294,7 +294,7 @@ class Cell(CellBase):
         return data
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(d, cellmap=None):
         cell_is_range = type(d["value"]) == dict
         if cell_is_range:
             range = d["value"]
@@ -302,7 +302,7 @@ class Cell(CellBase):
                 range["values"] = [None] * len(range["cells"])
             value = RangeCore(
                 range["cells"], range["values"],
-                nrows=range["nrows"], ncols=range["ncols"])
+                nrows=range["nrows"], ncols=range["ncols"], cellmap=cellmap)
         else:
             value = d["value"]
         new_cell = Cell(
