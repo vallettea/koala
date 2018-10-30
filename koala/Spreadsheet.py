@@ -87,7 +87,7 @@ class Spreadsheet(object):
             for index, c in enumerate(cell.range.cells): # for each cell of the range, translate the formula
                 if index == 0:
                     c.formula = formula
-                    translator = Translator(unicode('=' + formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
+                    translator = Translator(unicode('=' +    formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
                 else:
                     translated = translator.translate_formula(c.address().split('!')[1]) # the Translator needs a reference without sheet
                     c.formula = translated[1:] # to get rid of the '='
@@ -762,8 +762,6 @@ class Spreadsheet(object):
 
     @staticmethod
     def from_dict(input_data):
-        def cell_from_dict(d):
-            return {"id": Cell.from_dict(d)}
 
         def find_cell(nodes, address):
             for node in nodes:
@@ -775,8 +773,24 @@ class Spreadsheet(object):
 
         data = dict(input_data)
 
-        nodes = list(map(cell_from_dict, data["nodes"]))
-        data["nodes"] = nodes
+        nodes = list(
+            map(Cell.from_dict,
+                filter(
+                    lambda item: not isinstance(item['value'], dict),
+                    data['nodes'])))
+        cellmap = {n.address(): n for n in nodes}
+
+        def cell_from_dict(d):
+            return Cell.from_dict(d, cellmap=cellmap)
+
+        nodes.extend(
+            list(
+                map(cell_from_dict,
+                    filter(
+                        lambda item: isinstance(item['value'], dict),
+                        data['nodes']))))
+
+        data["nodes"] = [{'id': node} for node in nodes]
 
         links = []
         for el in data['links']:
@@ -792,6 +806,7 @@ class Spreadsheet(object):
 
         G = json_graph.node_link_graph(data)
         cellmap = {n.address(): n for n in G.nodes()}
+
         named_ranges = data["named_ranges"]
         inputs = data["inputs"]
         outputs = data["outputs"]
