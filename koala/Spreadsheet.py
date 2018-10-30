@@ -87,7 +87,7 @@ class Spreadsheet(object):
             for index, c in enumerate(cell.range.cells): # for each cell of the range, translate the formula
                 if index == 0:
                     c.formula = formula
-                    translator = Translator(unicode('=' + formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
+                    translator = Translator(unicode('=' +    formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
                 else:
                     translated = translator.translate_formula(c.address().split('!')[1]) # the Translator needs a reference without sheet
                     c.formula = translated[1:] # to get rid of the '='
