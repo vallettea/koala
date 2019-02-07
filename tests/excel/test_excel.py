@@ -7,7 +7,7 @@ path = os.path.join(dir, '../../')
 sys.path.insert(0, path)
 
 from koala.reader import read_archive, read_cells
-from koala import ExcelCompiler
+from koala import ExcelCompiler, Spreadsheet
 
 
 # # This fails, needs to be adapted
@@ -53,6 +53,101 @@ class Test_NamedRanges(unittest.TestCase):
     def test_after_set_value(self):
         self.graph.set_value('INPUT', 2025)
         self.assertTrue(self.graph.evaluate('INPUT') == 2025 and self.graph.evaluate('Sheet1!A1') == 2025 and self.graph.evaluate('RESULT') == 2211)
+
+
+class Test_DumpDict(unittest.TestCase):
+
+    def setUp(self):
+        c = ExcelCompiler("./tests/files/NamedRanges.xlsx", ignore_sheets=['IHS'])
+        self.graph = c.gen_graph()
+        sys.setrecursionlimit(10000)
+
+    def test_no_set_value(self):
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
+
+    def test_set_value(self):
+        # Clone object
+        data = self.graph.asdict()
+        graph = Spreadsheet.from_dict(data)
+
+        # Set value and check result in clone.
+        graph.set_value('INPUT', 2025)
+        self.assertTrue(graph.evaluate('INPUT') == 2025)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
+        # self.assertTrue(graph.evaluate('RESULT') == 2211)
+
+        # Check original not changed.
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
+
+
+class Test_Dump(unittest.TestCase):
+
+
+    def setUp(self):
+        c = ExcelCompiler("./tests/files/NamedRanges.xlsx", ignore_sheets = ['IHS'])
+        self.graph = c.gen_graph()
+        sys.setrecursionlimit(10000)
+
+    def test_no_set_value(self):
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
+
+    def test_set_value(self):
+        # Clone object
+        self.graph.dump("dump.txt.gz")
+        graph = Spreadsheet.load("dump.txt.gz")
+
+        # Set value and check result in clone.
+        graph.set_value('INPUT', 2025)
+        self.assertTrue(graph.evaluate('INPUT') == 2025)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
+        # self.assertTrue(graph.evaluate('RESULT') == 2211)
+
+        # Check original not changed.
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
+
+
+class Test_DumpJson(unittest.TestCase):
+
+
+    def setUp(self):
+        c = ExcelCompiler("./tests/files/NamedRanges.xlsx", ignore_sheets = ['IHS'])
+        self.graph = c.gen_graph()
+        sys.setrecursionlimit(10000)
+
+    def test_no_set_value(self):
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
+
+    def test_set_value(self):
+        # Clone object
+        self.graph.dump_json("dump.txt.gz")
+        graph = Spreadsheet.load_json("dump.txt.gz")
+
+        # Set value and check result in clone.
+        graph.set_value('INPUT', 2025)
+        self.assertTrue(graph.evaluate('INPUT') == 2025)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
+        # self.assertTrue(graph.evaluate('RESULT') == 2211)
+
+        # Check original not changed.
+        graph = self.graph
+        self.assertTrue(graph.evaluate('INPUT') == 1)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
+        self.assertTrue(graph.evaluate('RESULT') == 187)
 
 
 if __name__ == '__main__':

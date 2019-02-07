@@ -198,7 +198,7 @@ def dump_json(self, fname):
     data = self.asdict()
 
     with gzip.GzipFile(fname, 'w') as outfile:
-        outfile.write(json.dumps(data))
+        outfile.write(json.dumps(data).encode('utf-8'))
 
 
 def load_json(fname):
@@ -206,9 +206,9 @@ def load_json(fname):
     def _decode_list(data):
         rv = []
         for item in data:
-            if isinstance(item, unicode):
+            if isinstance(item, unicode) and unicode != str:
                 item = item.encode('utf-8')
-            elif isinstance(item, list):
+            elif isinstance(item, list) and unicode != str:
                 item = _decode_list(item)
             elif isinstance(item, dict):
                 item = _decode_dict(item)
@@ -218,9 +218,9 @@ def load_json(fname):
     def _decode_dict(data):
         rv = {}
         for key, value in data.items():
-            if isinstance(key, unicode):
+            if isinstance(key, unicode) and unicode != str:
                 key = key.encode('utf-8')
-            if isinstance(value, unicode):
+            if isinstance(value, unicode) and unicode != str:
                 value = value.encode('utf-8')
             elif isinstance(value, list):
                 value = _decode_list(value)
@@ -230,7 +230,7 @@ def load_json(fname):
         return rv
 
     with gzip.GzipFile(fname, 'r') as infile:
-        data = json.loads(infile.read(), object_hook=_decode_dict)
+        data = json.loads(infile.read().decode('utf-8'), object_hook=_decode_dict)
 
     return data
 

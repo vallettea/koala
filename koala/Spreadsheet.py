@@ -749,7 +749,7 @@ class Spreadsheet(object):
 
         links = []
         for el in data['links']:
-            link = {key: cell.address() for key, cell in el.iteritems()}
+            link = {key: cell.address() for key, cell in el.items()}
             links.append(link)
 
         data["nodes"] = nodes
