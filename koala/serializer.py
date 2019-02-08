@@ -187,8 +187,10 @@ def load(fname):
             k,v = line.split(SEP)
             named_ranges[k] = v
 
-    G = DiGraph(edges)
-    
+    G = DiGraph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
+
     print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, named_ranges, pointers, outputs, inputs)
