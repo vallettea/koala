@@ -1,10 +1,4 @@
 import unittest
-import os
-import sys
-
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../..')
-sys.path.insert(0, path)
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Cell import Cell
@@ -161,7 +155,3 @@ class Test_Excel(unittest.TestCase):
         self.sp.add_cell(Cell('Sheet1!A4', formula = 'A1 + 10'))
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!A4'), 13)
-
-
-if __name__ == '__main__':
-    unittest.main()

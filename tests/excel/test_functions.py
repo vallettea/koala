@@ -2,13 +2,7 @@ from __future__ import absolute_import
 
 import pyximport; pyximport.install()
 
-import os
-import sys
 import unittest
-
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../..')
-sys.path.insert(0, path)
 
 from koala.excellib import *
 
@@ -685,7 +679,3 @@ class Test_Match(unittest.TestCase):
         range = Range('A1:A3', [False, True, False])
         with self.assertRaises(ExcelError):
             match(True, range, -1)
-
-
-if __name__ == '__main__':
-    unittest.main()

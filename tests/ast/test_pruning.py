@@ -1,11 +1,5 @@
 import unittest
-import os
-import sys
 
-
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../..')
-sys.path.insert(0, path)
 
 # Here is the graph contained in pruning.xlsx
 #
@@ -91,9 +85,3 @@ class Test_with_range(unittest.TestCase):
     def test_G1_bis(self):
         self.sp.set_value('test', [7,8,9])
         self.assertEqual(self.sp.evaluate('Sheet1!C6'), 47)
-
-
-if __name__ == '__main__':
-    unittest.main()
-
-

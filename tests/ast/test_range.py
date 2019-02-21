@@ -1,11 +1,5 @@
 from __future__ import print_function
 import unittest
-import os
-import sys
-
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../..')
-sys.path.insert(0, path)
 
 from koala.Range import RangeFactory
 
@@ -172,7 +166,3 @@ class Test_Excel(unittest.TestCase):
         range2 = Range('B1:B3', [3, 3, 3])
 
         self.assertEqual(Range.apply_one('is_inferior_or_equal', range1, range2, (1, 'C')), True) # 1 <= 3 is False
-
-
-if __name__ == '__main__':
-    unittest.main()
