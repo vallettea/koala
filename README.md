@@ -4,7 +4,7 @@
 
 Koala converts any Excel workbook into a python object that enables on the fly calculation without the need of Excel.
 
-Koala parses an Excel workbook and creates network of all the cells with their dependencies. It is then possible to change any value of a node and recompute all the depending cells.
+Koala parses an Excel workbook and creates a network of all the cells with their dependencies. It is then possible to change any value of a node and recompute all the depending cells.
 
 ## Get started
 
@@ -16,7 +16,7 @@ Koala is available on pypi so you can just:
 pip install koala2
 ```
 
-alternatively, you can dowload it and install it manually:
+alternatively, you can download it and install the last version from github:
 
 ```
 git clone https://github.com/anthill/koala.git
@@ -36,7 +36,7 @@ This operation may take some time depending on the size of your workbook (we've 
 ```
 from koala.ExcelCompiler import ExcelCompiler
 
-c = ExcelCompiler(file)
+c = ExcelCompiler("examples/basic.xlsx")
 sp = c.gen_graph()
 ```
 

@@ -1,19 +1,20 @@
 from __future__ import absolute_import, print_function
 # cython: profile=True
 
-import networkx
-from openpyxl.compat import unicode
+from koala.Range import get_cell_address, parse_cell_address
 
-from koala.openpyxl.formula.translate import Translator
-
+from koala.ast import *
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
-
-from koala.utils import *
-from koala.ast import *
-from koala.Range import parse_cell_address, get_cell_address
-from koala.tokenizer import reverse_rpn
+from koala.openpyxl.formula.translate import Translator
 from koala.serializer import *
+from koala.tokenizer import reverse_rpn
+from koala.utils import *
+
+import networkx
+from networkx.readwrite import json_graph
+
+from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
@@ -29,6 +30,7 @@ class Spreadsheet(object):
         self.addr_to_name = addr_to_name
 
         addr_to_range = {}
+
         for c in list(self.cellmap.values()):
             if c.is_range and len(list(c.range.keys())) != 0: # could be better, but can't check on Exception types here...
                 addr = c.address() if c.is_named_range else c.range.name
@@ -85,7 +87,7 @@ class Spreadsheet(object):
             for index, c in enumerate(cell.range.cells): # for each cell of the range, translate the formula
                 if index == 0:
                     c.formula = formula
-                    translator = Translator(unicode('=' + formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
+                    translator = Translator(unicode('=' +    formula), c.address().split('!')[1]) # the Translator needs a reference without sheet
                 else:
                     translated = translator.translate_formula(c.address().split('!')[1]) # the Translator needs a reference without sheet
                     c.formula = translated[1:] # to get rid of the '='
@@ -367,7 +369,7 @@ class Spreadsheet(object):
                         else:
                             raise Exception('Volatiles should always have a formula')
 
-                    for parent in self.G.predecessors_iter(cell): # climb up the tree
+                    for parent in self.G.predecessors(cell): # climb up the tree
                         todo.append(parent)
 
                     done.add(cell)
@@ -447,63 +449,61 @@ class Spreadsheet(object):
 
     @staticmethod
     def load_json(fname):
-        return Spreadsheet(*load_json(fname))
+        data = load_json(fname)
+        return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
-
         self.reset_buffer = set()
 
-        if address not in self.cellmap:
-            raise Exception("Address not present in graph.")
+        try:
+            address = address.replace('$', '')
+            cell = self.cellmap[address]
 
-        address = address.replace('$','')
-        cell = self.cellmap[address]
+            # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
+            self.fix_cell(address)
 
-        # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
-        self.fix_cell(address)
+            # case where the address refers to a range
+            if cell.is_range:
+                cells_to_set = []
 
-        # case where the address refers to a range
-        if self.cellmap[address].is_range:
-            cells_to_set = []
-            # for a in self.cellmap[address].range.addresses:
-                # if a in self.cellmap:
-                #     cells_to_set.append(self.cellmap[a])
-                #     self.fix_cell(a)
+                if not isinstance(val, list):
+                    val = [val] * len(cells_to_set)
 
-            if type(val) != list:
-                val = [val]*len(cells_to_set)
-
-            self.reset(cell)
-            cell.range.values = val
-
-        # case where the address refers to a single value
-        else:
-            if address in self.named_ranges: # if the cell is a named range, we need to update and fix the reference cell
-                ref_address = self.named_ranges[address]
-
-                if ref_address in self.cellmap:
-                    ref_cell = self.cellmap[ref_address]
-                else:
-                    ref_cell = Cell(ref_address, None, value = val, formula = None, is_range = False, is_named_range = False )
-                    self.add_cell(ref_cell)
-
-                # self.fix_cell(ref_address)
-                ref_cell.value = val
-
-            if cell.value != val:
-                if cell.value is None:
-                    cell.value = 'notNone' # hack to avoid the direct return in reset() when value is None
-                # reset the node + its dependencies
                 self.reset(cell)
-                # set the value
-                cell.value = val
+                cell.range.values = val
 
-        for vol in self.pointers_to_reset: # reset all pointers
-            self.reset(self.cellmap[vol])
+            # case where the address refers to a single value
+            else:
+                if address in self.named_ranges:  # if the cell is a named range, we need to update and fix the reference cell
+                    ref_address = self.named_ranges[address]
+
+                    if ref_address in self.cellmap:
+                        ref_cell = self.cellmap[ref_address]
+                    else:
+                        ref_cell = Cell(
+                            ref_address, None, value=val,
+                            formula=None, is_range=False, is_named_range=False)
+                        self.add_cell(ref_cell)
+
+                    ref_cell.value = val
+
+                if cell.value != val:
+                    if cell.value is None:
+                        cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
+                    # reset the node + its dependencies
+                    self.reset(cell)
+                    # set the value
+                    cell.value = val
+
+            for vol in self.pointers_to_reset:  # reset all pointers
+                self.reset(self.cellmap[vol])
+        except KeyError:
+            raise Exception('Cell %s not in cellmap' % address)
 
     def reset(self, cell):
         addr = cell.address()
-        if cell.value is None and addr not in self.named_ranges: return
+        if cell.value is None and addr not in self.named_ranges:
+            return
 
         # update cells
         if cell.should_eval != 'never':
@@ -518,15 +518,15 @@ class Spreadsheet(object):
                 self.reset(child)
 
     def fix_cell(self, address):
-        if address in self.cellmap:
+        try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
                 self.fixed_cells[address] = cell.should_eval
                 cell.should_eval = 'never'
-        else:
+        except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def free_cell(self, address = None):
+    def free_cell(self, address=None):
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
@@ -538,17 +538,18 @@ class Spreadsheet(object):
                 cell.should_eval = self.fixed_cells[addr]
             self.fixed_cells = {}
 
-        elif address in self.cellmap:
-            cell = self.cellmap[address]
-
-            cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
-            if cell.python_expression is not None:
-                self.eval_ref(address)
-
-            cell.should_eval = self.fixed_cells[address]
-            self.fixed_cells.pop(address, None)
         else:
-            raise Exception('Cell %s not in cellmap' % address)
+            try:
+                cell = self.cellmap[address]
+
+                cell.should_eval = 'always' # this is to be able to correctly reinitiliaze the value
+                if cell.python_expression is not None:
+                    self.eval_ref(address)
+
+                cell.should_eval = self.fixed_cells[address]
+                self.fixed_cells.pop(address, None)
+            except KeyError:
+                raise Exception('Cell %s not in cellmap' % address)
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
@@ -702,7 +703,10 @@ class Spreadsheet(object):
 
                     self.history[cell.address()]['new'] = str(cell.value)
                 else:
-                    self.history[cell.address()] = {'new': str(cell.value)}
+                    if isinstance(cell.value, ExcelError):
+                        self.history[cell.address()] = {'new': str(cell.value), 'error': str(cell.value.info)}
+                    else:
+                        self.history[cell.address()] = {'new': str(cell.value)}
 
         except Exception as e:
             if str(e).startswith("Problem evalling"):
@@ -711,3 +715,102 @@ class Spreadsheet(object):
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression))
 
         return cell.value
+
+    def asdict(self):
+        data = json_graph.node_link_data(self.G)
+
+        def cell_to_dict(cell):
+            if isinstance(cell.range, RangeCore):
+                range = cell.range
+                value = {
+                    "cells": range.addresses,
+                    "values": range.values,
+                    "nrows": range.nrows,
+                    "ncols": range.ncols
+                }
+            else:
+                value = cell.value
+
+            node = {
+                "address": cell.address(),
+                "formula": cell.formula,
+                "value": value,
+                "python_expression": cell.python_expression,
+                "is_named_range": cell.is_named_range,
+                "should_eval": cell.should_eval
+            }
+            return node
+
+        # save nodes as simple objects
+        nodes = []
+        for node in data["nodes"]:
+            cell = node["id"]
+            nodes.append(cell.asdict())
+
+        links = []
+        for el in data['links']:
+            link = {key: cell.address() for key, cell in el.items()}
+            links.append(link)
+
+        data["nodes"] = nodes
+        data["links"] = links
+        data["outputs"] = self.outputs
+        data["inputs"] = self.inputs
+        data["named_ranges"] = self.named_ranges
+
+        return data
+
+    @staticmethod
+    def from_dict(input_data):
+
+        def find_cell(nodes, address):
+            for node in nodes:
+                cell = node['id']
+                if cell.address() == address:
+                    return cell
+
+            assert False
+
+        data = dict(input_data)
+
+        nodes = list(
+            map(Cell.from_dict,
+                filter(
+                    lambda item: not isinstance(item['value'], dict),
+                    data['nodes'])))
+        cellmap = {n.address(): n for n in nodes}
+
+        def cell_from_dict(d):
+            return Cell.from_dict(d, cellmap=cellmap)
+
+        nodes.extend(
+            list(
+                map(cell_from_dict,
+                    filter(
+                        lambda item: isinstance(item['value'], dict),
+                        data['nodes']))))
+
+        data["nodes"] = [{'id': node} for node in nodes]
+
+        links = []
+        for el in data['links']:
+            source_address = el['source']
+            target_address = el['target']
+            link = {
+                'source': find_cell(data['nodes'], source_address),
+                'target': find_cell(data['nodes'], target_address)
+            }
+            links.append(link)
+
+        data['links'] = links
+
+        G = json_graph.node_link_graph(data)
+        cellmap = {n.address(): n for n in G.nodes()}
+
+        named_ranges = data["named_ranges"]
+        inputs = data["inputs"]
+        outputs = data["outputs"]
+
+        return Spreadsheet(
+            G, cellmap, named_ranges,
+            inputs=inputs, outputs=outputs)

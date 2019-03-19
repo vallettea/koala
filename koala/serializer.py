@@ -16,8 +16,8 @@ SEP = ";;"
 
 ########### based on custom format #################
 def dump(self, fname):
-    outfile = gzip.GzipFile(fname, 'w')
 
+    outfile = gzip.GzipFile(fname,'w')
 
     # write simple cells first
     simple_cells = [cell for cell in list(self.cellmap.values()) if cell.is_range == False]
@@ -50,15 +50,14 @@ def dump(self, fname):
 
     for cell in simple_cells:
         parse_cell_info(cell)
-
         value = cell.value
         if isinstance(value, unicode):
-            outfile.write(cell.value.encode('utf-8') + "\n")
+            outfile.write(cell.value.encode('utf-8') + b"\n")
         else:
-            outfile.write(str(cell.value) + "\n")
-        outfile.write("====" + "\n")
+            outfile.write((str(cell.value) + u"\n").encode('utf-8'))
+        outfile.write(b"====" + b"\n")
 
-    outfile.write("-----" + "\n")
+    outfile.write(b"-----" + b"\n")
 
     for cell in range_cells:
         parse_cell_info(cell)
@@ -68,22 +67,22 @@ def dump(self, fname):
         else:
             outfile.write((cell.range.name + u"\n").encode('utf-8'))
 
-        outfile.write("====" + "\n")
-        outfile.write("====" + "\n")
+        outfile.write(b"====" + b"\n")
+        outfile.write(b"====" + b"\n")
 
     # writing the edges
-    outfile.write("edges" + "\n")
+    outfile.write(b"edges" + b"\n")
     for source, target in self.G.edges():
         outfile.write((source.address() + SEP + target.address() + u"\n").encode('utf-8'))
 
     # writing the rest
     if self.outputs is not None:
-        outfile.write("outputs" + "\n")
+        outfile.write(b"outputs" + b"\n")
         outfile.write((SEP.join(self.outputs) + u"\n").encode('utf-8'))
     if self.inputs is not None:
-        outfile.write("inputs" + "\n")
+        outfile.write(b"inputs" + b"\n")
         outfile.write((SEP.join(self.inputs) + u"\n").encode('utf-8'))
-    outfile.write("named_ranges" + "\n")
+    outfile.write(b"named_ranges" + b"\n")
     for k in self.named_ranges:
         outfile.write((k + SEP + self.named_ranges[k] + u"\n").encode('utf-8'))
 
@@ -120,11 +119,13 @@ def load(fname):
     outputs = None
     inputs = None
     named_ranges = {}
-    infile = gzip.GzipFile(fname, 'r')
-
+    infile = gzip.GzipFile(fname, 'rb')
+        
     for line in infile.read().splitlines():
 
-        if line == "====":
+        line= line.decode("utf-8")
+
+        if line == "====":            
             mode = "node0"
             continue
         if line == "-----":
@@ -132,7 +133,7 @@ def load(fname):
             Range = RangeFactory(cellmap_temp)
             mode = "node0"
             continue
-        elif line == "edges":
+        elif line == "edges":   
             cellmap = {n.address(): n for n in nodes}
             mode = "edges"
             continue
@@ -147,40 +148,32 @@ def load(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)
+            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)            
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
             is_pointer = to_bool(is_pointer)
-            should_eval = should_eval
+            should_eval = should_eval            
             mode = "node1"
-        elif mode == "node1":
+        elif mode == "node1":            
             if is_range:
-
                 reference = json.loads(line) if is_pointer else line # in order to be able to parse dicts
                 vv = Range(reference)
-
                 if is_pointer:
                     if not is_named_range:
                         address = vv.name
-
                     pointers.add(address)
-
                 cell = Cell(address, None, vv, formula, is_range, is_named_range, should_eval)
                 cell.python_expression = python_expression
                 nodes.append(cell)
             else:
                 value = to_bool(to_float(line))
-
                 cell = Cell(address, None, value, formula, is_range, is_named_range, should_eval)
-
                 cell.python_expression = python_expression
                 if formula:
                     if 'OFFSET' in formula or 'INDEX' in formula:
                         pointers.add(address)
-
-
                     cell.compile()
                 nodes.append(cell)
         elif mode == "edges":
@@ -194,7 +187,9 @@ def load(fname):
             k,v = line.split(SEP)
             named_ranges[k] = v
 
-    G = DiGraph(data = edges)
+    G = DiGraph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
 
     print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
@@ -202,37 +197,10 @@ def load(fname):
 
 ########### based on json #################
 def dump_json(self, fname):
-    data = json_graph.node_link_data(self.G)
-    # save nodes as simple objects
-    nodes = []
-    for node in data["nodes"]:
-        cell = node["id"]
+    data = self.asdict()
 
-        if isinstance(cell.range, RangeCore):
-            range = cell.range
-            value = {
-                "cells": range.addresses,
-                "values": range.values,
-                "nrows": range.nrows,
-                "ncols": range.ncols
-            }
-        else:
-            value = cell.value
-
-        nodes += [{
-            "address": cell.address(),
-            "formula": cell.formula,
-            "value": value,
-            "python_expression": cell.python_expression,
-            "is_named_range": cell.is_named_range,
-            "should_eval": cell.should_eval
-        }]
-    data["nodes"] = nodes
-    data["outputs"] = self.outputs
-    data["inputs"] = self.inputs
-    data["named_ranges"] = self.named_ranges
     with gzip.GzipFile(fname, 'w') as outfile:
-        outfile.write(json.dumps(data))
+        outfile.write(json.dumps(data).encode('utf-8'))
 
 
 def load_json(fname):
@@ -240,9 +208,9 @@ def load_json(fname):
     def _decode_list(data):
         rv = []
         for item in data:
-            if isinstance(item, unicode):
+            if isinstance(item, unicode) and unicode != str:
                 item = item.encode('utf-8')
-            elif isinstance(item, list):
+            elif isinstance(item, list) and unicode != str:
                 item = _decode_list(item)
             elif isinstance(item, dict):
                 item = _decode_dict(item)
@@ -252,9 +220,9 @@ def load_json(fname):
     def _decode_dict(data):
         rv = {}
         for key, value in data.items():
-            if isinstance(key, unicode):
+            if isinstance(key, unicode) and unicode != str:
                 key = key.encode('utf-8')
-            if isinstance(value, unicode):
+            if isinstance(value, unicode) and unicode != str:
                 value = value.encode('utf-8')
             elif isinstance(value, list):
                 value = _decode_list(value)
@@ -262,31 +230,11 @@ def load_json(fname):
                 value = _decode_dict(value)
             rv[key] = value
         return rv
+
     with gzip.GzipFile(fname, 'r') as infile:
-        data = json.loads(infile.read(), object_hook=_decode_dict)
-    def cell_from_dict(d):
-        cell_is_range = type(d["value"]) == dict
-        if cell_is_range:
-            range = d["value"]
-            if len(range["values"]) == 0:
-                range["values"] = [None] * len(range["cells"])
-            value = RangeCore(range["cells"], range["values"], nrows = range["nrows"], ncols = range["ncols"])
-        else:
-            value = d["value"]
-        new_cell = Cell(d["address"], None, value=value, formula=d["formula"], is_range = cell_is_range, is_named_range=d["is_named_range"], should_eval=d["should_eval"])
-        new_cell.python_expression = d["python_expression"]
-        new_cell.compile()
-        return {"id": new_cell}
+        data = json.loads(infile.read().decode('utf-8'), object_hook=_decode_dict)
 
-    nodes = list(map(cell_from_dict, data["nodes"]))
-    data["nodes"] = nodes
-
-    G = json_graph.node_link_graph(data)
-    cellmap = {n.address():n for n in G.nodes()}
-
-    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
-
-    return (G, cellmap, data["named_ranges"], data["outputs"], data["inputs"])
+    return data
 
 
 ########### based on dot #################
