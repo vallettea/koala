@@ -181,12 +181,6 @@ class Cell(CellBase):
         if not self.python_expression:
             return
 
-        # if we are a constant string, surround by quotes
-        if (isinstance(self.value, (str, unicode)) and
-                not self.formula and
-                not self.python_expression.startswith('"')):
-            self.python_expression = '"' + self.python_expression + '"'
-
         try:
             self.__compiled_expression = compile(
                 self.python_expression, '<string>', 'eval')

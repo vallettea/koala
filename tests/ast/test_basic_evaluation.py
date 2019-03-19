@@ -1,10 +1,5 @@
+# -*- coding: utf-8 -*-
 import unittest
-import os
-import sys
-
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../..')
-sys.path.insert(0, path)
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Cell import Cell
@@ -70,6 +65,24 @@ class Test_Excel(unittest.TestCase):
     def test_J2(self):
         self.sp.set_value('Sheet1!B2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
+
+    def test_J22(self):
+        cell = self.sp.cellmap['Sheet1!J22']
+        assert cell.value == 'Paul'
+
+        assert self.sp.evaluate('Sheet1!J22') == 'Paul'
+
+    def test_J23(self):
+        cell = self.sp.cellmap['Sheet1!J23']
+        assert cell.value == u'John☺'
+
+        assert self.sp.evaluate('Sheet1!J23') == u'John☺'
+
+    def test_J24(self):
+        cell = self.sp.cellmap['Sheet1!J24']
+        assert cell.value == 'George'
+
+        assert self.sp.evaluate('Sheet1!J24') == 'George'
 
     def test_C17(self):
         self.sp.set_value('Sheet1!A17', 40)
@@ -161,7 +174,3 @@ class Test_Excel(unittest.TestCase):
         self.sp.add_cell(Cell('Sheet1!A4', formula = 'A1 + 10'))
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!A4'), 13)
-
-
-if __name__ == '__main__':
-    unittest.main()

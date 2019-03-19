@@ -2,10 +2,6 @@ import os.path
 import sys
 import unittest
 
-dir = os.path.dirname(__file__)
-path = os.path.join(dir, '../../')
-sys.path.insert(0, path)
-
 from koala.reader import read_archive, read_cells
 from koala import ExcelCompiler, Spreadsheet
 
@@ -148,7 +144,3 @@ class Test_DumpJson(unittest.TestCase):
         self.assertTrue(graph.evaluate('INPUT') == 1)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
         self.assertTrue(graph.evaluate('RESULT') == 187)
-
-
-if __name__ == '__main__':
-    unittest.main()
