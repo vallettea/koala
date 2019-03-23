@@ -6,7 +6,7 @@ from koala.Range import get_cell_address, parse_cell_address
 from koala.ast import *
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
-from koala.openpyxl.formula.translate import Translator
+from openpyxl.formula.translate import Translator
 from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *

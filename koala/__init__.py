@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .openpyxl import *
+from openpyxl import *
 from .ast import *
 from .Cell import *
 from .ExcelCompiler import *
