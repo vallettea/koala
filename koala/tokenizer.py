@@ -262,7 +262,7 @@ class ExcelParser(ExcelParserTokens):
         inError    = False
 
         while (len(formula) > 0):
-            if (formula[0] == " "):
+            if (formula[0] in (" ", "\n")):
                 formula = formula[1:]
             else:
                 if (formula[0] == "="):
@@ -402,13 +402,13 @@ class ExcelParser(ExcelParserTokens):
                 continue
 
             # trim white-space
-            if (currentChar() == " "):
+            if (currentChar() in (" ", "\n")):
                 if (len(token) > 0):
                     tokens.add(token, self.TOK_TYPE_OPERAND)
                     token = ""
                 tokens.add("", self.TOK_TYPE_WSPACE)
                 offset += 1
-                while ((currentChar() == " ") and (not EOF())):
+                while ((currentChar() in (" ", "\n")) and (not EOF())):
                     offset += 1
                 continue
 
