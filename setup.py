@@ -26,5 +26,12 @@ if __name__ == '__main__':
 
         long_description=open("README.md").read(),
 
-        install_requires=open('requirements.txt').readlines(),
+        install_requires=[
+            'networkx >= 2.1',
+            'openpyxl >= 2.5.3',
+            'numpy >= 1.14.2',
+            'Cython >= 0.28.2',
+            'lxml >= 4.1.1',
+            'six >= 1.11.0',
+        ]
     )
