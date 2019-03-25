@@ -377,7 +377,12 @@ def cell2code(cell, named_ranges):
 
     else:
         ast = None
-        code = str('"' + cell.value.encode('utf-8') + '"' if isinstance(cell.value,unicode) else cell.value)
+        if isinstance(cell.value, unicode):
+            code = u'u"' + cell.value.replace(u'"', u'\\"') + u'"'
+        elif isinstance(cell.value, str):
+            raise RuntimeError("Got unexpected non-unicode str")
+        else:
+            code = str(cell.value)
     return code,ast
 
 
