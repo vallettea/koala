@@ -11,7 +11,7 @@ from openpyxl.compat import unicode
 from koala.utils import uniqueify, flatten
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
-from koala.tokenizer import ExcelParser, f_token, shunting_yard
+from koala.tokenizer import ExcelParser, f_token
 from .astnodes import *
 
 

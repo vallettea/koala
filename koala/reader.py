@@ -5,15 +5,15 @@ import re
 import os
 import json
 
-from koala.openpyxl.formula.translate import Translator
-from koala.openpyxl.cell.text import Text
-from koala.openpyxl.utils.indexed_list import IndexedList
-from koala.openpyxl.xml.functions import iterparse, fromstring, safe_iterator
+from openpyxl.formula.translate import Translator
+from openpyxl.cell.text import Text
+from openpyxl.utils.indexed_list import IndexedList
+from openpyxl.xml.functions import iterparse, fromstring, safe_iterator
 try:
     from xml.etree.cElementTree import ElementTree as ET
 except ImportError:
     from xml.etree.ElementTree import ElementTree as ET
-from koala.openpyxl.xml.constants import (
+from openpyxl.xml.constants import (
     SHEET_MAIN_NS,
     REL_NS,
     PKG_REL_NS,
