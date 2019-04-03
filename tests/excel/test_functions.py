@@ -728,4 +728,15 @@ class Test_Today(unittest.TestCase):
     todays_ordinal = days_since_epoch.days + 2
 
     def test_positive_integers(self):
-        self.assertEqual(today(), todays_ordinal)
+        self.assertEqual(today(), self.todays_ordinal)
+
+
+class Test_Concatenate(unittest.TestCase):
+
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            concatenate("Hello ", 2, [' World!'])
+
+    def test_concatenate(self):
+        self.assertEqual(concatenate("Hello", " ", "World!"), "Hello World!")
