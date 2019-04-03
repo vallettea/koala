@@ -9,7 +9,7 @@ Python equivalents of various excel functions
 from __future__ import absolute_import, division
 
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 
@@ -45,9 +45,32 @@ FUNCTION_MAP = {
 IND_FUN = [
     "SUM",
     "MIN",
+    "IF",
+    "TAN",
+    "ATAN2",
+    "PI",
+    "ARRAY",
+    "ARRAYROW",
+    "AND",
+    "OR",
+    "ALL",
+    "VALUE",
+    "LOG",
     "MAX",
     "SUMPRODUCT",
     "IRR",
+    "MIN",
+    "SUM",
+    "CHOOSE",
+    "SUMIF",
+    "AVERAGE",
+    "RIGHT",
+    "INDEX",
+    "LOOKUP",
+    "LINEST",
+    "NPV",
+    "MATCH",
+    "MOD",
     "COUNT",
     "COUNTA",
     "COUNTIF",
@@ -57,10 +80,30 @@ IND_FUN = [
     "INDEX",
     "AVERAGE",
     "SUMIF",
+    "ROUND",
+    "MID",
+    "DATE",
+    "YEARFRAC",
+    "ISNA",
+    "ISBLANK",
+    "ISTEXT",
+    "OFFSET",
+    "SUMPRODUCT",
+    "IFERROR",
+    "IRR",
+    "VLOOKUP",
+    "VDB",
+    "SLN",
     "XNPV",
     "PMT",
     "ROUNDUP",
+    "POWER",
+    "SQRT",
+    "TODAY"
 ]
+
+CELL_CHARACTER_LIMIT = 32767
+EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 
 ######################################################################################
 # List of excel equivalent functions
@@ -162,7 +205,6 @@ def average(*args): # Excel reference: https://support.office.com/en-us/article/
     values = extract_numeric_values(*args)
 
     return sum(values) / len(values)
-
 
 def right(text,n):
     #TODO: hack to deal with naca section numbers
@@ -513,6 +555,9 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
 
     text = str(text)
 
+    if len(text) > CELL_CHARACTER_LIMIT:
+        return ExcelError('#VALUE!', 'text is too long. Is %s needs to be %s or less.' % (len(text), CELL_CHARACTER_LIMIT))
+
     if type(start_num) != int:
         return ExcelError('#VALUE!', '%s is not an integer' % str(start_num))
     if type(num_chars) != int:
@@ -523,7 +568,7 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
     if num_chars < 0:
         return ExcelError('#VALUE!', '%s is < 0' % str(num_chars))
 
-    return text[start_num:num_chars]
+    return text[start_num : start_num + num_chars]
 
 
 def date(year, month, day): # Excel reference: https://support.office.com/en-us/article/DATE-function-e36c0c8c-4104-49da-ab83-82328b832349
@@ -915,7 +960,36 @@ def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-
     # type = args[4]
     return -present_value * rate / (1 - np.power(1 + rate, -num_payments))
 
+# https://support.office.com/en-us/article/POWER-function-D3F2908B-56F4-4C3F-895A-07FB519C362A
+def power(number, power):
+
+    if number == power == 0:
+        # Really excel?  What were you thinking?
+        return ExcelError('#NUM!', 'Number and power cannot both be zero' % str(number))
+
+    if power < 1 and number < 0:
+        return ExcelError('#NUM!', '%s must be non-negative' % str(number))
+
+    return np.power(number, power)
+
+# https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdf
+def sqrt(number):
+    if number < 0:
+        return ExcelError('#NUM!', '%s must be non-negative' % str(index_num))
+    return np.sqrt(number)
+
+# https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
+def today():
+    reference_date = datetime.today().date()
+    days_since_epoch = reference_date - EXCEL_EPOCH
+    # why +2 ?
+    # 1 based from 1900-01-01
+    # I think it is "inclusive" / to the _end_ of the day.
+    # https://support.office.com/en-us/article/date-function-e36c0c8c-4104-49da-ab83-82328b832349
+    """Note: Excel stores dates as sequential serial numbers so that they can be used in calculations.
+    January 1, 1900 is serial number 1, and January 1, 2008 is serial number 39448 because it is 39,447 days after January 1, 1900.
+     You will need to change the number format (Format Cells) in order to display a proper date."""
+    return days_since_epoch.days + 2
 
 if __name__ == '__main__':
     pass
-
