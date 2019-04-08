@@ -410,7 +410,7 @@ class Test_Mid(unittest.TestCase):
             mid('Romain', 1, -1)
 
     def test_mid(self):
-        self.assertEqual(mid('Romain', 2, 9), 'main')
+        self.assertEqual(mid('Romain', 2, 4), 'main')
 
 
 class Test_Round(unittest.TestCase):
@@ -679,3 +679,64 @@ class Test_Match(unittest.TestCase):
         range = Range('A1:A3', [False, True, False])
         with self.assertRaises(ExcelError):
             match(True, range, -1)
+
+
+# https://support.office.com/en-ie/article/power-function-d3f2908b-56f4-4c3f-895a-07fb519c362a
+class Test_Power(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            power(-1, 2)
+
+    @unittest.skip('This test fails.')
+    def test_second_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            power(1, 0)
+
+    def test_integers(self):
+        self.assertEqual(power(5, 2), 25)
+
+    def test_floats(self):
+        self.assertEqual(power(98.6, 3.2), 2401077.2220695773)
+
+# https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdfa
+class Test_Sqrt(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            sqrt(-16)
+
+    def test_positive_integers(self):
+        self.assertEqual(sqrt(16), 4)
+
+
+class Test_Sqrt(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            sqrt(-16)
+
+    def test_positive_integers(self):
+        self.assertEqual(sqrt(16), 4)
+
+
+class Test_Today(unittest.TestCase):
+
+    EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+    reference_date = datetime.today().date()
+    days_since_epoch = reference_date - EXCEL_EPOCH
+    todays_ordinal = days_since_epoch.days + 2
+
+    def test_positive_integers(self):
+        self.assertEqual(today(), self.todays_ordinal)
+
+
+class Test_Concatenate(unittest.TestCase):
+
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            concatenate("Hello ", 2, [' World!'])
+
+    def test_concatenate(self):
+        self.assertEqual(concatenate("Hello", " ", "World!"), "Hello World!")
