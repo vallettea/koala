@@ -124,10 +124,17 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         return resolve_range_cache[key]
     else:
         if not is_range(rng):  return ([sheet + rng],1,1)
-
         # single cell, no range
-        sh, start_col, start_row = split_address(start)
-        sh, end_col, end_row = split_address(end)
+        if start.isdigit() and end.isdigit():
+			# This copes with 5:5 style ranges
+            start_col = "A"
+            start_row = start
+            end_col = "XFD"
+            end_row = end
+        else:    
+            sh, start_col, start_row = split_address(start)
+            sh, end_col, end_row = split_address(end)
+
         start_col_idx = col2num(start_col)
         end_col_idx = col2num(end_col);
 
