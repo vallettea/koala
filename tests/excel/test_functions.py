@@ -722,8 +722,8 @@ class Test_Sqrt(unittest.TestCase):
 
 class Test_Today(unittest.TestCase):
 
-    EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
-    reference_date = datetime.today().date()
+    EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+    reference_date = datetime.datetime.today().date()
     days_since_epoch = reference_date - EXCEL_EPOCH
     todays_ordinal = days_since_epoch.days + 2
 
