@@ -5,6 +5,7 @@ from __future__ import absolute_import, division
 import collections
 import numbers
 import re
+import datetime as dt
 from six import string_types
 
 from openpyxl.compat import unicode
@@ -131,7 +132,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             start_row = start
             end_col = "XFD"
             end_row = end
-        else:    
+        else:
             sh, start_col, start_row = split_address(start)
             sh, end_col, end_row = split_address(end)
 
@@ -407,10 +408,16 @@ def date_from_int(nb):
             if nb > max_days:
                 nb -= max_days
             else:
-                current_day = nb
+                current_day = int(nb)
                 nb = 0
 
     return (current_year, current_month, current_day)
+
+def excel_date(date):
+    temp = dt.date(1899, 12, 30)    # Note, not 31st Dec but 30th!
+    delta = date - temp
+
+    return float(delta.days) + (float(delta.seconds) / 86400)
 
 def criteria_parser(criteria):
 
