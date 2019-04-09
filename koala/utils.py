@@ -413,7 +413,7 @@ def date_from_int(nb):
 
     return (current_year, current_month, current_day)
 
-def excel_date(date):
+def int_from_date(date):
     temp = dt.date(1899, 12, 30)    # Note, not 31st Dec but 30th!
     delta = date - temp
 

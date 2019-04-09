@@ -438,7 +438,7 @@ def eomonth(start_date, months): # Excel reference: https://support.office.com/e
     y2 = end_date_d.year
     m2 = end_date_d.month
     d2 = monthrange(y2, m2)[1]
-    res = int(excel_date(datetime.date(y2, m2, d2)))
+    res = int(int_from_date(datetime.date(y2, m2, d2)))
 
     return res
 
