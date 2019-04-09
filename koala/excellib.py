@@ -453,6 +453,10 @@ def countif(range, criteria): # Excel reference: https://support.office.com/en-u
     return len(valid)
 
 
+def xirr(values, dates, guess=0): # Excel Reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+    return 1 # todo
+
+
 def countifs(*args): # Excel reference: https://support.office.com/en-us/article/COUNTIFS-function-dda3dc6e-f74e-4aee-88bc-aa8c2a866842
 
     arg_list = list(args)
