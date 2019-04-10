@@ -377,11 +377,12 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         # Verify ascending sort
 
         posMax = -1
-        for i in range(range_length-1):
+        for i in range(range_length):
             current = type_convert(range_values[i])
 
-            if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
+            if i < range_length - 1:
+                if current > type_convert(range_values[i + 1]):
+                    return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i
         if posMax == -1:
