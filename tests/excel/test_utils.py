@@ -1,0 +1,44 @@
+from __future__ import absolute_import
+
+import pyximport; pyximport.install()
+
+import unittest
+
+from koala.excellib import *
+
+
+class Test_criteria_parser(unittest.TestCase):
+    def test_parser_numeric(self):
+        self.assertEqual(criteria_parser(2)(4), False)
+        self.assertEqual(criteria_parser(3)(3), True)
+        self.assertEqual(criteria_parser(4)(2), False)
+
+    def test_parser_not_equal_numeric(self):
+        self.assertEqual(criteria_parser('<>3')(2), True)
+        self.assertEqual(criteria_parser('<>3')(3), False)
+        self.assertEqual(criteria_parser('<>3')(4), True)
+
+    def test_parser_equal_numeric(self):
+        self.assertEqual(criteria_parser('=3')(2), False)
+        self.assertEqual(criteria_parser('=3')(3), True)
+        self.assertEqual(criteria_parser('=3')(4), False)
+
+    def test_parser_smaller_than_numeric(self):
+        self.assertEqual(criteria_parser('<3')(2), True)
+        self.assertEqual(criteria_parser('<3')(3), False)
+        self.assertEqual(criteria_parser('<3')(4), False)
+
+    def test_parser_larger_than_numeric(self):
+        self.assertEqual(criteria_parser('>3')(2), False)
+        self.assertEqual(criteria_parser('>3')(3), False)
+        self.assertEqual(criteria_parser('>3')(4), True)
+
+    def test_parser_smaller_than_equal_numeric(self):
+        self.assertEqual(criteria_parser('<=3')(2), True)
+        self.assertEqual(criteria_parser('<=3')(3), True)
+        self.assertEqual(criteria_parser('<=3')(4), False)
+
+    def test_parser_larger_than_equal_numeric(self):
+        self.assertEqual(criteria_parser('>=3')(2), False)
+        self.assertEqual(criteria_parser('>=3')(3), True)
+        self.assertEqual(criteria_parser('>=3')(4), True)
