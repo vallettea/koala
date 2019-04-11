@@ -126,7 +126,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         if not is_range(rng):  return ([sheet + rng],1,1)
         # single cell, no range
         if start.isdigit() and end.isdigit():
-			# This copes with 5:5 style ranges
+            # This copes with 5:5 style ranges
             start_col = "A"
             start_row = start
             end_col = "XFD"
