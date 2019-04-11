@@ -22,6 +22,9 @@ class Test_criteria_parser(unittest.TestCase):
         self.assertEqual(criteria_parser('=3')(2), False)
         self.assertEqual(criteria_parser('=3')(3), True)
         self.assertEqual(criteria_parser('=3')(4), False)
+        self.assertEqual(criteria_parser('=3.3')(3.3), True)
+        self.assertEqual(criteria_parser('=3.0')(3), True)
+        self.assertEqual(criteria_parser('=3')(3.0), True)
 
     def test_parser_smaller_than_numeric(self):
         self.assertEqual(criteria_parser('<3')(2), True)
@@ -42,3 +45,11 @@ class Test_criteria_parser(unittest.TestCase):
         self.assertEqual(criteria_parser('>=3')(2), False)
         self.assertEqual(criteria_parser('>=3')(3), True)
         self.assertEqual(criteria_parser('>=3')(4), True)
+
+    def test_parser_strings(self):
+        self.assertEqual(criteria_parser('=A')('A'), True)
+        self.assertEqual(criteria_parser('=A')('a'), True)
+        self.assertEqual(criteria_parser('=a')('A'), True)
+        self.assertEqual(criteria_parser('=a')('a'), True)
+        self.assertEqual(criteria_parser('=A')('B'), False)
+        self.assertEqual(criteria_parser('=A')(1), False)
