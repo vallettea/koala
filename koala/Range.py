@@ -58,7 +58,9 @@ def check_value(a):
         return ExcelError(a)
 
     try:  # This is to avoid None or Exception returned by Range operations
-        if float(a) or isinstance(a, (unicode, str)):
+        if isinstance(a, (unicode, str)):
+            return a
+        elif float(a):
             return a
         else:
             return 0
