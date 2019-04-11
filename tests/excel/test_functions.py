@@ -719,6 +719,9 @@ class Test_Sqrt(unittest.TestCase):
     def test_positive_integers(self):
         self.assertEqual(sqrt(16), 4)
 
+    def test_float(self):
+        self.assertEqual(sqrt(.25), .5)
+
 
 class Test_Today(unittest.TestCase):
 
@@ -740,3 +743,29 @@ class Test_Concatenate(unittest.TestCase):
 
     def test_concatenate(self):
         self.assertEqual(concatenate("Hello", " ", "World!"), "Hello World!")
+
+
+class Test_Year(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(year(43566), 2019)  # 11/04/2019
+        self.assertEqual(year(43831), 2020)  # 01/01/2020
+        self.assertEqual(year(36525), 1999)  # 31/12/1999
+
+
+class Test_Month(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(month(43566), 4)  # 11/04/2019
+        self.assertEqual(month(43831), 1)  # 01/01/2020
+        self.assertEqual(month(36525), 12)  # 31/12/1999
+
+
+class Test_Eomonth(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(eomonth(43566, 2), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43831, 5), 44012)  # 01/01/2020, add 5 months
+        self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
+        self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month
+        self.assertNotEqual(eomonth(36525, 15), 36980)  # 31/12/1999, add 15 month
