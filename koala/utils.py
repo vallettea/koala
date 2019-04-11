@@ -448,6 +448,11 @@ def criteria_parser(criteria):
                 if not is_number(x):
                     raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
                 return x != value
+        elif operator == '=' and is_number(value):
+            def check(x):
+                if not is_number(x):
+                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                return x == value
         else:
             def check(x):
                 return x == criteria
