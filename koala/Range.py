@@ -539,7 +539,12 @@ class RangeCore(dict):
     @staticmethod
     def add(a, b):
         try:
-            return check_value(a) + check_value(b)
+            a = check_value(a)
+            b = check_value(b)
+            if isinstance(a, str) or isinstance(b, str):
+                a = str(a)
+                b = str(b)
+            return a + b
         except Exception as e:
             return ExcelError('#N/A', e)
 
