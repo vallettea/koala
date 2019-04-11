@@ -79,7 +79,7 @@ IND_FUN = [
     "LOOKUP",
     "INDEX",
     "AVERAGE",
-    "SUMIF",
+    "SUMIFS",
     "ROUND",
     "MID",
     "DATE",
