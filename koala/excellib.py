@@ -210,6 +210,12 @@ def sumifs(*args):
 
     nb_criteria = (len(args)-1) / 2
 
+    args = list(args)
+    # when all the arrays are length one, they enter the function as floats/ints, not ranges, so let's convert them
+    for i, arg in enumerate(args,1):
+        if isinstance(arg, (float, int)):
+            args[i-1] = Range('A'+str(i)+':A'+str(i), [arg])
+
     # input checks
     if nb_criteria == 0:
         return TypeError('At least one criteria and criteria range should be provided.')
