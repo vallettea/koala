@@ -426,32 +426,32 @@ def criteria_parser(criteria):
         if operator == '<':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x < value
         elif operator == '>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x > value
         elif operator == '>=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x >= value
         elif operator == '<=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x <= value
         elif operator == '<>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x != value
         elif operator == '=' and is_number(value):
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x == value
         elif operator == '=':
             def check(x):
