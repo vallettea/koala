@@ -200,6 +200,42 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
         return sum([range.values[x] for x in indexes])
 
 
+def sumifs(*args):
+    # Excel reference: https://support.office.com/en-us/article/
+    #   sumifs-function-c9e748f5-7ea7-455d-9406-611cebce642b
+
+    ### Must return values in arrays for possible ranges (not for criteria itself
+    ### Single values to list, well defined ranges -> take their values, criteria-> keep as string
+    #     args = [list(x) if not isinstance(x, Range) and not isinstance(x, str) else x.values for x in args]
+
+    nb_criteria = (len(args)-1) / 2
+
+    # input checks
+    if nb_criteria == 0:
+        return TypeError('At least one criteria and criteria range should be provided.')
+    if int(nb_criteria) != nb_criteria:
+        return TypeError('Number of criteria an criteria ranges should be equal.')
+    nb_criteria = int(nb_criteria)
+
+    # separate arguments
+    sum_range = args[0]
+    criteria_ranges = args[1::2]
+    criteria = args[2::2]
+    index = list(range(1, nb_criteria+1))
+
+    for i in range(nb_criteria):
+
+        criteria_range = criteria_ranges[i]
+        criterion = criteria[i]
+
+        index_tmp = find_corresponding_index(criteria_range.values, criterion)
+        index = np.intersect1d(index, index_tmp)
+
+    res = sum_range[index]
+
+    return res
+
+
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
     # ignore non numeric cells and boolean cells
     values = extract_numeric_values(*args)
