@@ -126,7 +126,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         if not is_range(rng):  return ([sheet + rng],1,1)
         # single cell, no range
         if start.isdigit() and end.isdigit():
-			# This copes with 5:5 style ranges
+            # This copes with 5:5 style ranges
             start_col = "A"
             start_row = start
             end_col = "XFD"
@@ -426,31 +426,39 @@ def criteria_parser(criteria):
         if operator == '<':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x < value
         elif operator == '>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x > value
         elif operator == '>=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x >= value
         elif operator == '<=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x <= value
         elif operator == '<>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x != value
+        elif operator == '=' and is_number(value):
+            def check(x):
+                if not is_number(x):
+                    return False # Excel returns False when a string is compared with a value
+                return x == value
+        elif operator == '=':
+            def check(x):
+                return str(x).lower() == str(value)
         else:
             def check(x):
-                return x == criteria
+                return str(x).lower() == criteria.lower()
     else:
         raise Exception('Could\'t parse criteria %s' % criteria)
 
