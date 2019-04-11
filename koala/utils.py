@@ -131,7 +131,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             start_row = start
             end_col = "XFD"
             end_row = end
-        else:    
+        else:
             sh, start_col, start_row = split_address(start)
             sh, end_col, end_row = split_address(end)
 
