@@ -221,17 +221,18 @@ def sumifs(*args):
     sum_range = args[0]
     criteria_ranges = args[1::2]
     criteria = args[2::2]
-    index = list(range(1, nb_criteria+1))
+    index = list(range(0, len(sum_range)))
 
     for i in range(nb_criteria):
 
         criteria_range = criteria_ranges[i]
-        criterion = criteria[i]
+        criterion = str(criteria[i])
 
         index_tmp = find_corresponding_index(criteria_range.values, criterion)
         index = np.intersect1d(index, index_tmp)
 
-    res = sum_range[index]
+    sum_select = [sum_range.values[i] for i in index]
+    res = sum(sum_select)
 
     return res
 
