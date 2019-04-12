@@ -204,10 +204,6 @@ def sumifs(*args):
     # Excel reference: https://support.office.com/en-us/article/
     #   sumifs-function-c9e748f5-7ea7-455d-9406-611cebce642b
 
-    ### Must return values in arrays for possible ranges (not for criteria itself
-    ### Single values to list, well defined ranges -> take their values, criteria-> keep as string
-    #     args = [list(x) if not isinstance(x, Range) and not isinstance(x, str) else x.values for x in args]
-
     nb_criteria = (len(args)-1) / 2
 
     args = list(args)
