@@ -416,7 +416,11 @@ def criteria_parser(criteria):
 
     if is_number(criteria):
         def check(x):
-            return x == criteria #and type(x) == type(criteria)
+            try:
+                x = float(x)
+            except:
+                return False
+            return x == float(criteria) #and type(x) == type(criteria)
     elif type(criteria) == str:
         search = re.search('(\W*)(.*)', criteria.lower()).group
         operator = search(1)
