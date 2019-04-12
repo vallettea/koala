@@ -104,6 +104,7 @@ IND_FUN = [
     "TODAY",
     "YEAR",
     "MONTH",
+    "EOMONTH",
 ]
 
 CELL_CHARACTER_LIMIT = 32767
