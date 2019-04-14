@@ -290,6 +290,34 @@ class Test_SumIf(unittest.TestCase):
         self.assertEqual(sumif(range1, ">=3", range2), 35)
 
 
+class Test_SumIfs(unittest.TestCase):
+
+    def test_criteria_numeric(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '<=2'), 3)
+        self.assertEqual(sumifs(sum_range, criteria_range, '>2'), 3)
+
+    def test_criteria_string(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', ['A', 'B', 'C'])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '=A'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '=B'), 2)
+        self.assertEqual(sumifs(sum_range, criteria_range, 'C'), 3)
+
+    def test__multiple_criteria(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range1 = Range('B1:B3', ['A', 'B', 'B'])
+        criteria_range2 = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=A', criteria_range2, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=B', criteria_range2, '>1'), 5)
+        self.assertEqual(sumifs(sum_range, criteria_range1, 'B', criteria_range2, '<3'), 2)
+
+
 class Test_IsNa(unittest.TestCase):
     # This function might need more solid testing
 

@@ -81,7 +81,7 @@ IND_FUN = [
     "LOOKUP",
     "INDEX",
     "AVERAGE",
-    "SUMIF",
+    "SUMIFS",
     "ROUND",
     "MID",
     "DATE",
@@ -203,6 +203,41 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
 
     else:
         return sum([range.values[x] for x in indexes])
+
+
+def sumifs(*args):
+    # Excel reference: https://support.office.com/en-us/article/
+    #   sumifs-function-c9e748f5-7ea7-455d-9406-611cebce642b
+
+    nb_criteria = (len(args)-1) / 2
+
+    args = list(args)
+
+    # input checks
+    if nb_criteria == 0:
+        return TypeError('At least one criteria and criteria range should be provided.')
+    if int(nb_criteria) != nb_criteria:
+        return TypeError('Number of criteria an criteria ranges should be equal.')
+    nb_criteria = int(nb_criteria)
+
+    # separate arguments
+    sum_range = args[0]
+    criteria_ranges = args[1::2]
+    criteria = args[2::2]
+    index = list(range(0, len(sum_range)))
+
+    for i in range(nb_criteria):
+
+        criteria_range = criteria_ranges[i]
+        criterion = str(criteria[i])
+
+        index_tmp = find_corresponding_index(criteria_range.values, criterion)
+        index = np.intersect1d(index, index_tmp)
+
+    sum_select = [sum_range.values[i] for i in index]
+    res = sum(sum_select)
+
+    return res
 
 
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
