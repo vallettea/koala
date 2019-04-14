@@ -9,9 +9,11 @@ Python equivalents of various excel functions
 from __future__ import absolute_import, division
 
 import numpy as np
-from datetime import datetime, date
+import datetime
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
+from calendar import monthrange
+from dateutil.relativedelta import relativedelta
 
 from openpyxl.compat import unicode
 
@@ -99,11 +101,14 @@ IND_FUN = [
     "ROUNDUP",
     "POWER",
     "SQRT",
-    "TODAY"
+    "TODAY",
+    "YEAR",
+    "MONTH",
+    "EOMONTH",
 ]
 
 CELL_CHARACTER_LIMIT = 32767
-EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 
 ######################################################################################
 # List of excel equivalent functions
@@ -420,6 +425,48 @@ def mod(nb, q): # Excel Reference: https://support.office.com/en-us/article/MOD-
         return nb % q
 
 
+def eomonth(start_date, months): # Excel reference: https://support.office.com/en-us/article/eomonth-function-7314ffa1-2bc9-4005-9d66-f49db127d628
+    if not is_number(start_date):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(start_date))
+    if start_date < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(start_date))
+
+    if not is_number(months):
+        return ExcelError('#VALUE!', 'months %s must be a number' % str(months))
+
+    y1, m1, d1 = date_from_int(start_date)
+    start_date_d = datetime.date(year=y1, month=m1, day=d1)
+    end_date_d = start_date_d + relativedelta(months=months)
+    y2 = end_date_d.year
+    m2 = end_date_d.month
+    d2 = monthrange(y2, m2)[1]
+    res = int(int_from_date(datetime.date(y2, m2, d2)))
+
+    return res
+
+
+def year(serial_number): # Excel reference: https://support.office.com/en-us/article/year-function-c64f017a-1354-490d-981f-578e8ec8d3b9
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return y1
+
+
+def month(serial_number): # Excel reference: https://support.office.com/en-us/article/month-function-579a2881-199b-48b2-ab90-ddba0eba86e8
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return m1
+
+
 def count(*args): # Excel reference: https://support.office.com/en-us/article/COUNT-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
     l = list(args)
 
@@ -591,10 +638,10 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
 
     year, month, day = normalize_year(year, month, day) # taking into account negative month and day values
 
-    date_0 = datetime(1900, 1, 1)
-    date = datetime(year, month, day)
+    date_0 = datetime.datetime(1900, 1, 1)
+    date = datetime.datetime(year, month, day)
 
-    result = (datetime(year, month, day) - date_0).days + 2
+    result = (datetime.datetime(year, month, day) - date_0).days + 2
 
     if result <= 0:
         return ExcelError('#VALUE!', 'Date result is negative')
@@ -981,7 +1028,7 @@ def sqrt(number):
 
 # https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
 def today():
-    reference_date = datetime.today().date()
+    reference_date = datetime.datetime.today().date()
     days_since_epoch = reference_date - EXCEL_EPOCH
     # why +2 ?
     # 1 based from 1900-01-01
