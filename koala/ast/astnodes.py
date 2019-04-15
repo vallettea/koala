@@ -4,7 +4,7 @@ from __future__ import print_function
 from openpyxl.compat import unicode
 
 from koala.excellib import FUNCTION_MAP, IND_FUN
-from koala.utils import is_range, split_range, split_address
+from koala.utils import is_range, split_range, split_address, resolve_range
 from koala.ExcelError import *
 
 
