@@ -145,7 +145,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             start_col = start
             start_row = 1
             end_col = end
-            end_row = 2^20
+            end_row = 2**20
         else:
             sh, start_col, start_row = split_address(start)
             sh, end_col, end_row = split_address(end)
