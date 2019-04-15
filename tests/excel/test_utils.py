@@ -81,3 +81,7 @@ class Test_resolve_range(unittest.TestCase):
         self.assertEqual(resolve_range('Sheet1!A1:A3'), (['Sheet1!A1', 'Sheet1!A2', 'Sheet1!A3'], 3, 1))
         self.assertEqual(resolve_range('Sheet1!A1:C1'), (['Sheet1!A1', 'Sheet1!B1', 'Sheet1!C1'], 1, 3))
         self.assertEqual(resolve_range('Sheet1!A1:B2'), ([['Sheet1!A1', 'Sheet1!B1'], ['Sheet1!A2', 'Sheet1!B2']], 2, 2))
+        self.assertEqual(resolve_range('Sheet1!A:A')[1::], (2**20, 1))
+        self.assertEqual(resolve_range('Sheet1!A:B')[1::], (2**20, 2))
+        self.assertEqual(resolve_range('Sheet1!1:1')[1::], (1, 2**14))
+        self.assertEqual(resolve_range('Sheet1!1:2')[1::], (2, 2**14))
