@@ -85,6 +85,14 @@ def split_address(address):
             row,col = addr.split('C')
             row = row[2:-1]
             col = col[2:-1]
+        # [<row>] format
+        elif re.match('^[\d\$]+$', addr):
+            row = addr
+            col = None
+        # [<col>] format
+        elif re.match('^[A-Z\$]$', addr):
+            row = None
+            col = addr
         else:
             raise Exception('Invalid address format ' + addr)
 
