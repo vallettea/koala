@@ -69,8 +69,15 @@ class Test_criteria_parser(unittest.TestCase):
 
 
 class Test_split_address(unittest.TestCase):
-    def test_parser_numeric(self):
+    def test_parser(self):
         self.assertEqual(split_address('K54'), (None, 'K', '54'))
         self.assertEqual(split_address('Sheet1!K54'), ('Sheet1', 'K', '54'))
         self.assertEqual(split_address('Sheet1!5'), ('Sheet1', None, '5'))
         self.assertEqual(split_address('Sheet1!A'), ('Sheet1', 'A', None))
+
+
+class Test_resolve_range(unittest.TestCase):
+    def test_parser(self):
+        self.assertEqual(resolve_range('Sheet1!A1:A3'), (['Sheet1!A1', 'Sheet1!A2', 'Sheet1!A3'], 3, 1))
+        self.assertEqual(resolve_range('Sheet1!A1:C1'), (['Sheet1!A1', 'Sheet1!B1', 'Sheet1!C1'], 1, 3))
+        self.assertEqual(resolve_range('Sheet1!A1:B2'), ([['Sheet1!A1', 'Sheet1!B1'], ['Sheet1!A2', 'Sheet1!B2']], 2, 2))
