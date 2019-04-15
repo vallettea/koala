@@ -286,6 +286,11 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
     if row == 0 and col == 0:
         return ExcelError('#VALUE!', 'No index asked for Range')
 
+    if col is None and nr == 1 and row <= nc:
+        # special case where index is matched on row, and the second row input can be used as a col
+        col = row
+        row = None
+
     if row is not None and row > nr:
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
 
