@@ -132,7 +132,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
             start_row = start
             end_col = "XFD"
             end_row = end
-        if start.isalpha() and end.isalpha():
+        elif start.isalpha() and end.isalpha():
             # This copes with A:A style ranges
             start_col = start
             start_row = 1
