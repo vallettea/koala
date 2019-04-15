@@ -66,3 +66,11 @@ class Test_criteria_parser(unittest.TestCase):
         self.assertEqual(criteria_parser('=a')('a'), True)
         self.assertEqual(criteria_parser('=A')('B'), False)
         self.assertEqual(criteria_parser('=A')(1), False)
+
+
+class Test_split_address(unittest.TestCase):
+    def test_parser_numeric(self):
+        self.assertEqual(split_address('K54'), (None, 'K', '54'))
+        self.assertEqual(split_address('Sheet1!K54'), ('Sheet1', 'K', '54'))
+        self.assertEqual(split_address('Sheet1!5'), ('Sheet1', None, '5'))
+        self.assertEqual(split_address('Sheet1!A'), ('Sheet1', 'A', None))
