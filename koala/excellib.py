@@ -111,6 +111,7 @@ EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 # List of excel equivalent functions
 # TODO: needs unit testing
 
+
 def value(text):
     # make the distinction for naca numbers
     if text.find('.') > 0:
@@ -163,6 +164,7 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
     else:
         return sum(values)
 
+
 def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
 
     index = int(index_num)
@@ -207,6 +209,7 @@ def average(*args): # Excel reference: https://support.office.com/en-us/article/
     values = extract_numeric_values(*args)
 
     return sum(values) / len(values)
+
 
 def right(text,n):
     #TODO: hack to deal with naca section numbers
@@ -317,6 +320,7 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
             else:
                 return output_range[i-1]
 
+
 # NEEDS TEST
 def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us/article/LINEST-function-84d7d0d9-6e50-4101-977a-fa7abf772b6d
 
@@ -343,6 +347,7 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
     (coefs, residuals, rank, sing_vals) = np.linalg.lstsq(A, Y)
 
     return coefs
+
 
 # NEEDS TEST
 def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
@@ -434,6 +439,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
     return total
 
+
 def counta(range):
     if isinstance(range, ExcelError) or range in ErrorCodes:
         if range.value == '#NULL':
@@ -443,6 +449,7 @@ def counta(range):
             # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
         return len([x for x in range.values if x != None])
+
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
 
@@ -713,11 +720,14 @@ def isna(value):
     except:
         return True
 
+
 def isblank(value):
     return value is None
 
+
 def istext(value):
     return type(value) == str
+
 
 def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     # This function accepts a list of addresses
@@ -774,6 +784,7 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     return ref_sheet + start_address + end_address
 
+
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
 
@@ -790,6 +801,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
     reduce(check_length, range_list) # check that all ranges have the same size
 
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values)
+
 
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
@@ -881,6 +893,7 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
 
     return Range.find_associated_value(ref, result_column)
 
+
 def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-us/article/SLN-function-cdb666e5-c1c6-40a7-806a-e695edc2f1c8
 
     for arg in [cost, salvage, life]:
@@ -888,6 +901,7 @@ def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-u
             return arg
 
     return (cost - salvage) / life
+
 
 def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = False): # Excel reference: https://support.office.com/en-us/article/VDB-function-dde4e207-f3fa-488d-91d2-66d55e861d73
 
@@ -1008,6 +1022,7 @@ def xnpv(rate, values, dates):  # Excel reference: https://support.office.com/en
 
     return xnpv
 
+
 def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-function-0214da64-9a63-4996-bc20-214433fa6441
     rate = args[0]
     num_payments = args[1]
@@ -1016,6 +1031,7 @@ def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-
     # fv = args[3]
     # type = args[4]
     return -present_value * rate / (1 - np.power(1 + rate, -num_payments))
+
 
 # https://support.office.com/en-us/article/POWER-function-D3F2908B-56F4-4C3F-895A-07FB519C362A
 def power(number, power):
@@ -1029,11 +1045,13 @@ def power(number, power):
 
     return np.power(number, power)
 
+
 # https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdf
 def sqrt(number):
     if number < 0:
         return ExcelError('#NUM!', '%s must be non-negative' % str(index_num))
     return np.sqrt(number)
+
 
 # https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
 def today():
@@ -1048,9 +1066,11 @@ def today():
      You will need to change the number format (Format Cells) in order to display a proper date."""
     return days_since_epoch.days + 2
 
+
 # https://support.office.com/en-us/article/concat-function-9b1a9a3f-94ff-41af-9736-694cbd6b4ca2
 def concat(*args):
     return concatenate(*tuple(flatten(args)))
+
 
 # https://support.office.com/en-us/article/CONCATENATE-function-8F8AE884-2CA8-4F7A-B093-75D702BEA31D
 # Important: In Excel 2016, Excel Mobile, and Excel Online, this function has
