@@ -91,6 +91,7 @@ IND_FUN = [
     "SUMPRODUCT",
     "IFERROR",
     "IRR",
+    "XIRR",
     "VLOOKUP",
     "VDB",
     "SLN",
