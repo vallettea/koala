@@ -563,7 +563,7 @@ def graph_from_seeds(seeds, cell_source):
 
                             # add the empty cells
                             if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
-                                # only add cells within the current bounds of the sheet to avoid too many evaluations
+                                # only add cells within the maximum bounds of the sheet to avoid too many evaluations
                                 # for A:A or 1:1 ranges
 
                                 cell_new = Cell(addr, sheet_new, value="", should_eval='False') # create new cell object
