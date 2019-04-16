@@ -821,8 +821,34 @@ def irr(values, guess = None):
         except Exception as e:
             return ExcelError('#NUM!', e)
 
-def xirr(values, dates, guess=0): # Excel Reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
-    return 1 # todo
+
+def xirr(values, dates, guess=0):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and non-periodic dates. It resembles the
+    excel function XIRR().
+
+    Excel reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+
+    if isinstance(values, Range):
+        values = values.values
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
+    if guess is not None and guess != 0:
+        raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
+    else:
+        try:
+            return scipy.optimize.newton(lambda r: xnpv(r, values, dates), 0.0)
+        except RuntimeError:  # Failed to converge?
+            return scipy.optimize.brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
 
