@@ -101,9 +101,14 @@ def split_address(address):
 
 
 def max_dimension(cellmap, sheet = None):
-    cells = cellmap.values
-    rows = 10
-    cols = 10
+    cells = list(cellmap.values())
+    rows = 0
+    cols = 0
+    for cell in cells:
+        if sheet is None or cell.sheet == sheet:
+            rows = max(rows, int(cell.row))
+            cols = max(cols, int(col2num(cell.col)))
+
     return (rows, cols)
 
 
