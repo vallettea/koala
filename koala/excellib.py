@@ -9,6 +9,7 @@ Python equivalents of various excel functions
 from __future__ import absolute_import, division
 
 import numpy as np
+import scipy.optimize
 from datetime import datetime, date
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
