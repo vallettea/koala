@@ -200,6 +200,7 @@ class Test_Index(unittest.TestCase):
 
     def test_index_1_dim(self):
         self.assertEqual(index(resolve_range('A1:A3'), 3), 'A3')
+        self.assertEqual(index(resolve_range('A1:C1'), 3), 'C1')
 
     @unittest.skip('This test fails.')
     def test_index_2_dim_1_coord(self):
