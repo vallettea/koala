@@ -798,9 +798,19 @@ def iferror(value, value_if_error): # Excel reference: https://support.office.co
     else:
         return value
 
-def irr(values, guess = None): # Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
-                               # Numpy reference: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.irr.html
-    if (isinstance(values, Range)):
+
+def irr(values, guess = None):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and periodic dates. It resembles the
+    excel function IRR().
+
+    Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
+
+    :param values: the payments of which at least one has to be negative.
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+    if isinstance(values, Range):
         values = values.values
 
     if guess is not None and guess != 0:
