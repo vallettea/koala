@@ -70,6 +70,11 @@ class Test_Irr(unittest.TestCase):
             irr([-100, 39, 59, 55, 20], 2)
 
 
+class Test_Xirr(unittest.TestCase):
+    def test_xirr_basic(self):
+        self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
+
+
 class Test_Offset(unittest.TestCase):
     @unittest.skip('This test fails.')
     def test_offset_height_not_integer(self):
