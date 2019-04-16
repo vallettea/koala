@@ -470,12 +470,14 @@ def find_corresponding_index(list, criteria):
 
     return valid
 
+
 def check_length(range1, range2):
 
     if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
     else:
         return range2
+
 
 def extract_numeric_values(*args):
     values = []
