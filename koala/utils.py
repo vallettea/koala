@@ -92,6 +92,13 @@ def split_address(address):
         return (sheet,col,row)
 
 
+def max_dimension(cellmap, sheet = None):
+    cells = cellmap.values
+    rows = 10
+    cols = 10
+    return (rows, cols)
+
+
 resolve_range_cache = {}
 def resolve_range(rng, should_flatten = False, sheet=''):
     # print 'RESOLVE RANGE splitting', rng
