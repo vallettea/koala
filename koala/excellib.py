@@ -10,9 +10,11 @@ from __future__ import absolute_import, division
 
 import numpy as np
 import scipy.optimize
-from datetime import datetime, date
+import datetime
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
+from calendar import monthrange
+from dateutil.relativedelta import relativedelta
 
 from openpyxl.compat import unicode
 
@@ -80,7 +82,7 @@ IND_FUN = [
     "LOOKUP",
     "INDEX",
     "AVERAGE",
-    "SUMIF",
+    "SUMIFS",
     "ROUND",
     "MID",
     "DATE",
@@ -101,11 +103,14 @@ IND_FUN = [
     "ROUNDUP",
     "POWER",
     "SQRT",
-    "TODAY"
+    "TODAY",
+    "YEAR",
+    "MONTH",
+    "EOMONTH",
 ]
 
 CELL_CHARACTER_LIMIT = 32767
-EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 
 ######################################################################################
 # List of excel equivalent functions
@@ -202,6 +207,41 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
 
     else:
         return sum([range.values[x] for x in indexes])
+
+
+def sumifs(*args):
+    # Excel reference: https://support.office.com/en-us/article/
+    #   sumifs-function-c9e748f5-7ea7-455d-9406-611cebce642b
+
+    nb_criteria = (len(args)-1) / 2
+
+    args = list(args)
+
+    # input checks
+    if nb_criteria == 0:
+        return TypeError('At least one criteria and criteria range should be provided.')
+    if int(nb_criteria) != nb_criteria:
+        return TypeError('Number of criteria an criteria ranges should be equal.')
+    nb_criteria = int(nb_criteria)
+
+    # separate arguments
+    sum_range = args[0]
+    criteria_ranges = args[1::2]
+    criteria = args[2::2]
+    index = list(range(0, len(sum_range)))
+
+    for i in range(nb_criteria):
+
+        criteria_range = criteria_ranges[i]
+        criterion = str(criteria[i])
+
+        index_tmp = find_corresponding_index(criteria_range.values, criterion)
+        index = np.intersect1d(index, index_tmp)
+
+    sum_select = [sum_range.values[i] for i in index]
+    res = sum(sum_select)
+
+    return res
 
 
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
@@ -387,8 +427,9 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         for i in range(range_length):
             current = type_convert(range_values[i])
 
-            if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
+            if i < range_length - 1:
+                if current > type_convert(range_values[i + 1]):
+                    return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i
         if posMax == -1:
@@ -424,6 +465,48 @@ def mod(nb, q): # Excel Reference: https://support.office.com/en-us/article/MOD-
         return ExcelError('#VALUE!', '%s is not an integer' % str(q))
     else:
         return nb % q
+
+
+def eomonth(start_date, months): # Excel reference: https://support.office.com/en-us/article/eomonth-function-7314ffa1-2bc9-4005-9d66-f49db127d628
+    if not is_number(start_date):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(start_date))
+    if start_date < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(start_date))
+
+    if not is_number(months):
+        return ExcelError('#VALUE!', 'months %s must be a number' % str(months))
+
+    y1, m1, d1 = date_from_int(start_date)
+    start_date_d = datetime.date(year=y1, month=m1, day=d1)
+    end_date_d = start_date_d + relativedelta(months=months)
+    y2 = end_date_d.year
+    m2 = end_date_d.month
+    d2 = monthrange(y2, m2)[1]
+    res = int(int_from_date(datetime.date(y2, m2, d2)))
+
+    return res
+
+
+def year(serial_number): # Excel reference: https://support.office.com/en-us/article/year-function-c64f017a-1354-490d-981f-578e8ec8d3b9
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return y1
+
+
+def month(serial_number): # Excel reference: https://support.office.com/en-us/article/month-function-579a2881-199b-48b2-ab90-ddba0eba86e8
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return m1
 
 
 def count(*args): # Excel reference: https://support.office.com/en-us/article/COUNT-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
@@ -599,10 +682,10 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
 
     year, month, day = normalize_year(year, month, day) # taking into account negative month and day values
 
-    date_0 = datetime(1900, 1, 1)
-    date = datetime(year, month, day)
+    date_0 = datetime.datetime(1900, 1, 1)
+    date = datetime.datetime(year, month, day)
 
-    result = (datetime(year, month, day) - date_0).days + 2
+    result = (datetime.datetime(year, month, day) - date_0).days + 2
 
     if result <= 0:
         return ExcelError('#VALUE!', 'Date result is negative')
@@ -1055,7 +1138,7 @@ def sqrt(number):
 
 # https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
 def today():
-    reference_date = datetime.today().date()
+    reference_date = datetime.datetime.today().date()
     days_since_epoch = reference_date - EXCEL_EPOCH
     # why +2 ?
     # 1 based from 1900-01-01

@@ -58,7 +58,9 @@ def check_value(a):
         return ExcelError(a)
 
     try:  # This is to avoid None or Exception returned by Range operations
-        if float(a) or isinstance(a, (unicode, str)):
+        if isinstance(a, (unicode, str)):
+            return a
+        elif float(a):
             return a
         else:
             return 0
@@ -537,7 +539,12 @@ class RangeCore(dict):
     @staticmethod
     def add(a, b):
         try:
-            return check_value(a) + check_value(b)
+            a = check_value(a)
+            b = check_value(b)
+            if isinstance(a, str) or isinstance(b, str):
+                a = str(a)
+                b = str(b)
+            return a + b
         except Exception as e:
             return ExcelError('#N/A', e)
 

@@ -295,6 +295,34 @@ class Test_SumIf(unittest.TestCase):
         self.assertEqual(sumif(range1, ">=3", range2), 35)
 
 
+class Test_SumIfs(unittest.TestCase):
+
+    def test_criteria_numeric(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '<=2'), 3)
+        self.assertEqual(sumifs(sum_range, criteria_range, '>2'), 3)
+
+    def test_criteria_string(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', ['A', 'B', 'C'])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '=A'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '=B'), 2)
+        self.assertEqual(sumifs(sum_range, criteria_range, 'C'), 3)
+
+    def test__multiple_criteria(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range1 = Range('B1:B3', ['A', 'B', 'B'])
+        criteria_range2 = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=A', criteria_range2, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=B', criteria_range2, '>1'), 5)
+        self.assertEqual(sumifs(sum_range, criteria_range1, 'B', criteria_range2, '<3'), 2)
+
+
 class Test_IsNa(unittest.TestCase):
     # This function might need more solid testing
 
@@ -724,11 +752,14 @@ class Test_Sqrt(unittest.TestCase):
     def test_positive_integers(self):
         self.assertEqual(sqrt(16), 4)
 
+    def test_float(self):
+        self.assertEqual(sqrt(.25), .5)
+
 
 class Test_Today(unittest.TestCase):
 
-    EXCEL_EPOCH = datetime.strptime("1900-01-01", '%Y-%m-%d').date()
-    reference_date = datetime.today().date()
+    EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+    reference_date = datetime.datetime.today().date()
     days_since_epoch = reference_date - EXCEL_EPOCH
     todays_ordinal = days_since_epoch.days + 2
 
@@ -745,3 +776,29 @@ class Test_Concatenate(unittest.TestCase):
 
     def test_concatenate(self):
         self.assertEqual(concatenate("Hello", " ", "World!"), "Hello World!")
+
+
+class Test_Year(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(year(43566), 2019)  # 11/04/2019
+        self.assertEqual(year(43831), 2020)  # 01/01/2020
+        self.assertEqual(year(36525), 1999)  # 31/12/1999
+
+
+class Test_Month(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(month(43566), 4)  # 11/04/2019
+        self.assertEqual(month(43831), 1)  # 01/01/2020
+        self.assertEqual(month(36525), 12)  # 31/12/1999
+
+
+class Test_Eomonth(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(eomonth(43566, 2), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43831, 5), 44012)  # 01/01/2020, add 5 months
+        self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
+        self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month
+        self.assertNotEqual(eomonth(36525, 15), 36980)  # 31/12/1999, add 15 month

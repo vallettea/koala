@@ -5,6 +5,7 @@ from __future__ import absolute_import, division
 import collections
 import numbers
 import re
+import datetime as dt
 from six import string_types
 
 from openpyxl.compat import unicode
@@ -126,12 +127,12 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         if not is_range(rng):  return ([sheet + rng],1,1)
         # single cell, no range
         if start.isdigit() and end.isdigit():
-			# This copes with 5:5 style ranges
+            # This copes with 5:5 style ranges
             start_col = "A"
             start_row = start
             end_col = "XFD"
             end_row = end
-        else:    
+        else:
             sh, start_col, start_row = split_address(start)
             sh, end_col, end_row = split_address(end)
 
@@ -407,16 +408,26 @@ def date_from_int(nb):
             if nb > max_days:
                 nb -= max_days
             else:
-                current_day = nb
+                current_day = int(nb)
                 nb = 0
 
     return (current_year, current_month, current_day)
+
+def int_from_date(date):
+    temp = dt.date(1899, 12, 30)    # Note, not 31st Dec but 30th!
+    delta = date - temp
+
+    return float(delta.days) + (float(delta.seconds) / 86400)
 
 def criteria_parser(criteria):
 
     if is_number(criteria):
         def check(x):
-            return x == criteria #and type(x) == type(criteria)
+            try:
+                x = float(x)
+            except:
+                return False
+            return x == float(criteria) #and type(x) == type(criteria)
     elif type(criteria) == str:
         search = re.search('(\W*)(.*)', criteria.lower()).group
         operator = search(1)
@@ -426,31 +437,39 @@ def criteria_parser(criteria):
         if operator == '<':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x < value
         elif operator == '>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x > value
         elif operator == '>=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x >= value
         elif operator == '<=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x <= value
         elif operator == '<>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x != value
+        elif operator == '=' and is_number(value):
+            def check(x):
+                if not is_number(x):
+                    return False # Excel returns False when a string is compared with a value
+                return x == value
+        elif operator == '=':
+            def check(x):
+                return str(x).lower() == str(value)
         else:
             def check(x):
-                return x == criteria
+                return str(x).lower() == criteria.lower()
     else:
         raise Exception('Could\'t parse criteria %s' % criteria)
 
