@@ -954,16 +954,32 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     return result
 
-def xnpv(*args): # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
-    rate = args[0]
-    # ignore non numeric cells and boolean cells
-    values = extract_numeric_values(args[1])
-    dates = extract_numeric_values(args[2])
+
+def xnpv(rate, values, dates):  # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
+    """
+    Function to calculate the net present value (NPV) using payments and non-periodic dates. It resembles the excel function XPNV().
+
+    :param rate: the discount rate.
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :return: a float being the NPV.
+    """
+    if isinstance(values, Range):
+        values = values.values
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
+
+    if rate < 0:
+        return ExcelError('#NUM!', '`excel cannot handle a negative `rate`' % (len(values), len(dates)))
+
     xnpv = 0
     for v, d in zip(values, dates):
         xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+
     return xnpv
 
 def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-function-0214da64-9a63-4996-bc20-214433fa6441
