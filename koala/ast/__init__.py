@@ -8,7 +8,7 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from openpyxl.compat import unicode
 
-from koala.utils import uniqueify, flatten
+from koala.utils import uniqueify, flatten, max_dimension, col2num
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
@@ -540,6 +540,18 @@ def graph_from_seeds(seeds, cell_source):
                             cell_source.pointers.add(address)
                 else:
                     address = dep_name
+                    range_addresses = list(resolve_range(reference, should_flatten=True)[0])
+                    cellmap_add_addresses = [addr for addr in range_addresses if addr not in cellmap.keys()]
+                    # create empty cells that aren't in the cellmap
+                    for addr in cellmap_add_addresses:
+                        sheet_new,col_new,row_new = split_address(addr)
+                        max_rows, max_cols = max_dimension(cellmap, sheet_new)
+                        # only add cells within the current bounds of the sheet to avoid too many evaluations for A:A or 1:1 ranges
+                        if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
+                            cell_new = Cell(addr, sheet_new, value="", should_eval='False')
+                            cellmap[addr] = cell_new
+                            G.add_node(cell_new)
+                            cell_source.cells[addr] = cell_new
                     rng = cell_source.Range(reference)
 
                 if address in cellmap:
