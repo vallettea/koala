@@ -633,6 +633,17 @@ class Test_Match(unittest.TestCase):
         # Value is found
         self.assertEqual(match('a', range, 0), 2)
 
+    def test_mixed_string_floats_in_exact_mode(self):
+        range = Range('A1:A4', ['aab', '3.0', 'rars', 3.3])
+        # Value is found
+        self.assertEqual(match('aab', range, 0), 1)
+        self.assertEqual(match('3.0', range, 0), 2)
+        self.assertEqual(match(3, range, 0), 2)
+        self.assertEqual(match(3.0, range, 0), 2)
+        self.assertEqual(match('rars', range, 0), 3)
+        self.assertEqual(match('3.3', range, 0), 4)
+        self.assertEqual(match(3.3, range, 0), 4)
+
     @unittest.skip('This test fails.')
     def test_string_in_exact_mode_not_found(self):
         range = Range('A1:A3', ['aab', 'a', 'rars'])
