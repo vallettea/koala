@@ -542,16 +542,21 @@ def graph_from_seeds(seeds, cell_source):
                     address = dep_name
                     range_addresses = list(resolve_range(reference, should_flatten=True)[0])
                     cellmap_add_addresses = [addr for addr in range_addresses if addr not in cellmap.keys()]
-                    # create empty cells that aren't in the cellmap
-                    for addr in cellmap_add_addresses:
-                        sheet_new,col_new,row_new = split_address(addr)
-                        max_rows, max_cols = max_dimension(cellmap, sheet_new)
-                        # only add cells within the current bounds of the sheet to avoid too many evaluations for A:A or 1:1 ranges
-                        if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
-                            cell_new = Cell(addr, sheet_new, value="", should_eval='False')
-                            cellmap[addr] = cell_new
-                            G.add_node(cell_new)
-                            cell_source.cells[addr] = cell_new
+                    if len(cellmap_add_addresses) > 0:
+                        sheet_initial = split_address(cellmap_add_addresses[0])[0]
+                        max_rows, max_cols = max_dimension(cellmap, sheet_initial)
+                        # create empty cells that aren't in the cellmap
+                        for addr in cellmap_add_addresses:
+                            sheet_new,col_new,row_new = split_address(addr)
+                            if sheet_new != sheet_initial:
+                                sheet_initial = sheet_new
+                                max_rows, max_cols = max_dimension(cellmap, sheet_new)
+                            # only add cells within the current bounds of the sheet to avoid too many evaluations for A:A or 1:1 ranges
+                            if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
+                                cell_new = Cell(addr, sheet_new, value="", should_eval='False')
+                                cellmap[addr] = cell_new
+                                G.add_node(cell_new)
+                                cell_source.cells[addr] = cell_new
                     rng = cell_source.Range(reference)
 
                 if address in cellmap:
