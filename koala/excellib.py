@@ -454,10 +454,6 @@ def countif(range, criteria): # Excel reference: https://support.office.com/en-u
     return len(valid)
 
 
-def xirr(values, dates, guess=0): # Excel Reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
-    return 1 # todo
-
-
 def countifs(*args): # Excel reference: https://support.office.com/en-us/article/COUNTIFS-function-dda3dc6e-f74e-4aee-88bc-aa8c2a866842
 
     arg_list = list(args)
@@ -813,6 +809,9 @@ def irr(values, guess = None): # Excel reference: https://support.office.com/en-
             return np.irr(values)
         except Exception as e:
             return ExcelError('#NUM!', e)
+
+def xirr(values, dates, guess=0): # Excel Reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+    return 1 # todo
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
 
