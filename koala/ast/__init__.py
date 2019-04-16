@@ -8,7 +8,7 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from openpyxl.compat import unicode
 
-from koala.utils import uniqueify, flatten, max_dimension, col2num
+from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
