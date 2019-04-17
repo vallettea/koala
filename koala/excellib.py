@@ -412,6 +412,13 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             value = 0
 
         return value;
+    def type_convert_float(value):
+        if is_number(value):
+            value = float(value)
+        else:
+            value = None
+
+        return value
 
     lookup_value = type_convert(lookup_value)
 
@@ -437,7 +444,12 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
     elif match_type == 0:
         # No string wildcard
         try:
-            return [type_convert(x) for x in range_values].index(lookup_value) + 1
+            if is_number(lookup_value):
+                lookup_value = float(lookup_value)
+                output = [type_convert_float(x) for x in range_values].index(lookup_value) + 1
+            else:
+                output = [str(x).lower() for x in range_values].index(lookup_value) + 1
+            return output
         except:
             return ExcelError('#VALUE!', '%s not found' % lookup_value)
 
