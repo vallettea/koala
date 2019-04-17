@@ -8,7 +8,6 @@ python:
 
 install:
     - pip install tox-travis
-    - pip install -r requirements.txt
     - pip install pytest tox
 
 cache:
