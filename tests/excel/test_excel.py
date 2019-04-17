@@ -106,10 +106,10 @@ class Test_EmptyCellInRange(unittest.TestCase):
     def test_index_match(self):
         excel = self.graph
 
-        self.assertEqual(excel.evaluate('IndexMatch!B1'))  # horizontal, 1:1 style ranges
-        self.assertEqual(excel.evaluate('IndexMatch!B2'))  # vertical, A:A style ranges
-        self.assertEqual(excel.evaluate('IndexMatch!B3'))  # horizontal, 1:1 style ranges with empty cells in range
-        self.assertEqual(excel.evaluate('IndexMatch!B4'))  # vertical, A:A style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('IndexMatch!B1'), 1)  # horizontal, 1:1 style ranges
+        self.assertEqual(excel.evaluate('IndexMatch!B2'), 1)  # vertical, A:A style ranges
+        self.assertEqual(excel.evaluate('IndexMatch!B3'), 1)  # horizontal, 1:1 style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('IndexMatch!B4'), 1)  # vertical, A:A style ranges with empty cells in range
 
 
 class Test_DumpDict(unittest.TestCase):
