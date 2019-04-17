@@ -85,6 +85,14 @@ def split_address(address):
             row,col = addr.split('C')
             row = row[2:-1]
             col = col[2:-1]
+        # [<row>] format
+        elif re.match('^[\d\$]+$', addr):
+            row = addr
+            col = None
+        # [<col>] format
+        elif re.match('^[A-Z\$]$', addr):
+            row = None
+            col = addr
         else:
             raise Exception('Invalid address format ' + addr)
 
@@ -127,11 +135,17 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         if not is_range(rng):  return ([sheet + rng],1,1)
         # single cell, no range
         if start.isdigit() and end.isdigit():
-            # This copes with 5:5 style ranges
+            # This copes with 1:1 style ranges
             start_col = "A"
             start_row = start
             end_col = "XFD"
             end_row = end
+        elif start.isalpha() and end.isalpha():
+            # This copes with A:A style ranges
+            start_col = start
+            start_row = 1
+            end_col = end
+            end_row = 2**20
         else:
             sh, start_col, start_row = split_address(start)
             sh, end_col, end_row = split_address(end)
