@@ -9,6 +9,7 @@ Python equivalents of various excel functions
 from __future__ import absolute_import, division
 
 import numpy as np
+import scipy.optimize
 import datetime
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
@@ -93,6 +94,7 @@ IND_FUN = [
     "SUMPRODUCT",
     "IFERROR",
     "IRR",
+    "XIRR",
     "VLOOKUP",
     "VDB",
     "SLN",
@@ -113,6 +115,7 @@ EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 ######################################################################################
 # List of excel equivalent functions
 # TODO: needs unit testing
+
 
 def value(text):
     # make the distinction for naca numbers
@@ -165,6 +168,7 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
         return 0
     else:
         return sum(values)
+
 
 def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
 
@@ -245,6 +249,7 @@ def average(*args): # Excel reference: https://support.office.com/en-us/article/
     values = extract_numeric_values(*args)
 
     return sum(values) / len(values)
+
 
 def right(text,n):
     #TODO: hack to deal with naca section numbers
@@ -360,6 +365,7 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
             else:
                 return output_range[i-1]
 
+
 # NEEDS TEST
 def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us/article/LINEST-function-84d7d0d9-6e50-4101-977a-fa7abf772b6d
 
@@ -386,6 +392,7 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
     (coefs, residuals, rank, sing_vals) = np.linalg.lstsq(A, Y)
 
     return coefs
+
 
 # NEEDS TEST
 def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
@@ -532,6 +539,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
     return total
 
+
 def counta(range):
     if isinstance(range, ExcelError) or range in ErrorCodes:
         if range.value == '#NULL':
@@ -541,6 +549,7 @@ def counta(range):
             # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
         return len([x for x in range.values if x != None])
+
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
 
@@ -811,11 +820,14 @@ def isna(value):
     except:
         return True
 
+
 def isblank(value):
     return value is None
 
+
 def istext(value):
     return type(value) == str
+
 
 def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     # This function accepts a list of addresses
@@ -872,6 +884,7 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     return ref_sheet + start_address + end_address
 
+
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
 
@@ -889,6 +902,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
 
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values)
 
+
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
     if isinstance(value, ExcelError) or value in ErrorCodes:
@@ -896,9 +910,19 @@ def iferror(value, value_if_error): # Excel reference: https://support.office.co
     else:
         return value
 
-def irr(values, guess = None): # Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
-                               # Numpy reference: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.irr.html
-    if (isinstance(values, Range)):
+
+def irr(values, guess = None):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and periodic dates. It resembles the
+    excel function IRR().
+
+    Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
+
+    :param values: the payments of which at least one has to be negative.
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+    if isinstance(values, Range):
         values = values.values
 
     if guess is not None and guess != 0:
@@ -908,6 +932,35 @@ def irr(values, guess = None): # Excel reference: https://support.office.com/en-
             return np.irr(values)
         except Exception as e:
             return ExcelError('#NUM!', e)
+
+
+def xirr(values, dates, guess=0):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and non-periodic dates. It resembles the
+    excel function XIRR().
+
+    Excel reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+
+    if isinstance(values, Range):
+        values = values.values
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
+    if guess is not None and guess != 0:
+        raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
+    else:
+        try:
+            return scipy.optimize.newton(lambda r: xnpv(r, values, dates), 0.0)
+        except RuntimeError:  # Failed to converge?
+            return scipy.optimize.brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
 
@@ -940,6 +993,7 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
 
     return Range.find_associated_value(ref, result_column)
 
+
 def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-us/article/SLN-function-cdb666e5-c1c6-40a7-806a-e695edc2f1c8
 
     for arg in [cost, salvage, life]:
@@ -947,6 +1001,7 @@ def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-u
             return arg
 
     return (cost - salvage) / life
+
 
 def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = False): # Excel reference: https://support.office.com/en-us/article/VDB-function-dde4e207-f3fa-488d-91d2-66d55e861d73
 
@@ -1039,17 +1094,34 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     return result
 
-def xnpv(*args): # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
-    rate = args[0]
-    # ignore non numeric cells and boolean cells
-    values = extract_numeric_values(args[1])
-    dates = extract_numeric_values(args[2])
+
+def xnpv(rate, values, dates):  # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
+    """
+    Function to calculate the net present value (NPV) using payments and non-periodic dates. It resembles the excel function XPNV().
+
+    :param rate: the discount rate.
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :return: a float being the NPV.
+    """
+    if isinstance(values, Range):
+        values = values.values
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
+
+    if rate < 0:
+        return ExcelError('#NUM!', '`excel cannot handle a negative `rate`' % (len(values), len(dates)))
+
     xnpv = 0
     for v, d in zip(values, dates):
         xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+
     return xnpv
+
 
 def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-function-0214da64-9a63-4996-bc20-214433fa6441
     rate = args[0]
@@ -1059,6 +1131,7 @@ def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-
     # fv = args[3]
     # type = args[4]
     return -present_value * rate / (1 - np.power(1 + rate, -num_payments))
+
 
 # https://support.office.com/en-us/article/POWER-function-D3F2908B-56F4-4C3F-895A-07FB519C362A
 def power(number, power):
@@ -1072,11 +1145,13 @@ def power(number, power):
 
     return np.power(number, power)
 
+
 # https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdf
 def sqrt(number):
     if number < 0:
         return ExcelError('#NUM!', '%s must be non-negative' % str(index_num))
     return np.sqrt(number)
+
 
 # https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
 def today():
@@ -1091,9 +1166,11 @@ def today():
      You will need to change the number format (Format Cells) in order to display a proper date."""
     return days_since_epoch.days + 2
 
+
 # https://support.office.com/en-us/article/concat-function-9b1a9a3f-94ff-41af-9736-694cbd6b4ca2
 def concat(*args):
     return concatenate(*tuple(flatten(args)))
+
 
 # https://support.office.com/en-us/article/CONCATENATE-function-8F8AE884-2CA8-4F7A-B093-75D702BEA31D
 # Important: In Excel 2016, Excel Mobile, and Excel Online, this function has

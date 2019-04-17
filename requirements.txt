@@ -1,7 +1,8 @@
 networkx==2.1
 openpyxl==2.5.3
-numpy==1.14.2
+numpy>=1.15.0
 Cython==0.28.2
 lxml==4.1.1
 six==1.11.0
+scipy>=1.0.0
 python-dateutil==2.8.0
