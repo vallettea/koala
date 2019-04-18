@@ -649,7 +649,7 @@ class Spreadsheet(object):
                 if not isinstance(val, list):
                     val = [val] * len(cells_to_set)
 
-                self.reset(cell)
+                self.reset_cell(cell)
                 cell.range.values = val
 
             # case where the address refers to a single value
@@ -671,18 +671,40 @@ class Spreadsheet(object):
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
-                    self.reset(cell)
+                    self.reset_cell(cell)
                     # set the value
                     cell.value = val
 
             for vol in self.pointers_to_reset:  # reset all pointers
-                self.reset(self.cellmap[vol])
+                self.reset_cell(self.cellmap[vol])
         except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def reset(self, cell):
+    def reset(self):
+        """
+        Resets all the cells in a spreadsheet and indicates that an update is required.
+
+        :return: nothing
+        """
+
+        for cell in self.cellmap.values:
+            self.reset_cell(cell)
+        return
+
+    def reset_cell(self, cell):
+        """
+        Resets the value of the cell and indicates that an update is required.
+
+        :param cell: a Cell object that needs to be reset
+        :return: nothing
+        """
+
         addr = cell.address()
         if cell.value is None and addr not in self.named_ranges:
+            return
+
+        # check if cell has to be reset
+        if cell.value is None and cell.need_update:
             return
 
         # update cells
@@ -695,7 +717,7 @@ class Spreadsheet(object):
 
         for child in self.G.successors(cell):
             if child not in self.reset_buffer:
-                self.reset(child)
+                self.reset_cell(child)
 
     def fix_cell(self, address):
         try:
