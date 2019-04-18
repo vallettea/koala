@@ -12,6 +12,7 @@ from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
 
+import warnings
 import os.path
 import networkx
 from networkx.readwrite import json_graph
