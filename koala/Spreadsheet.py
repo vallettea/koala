@@ -232,6 +232,19 @@ class Spreadsheet(object):
 
     def add_cell(self, cell, value = None):
         """
+        Depricated
+        """
+
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        self.cell_add(cell=cell, value=value)
+
+    def cell_add(self, cell, value = None):
+        """
         Adds a cell to the Spreadsheet
 
         :param cell: a Cell object to add
@@ -664,7 +677,7 @@ class Spreadsheet(object):
                         ref_cell = Cell(
                             ref_address, None, value=val,
                             formula=None, is_range=False, is_named_range=False)
-                        self.add_cell(ref_cell)
+                        self.cell_add(ref_cell)
 
                     ref_cell.value = val
 
