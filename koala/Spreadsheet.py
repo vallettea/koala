@@ -665,7 +665,7 @@ class Spreadsheet(object):
                 if not isinstance(val, list):
                     val = [val] * len(cells_to_set)
 
-                self.cell_reset(cell)
+                self.cell_reset(cell.address())
                 cell.range.values = val
 
             # case where the address refers to a single value
@@ -679,7 +679,7 @@ class Spreadsheet(object):
                         ref_cell = Cell(
                             ref_address, None, value=val,
                             formula=None, is_range=False, is_named_range=False)
-                        self.cell_add(ref_cell)
+                        self.cell_add(cell=ref_cell)
 
                     ref_cell.value = val
 
@@ -687,12 +687,12 @@ class Spreadsheet(object):
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
-                    self.cell_reset(cell)
+                    self.cell_reset(cell.address())
                     # set the value
                     cell.value = val
 
             for vol in self.pointers_to_reset:  # reset all pointers
-                self.cell_reset(self.cellmap[vol])
+                self.cell_reset(self.cellmap[vol].address())
         except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
@@ -710,10 +710,10 @@ class Spreadsheet(object):
                 "This behaviour will be removed in a future version.",
                 PendingDeprecationWarning
             )
-            self.cell_reset(depricated)
+            self.cell_reset(depricated.address())
 
         for cell in self.cellmap.values:
-            self.cell_reset(cell.address)
+            self.cell_reset(cell.address())
         return
 
     def cell_reset(self, address):
@@ -745,7 +745,7 @@ class Spreadsheet(object):
 
         for child in self.G.successors(cell):
             if child not in self.reset_buffer:
-                self.cell_reset(child)
+                self.cell_reset(child.address())
 
     def fix_cell(self, address):
         try:
