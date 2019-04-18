@@ -232,8 +232,11 @@ class Spreadsheet(object):
 
     def add_cell(self, cell, value = None):
         """
-        Depricated
+        Depricated, see cell_add().
         """
+
+        if type(cell) != Cell:
+            cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
 
         # previously reset was used to only reset one cell. Capture this behaviour.
         warnings.warn(
@@ -241,23 +244,22 @@ class Spreadsheet(object):
             "This behaviour will be removed in a future version.",
             PendingDeprecationWarning
         )
-        self.cell_add(cell=cell, value=value)
+        self.cell_add(cell=cell)
 
-    def cell_add(self, cell, value = None):
+    def cell_add(self, address=None, cell=None, value=None, formula=None):
         """
-        Adds a cell to the Spreadsheet
+        Adds a cell to the Spreadsheet. Either the cell argument can be specified, or any combination of the other
+        arguments.
 
         :param cell: a Cell object to add
         :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
                       an address.
         """
+        if cell is None:
+            cell = Cell(address, value=value, formula=formula)
 
-        if type(cell) != Cell:
-            cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
-
-        addr = cell.address()
-        if addr in self.cellmap:
-            raise Exception('Cell %s already in cellmap' % addr)
+        if address in self.cellmap:
+            raise Exception('Cell %s already in cellmap' % address)
 
         cellmap, G = graph_from_seeds([cell], self)
 
@@ -711,19 +713,22 @@ class Spreadsheet(object):
             self.cell_reset(depricated)
 
         for cell in self.cellmap.values:
-            self.cell_reset(cell)
+            self.cell_reset(cell.address)
         return
 
-    def cell_reset(self, cell):
+    def cell_reset(self, address):
         """
         Resets the value of the cell and indicates that an update is required. Also resets all of its dependents.
 
-        :param cell: a Cell object that needs to be reset
+        :param address: the address of the cell to be reset.
         :return: nothing
         """
 
-        addr = cell.address()
-        if cell.value is None and addr not in self.named_ranges:
+        if address in self.cellmap:
+            cell = self.cellmap[address]
+        else:
+            return
+        if cell.value is None and address not in self.named_ranges:
             return
 
         # check if cell has to be reset
