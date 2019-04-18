@@ -184,7 +184,7 @@ class Spreadsheet(object):
         :param inputs:
         :param debug:
         """
-        
+
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
@@ -230,6 +230,13 @@ class Spreadsheet(object):
         self.save_history = True
 
     def add_cell(self, cell, value = None):
+        """
+        Adds a cell to the Spreadsheet
+
+        :param cell: a Cell object to add
+        :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
+                      an address.
+        """
 
         if type(cell) != Cell:
             cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
