@@ -46,7 +46,7 @@ class Spreadsheet(object):
             self.fixed_cells = None
         else:
             # fill in what the ExcelCompiler used to do
-            super(Spreadsheet, self).__init__()
+            super(Spreadsheet, self).__init__() # generate an empty spreadsheet
             file_name = os.path.abspath(file)
             # Decompose subfiles structure in zip file
             archive = read_archive(file_name)
@@ -71,6 +71,13 @@ class Spreadsheet(object):
         self.pointers = set()
 
     def gen_graph(self, outputs = [], inputs = []):
+        """
+        Generate the contents of the Spreadsheet from the read cells in the binary files.
+        Specifically this function generates the graph.
+
+        :param outputs:
+        :param inputs:
+        """
         # print('___### Generating Graph ###___')
 
         if len(outputs) == 0:
@@ -166,6 +173,18 @@ class Spreadsheet(object):
         self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
 
     def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
+        """
+        Writes the elements created by gen_graph to the object
+
+        :param G:
+        :param cellmap:
+        :param named_ranges:
+        :param pointers:
+        :param outputs:
+        :param inputs:
+        :param debug:
+        """
+        
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
