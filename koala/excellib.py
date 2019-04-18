@@ -84,6 +84,8 @@ IND_FUN = [
     "AVERAGE",
     "SUMIFS",
     "ROUND",
+    "ROWS",
+    "COLUMNS",
     "MID",
     "DATE",
     "YEARFRAC",
@@ -403,6 +405,28 @@ def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-
         cashflow = cashflow.values
 
     return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
+
+
+def rows(array):
+    """
+    Function to find the number of rows in an array.
+    Excel reference: https://support.office.com/en-ie/article/rows-function-b592593e-3fc2-47f2-bec1-bda493811597
+
+    :param array: the array of which the rows should be counted.
+    :return: the number of rows.
+    """
+    return len(array.values)
+
+
+def columns(array):
+    """
+    Function to find the number of columns in an array.
+    Excel reference: https://support.office.com/en-us/article/columns-function-4e8e7b4e-e603-43e8-b177-956088fa48ca
+
+    :param array: the array of which the columns should be counted.
+    :return: the number of columns.
+    """
+    return len(array.values)
 
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
