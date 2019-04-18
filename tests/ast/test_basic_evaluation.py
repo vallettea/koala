@@ -175,6 +175,6 @@ class Test_Excel(unittest.TestCase):
         self.assertEqual(self.sp.evaluate('Sheet1!A41'), 'George')
 
     def test_Modify_graph(self):
-        self.sp.cell_add(Cell('Sheet1!P4', formula ='A1 + 10'))
+        self.sp.add_cell(Cell('Sheet1!P4', formula ='A1 + 10'))
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!P4'), 13)
