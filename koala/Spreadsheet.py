@@ -649,7 +649,7 @@ class Spreadsheet(object):
                 if not isinstance(val, list):
                     val = [val] * len(cells_to_set)
 
-                self.reset_cell(cell)
+                self.cell_reset(cell)
                 cell.range.values = val
 
             # case where the address refers to a single value
@@ -671,29 +671,38 @@ class Spreadsheet(object):
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
-                    self.reset_cell(cell)
+                    self.cell_reset(cell)
                     # set the value
                     cell.value = val
 
             for vol in self.pointers_to_reset:  # reset all pointers
-                self.reset_cell(self.cellmap[vol])
+                self.cell_reset(self.cellmap[vol])
         except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def reset(self):
+    def reset(self, depricated=None):
         """
         Resets all the cells in a spreadsheet and indicates that an update is required.
 
         :return: nothing
         """
 
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        if depricated is not None:
+            warnings.warn(
+                "reset() is used to reset the full spreadsheet, cell_reset() should be used to reset only one cell. "
+                "This behaviour will be removed in a future version.",
+                PendingDeprecationWarning
+            )
+            self.cell_reset(depricated)
+
         for cell in self.cellmap.values:
-            self.reset_cell(cell)
+            self.cell_reset(cell)
         return
 
-    def reset_cell(self, cell):
+    def cell_reset(self, cell):
         """
-        Resets the value of the cell and indicates that an update is required.
+        Resets the value of the cell and indicates that an update is required. Also resets all of its dependents.
 
         :param cell: a Cell object that needs to be reset
         :return: nothing
@@ -717,7 +726,7 @@ class Spreadsheet(object):
 
         for child in self.G.successors(cell):
             if child not in self.reset_buffer:
-                self.reset_cell(child)
+                self.cell_reset(child)
 
     def fix_cell(self, address):
         try:
