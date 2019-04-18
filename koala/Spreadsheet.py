@@ -24,6 +24,7 @@ class Spreadsheet(object):
         # print("___### Initializing Excel Compiler ###___")
 
         if file is None:
+            # create empty version of this object
             self.cells = None
             self.named_ranges = None
             self.range = None
@@ -47,6 +48,7 @@ class Spreadsheet(object):
             self.debug = None
             self.fixed_cells = None
         else:
+            # fill in what the ExcelCompiler used to do
             super(Spreadsheet, self).__init__()
             file_name = os.path.abspath(file)
             # Decompose subfiles structure in zip file
@@ -59,10 +61,12 @@ class Spreadsheet(object):
             self.pointers = set()
             self.debug = debug
 
+            # now add the stuff what was originally done by the Spreadsheet
             self.gen_graph()
 
     def clean_pointer(self):
-        sp = Spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
+        spreadsheet = Spreadsheet()
+        sp = spreadsheet.build_spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
 
         cleaned_cells, cleaned_ranged_names = sp.clean_pointer()
         self.cells = cleaned_cells
@@ -87,10 +91,10 @@ class Spreadsheet(object):
                 if is_range(reference):
                     if 'OFFSET' in reference or 'INDEX' in reference:
                         start_end = prepare_pointer(reference, self.named_ranges)
-                        rng = range(start_end)
+                        rng = self.range(start_end)
                         self.pointers.add(o)
                     else:
-                        rng = range(reference)
+                        rng = self.range(reference)
 
                     for address in rng.addresses: # this is avoid pruning deletion
                         preseeds.append(address)
@@ -106,7 +110,7 @@ class Spreadsheet(object):
                     seeds.append(virtual_cell)
             else:
                 if is_range(o):
-                    rng = range(o)
+                    rng = self.range(o)
                     for address in rng.addresses: # this is avoid pruning deletion
                         preseeds.append(address)
                     virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
@@ -130,7 +134,7 @@ class Spreadsheet(object):
                         reference = self.named_ranges[i]
                         if is_range(reference):
 
-                            rng = range(reference)
+                            rng = self.range(reference)
                             for address in rng.addresses: # this is avoid pruning deletion
                                 inputs.append(address)
                             virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
@@ -144,7 +148,7 @@ class Spreadsheet(object):
                             G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
                     else:
                         if is_range(i):
-                            rng = range(i)
+                            rng = self.range(i)
                             for address in rng.addresses: # this is avoid pruning deletion
                                 inputs.append(address)
                             virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
@@ -162,7 +166,7 @@ class Spreadsheet(object):
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
+        self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
 
     def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
         self.G = G
@@ -357,7 +361,8 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
+        spreadsheet = Spreadsheet()
+        return spreadsheet.build_spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
     def clean_pointer(self):
         print('___### Cleaning Pointers ###___')
@@ -595,7 +600,9 @@ class Spreadsheet(object):
 
     @staticmethod
     def load(fname):
-        return Spreadsheet(*load(fname))
+        spreadsheet = Spreadsheet()
+        spreadsheet.build_spreadsheet(*load(fname))
+        return spreadsheet
 
     @staticmethod
     def load_json(fname):
@@ -964,6 +971,8 @@ class Spreadsheet(object):
         inputs = data["inputs"]
         outputs = data["outputs"]
 
-        return Spreadsheet(
+        spreadsheet = Spreadsheet()
+        spreadsheet.build_spreadsheet(
             G, cellmap, named_ranges,
             inputs=inputs, outputs=outputs)
+        return spreadsheet

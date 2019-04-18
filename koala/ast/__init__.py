@@ -528,7 +528,7 @@ def graph_from_seeds(seeds, cell_source):
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
                     start_end = prepare_pointer(reference, names, ref_cell = c1)
-                    rng = cell_source.Range(start_end)
+                    rng = cell_source.range(start_end)
 
                     if dep_name in names: # dep is a pointer range
                         address = dep_name
@@ -571,7 +571,7 @@ def graph_from_seeds(seeds, cell_source):
                                 G.add_node(cell_new) # add it to the graph
                                 cell_source.cells[addr] = cell_new # add it to the cell_source, used in this function
 
-                    rng = cell_source.Range(reference)
+                    rng = cell_source.range(reference)
 
                 if address in cellmap:
                     virtual_cell = cellmap[address]
