@@ -656,6 +656,9 @@ class Spreadsheet(object):
 
 
     def evaluate(self,cell,is_addr=True):
+        if isinstance(cell, Cell):
+            is_addr = False
+
         if is_addr:
             try:
                 cell = self.cellmap[cell]
