@@ -415,7 +415,13 @@ def rows(array):
     :param array: the array of which the rows should be counted.
     :return: the number of rows.
     """
-    return len(array.values)
+
+    if isinstance(array, (float, int)):
+        rows = 1  # special case for A1:A1 type ranges which for some reason only return an int/float
+    else:
+        rows = len(array.values)
+
+    return rows
 
 
 def columns(array):
@@ -426,7 +432,8 @@ def columns(array):
     :param array: the array of which the columns should be counted.
     :return: the number of columns.
     """
-    return len(array.values)
+
+    return rows(array)
 
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
