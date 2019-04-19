@@ -651,8 +651,8 @@ class Spreadsheet(object):
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
 
-            if self.cellmap[addr].need_update:
-                new_value = self.evaluate(addr)
+            if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
+                self.evaluate(addr)
 
 
     def evaluate(self,cell,is_addr=True):
