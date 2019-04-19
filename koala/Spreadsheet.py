@@ -27,13 +27,15 @@ class Spreadsheet(object):
         if file is None:
             # create empty version of this object
             self.cells = None  # precursor for cellmap: dict that link addresses (str) to Cell objects.
-            self.named_ranges = None
+            self.named_ranges = {}
             self.range = None
             self.pointers = None  # set listing the pointers
             self.debug = None  # boolean
 
-            self.G = None  # DiGraph object that represents the view of the Spreadsheet
-            self.cellmap = None  # dict that link addresses (str) to Cell objects.
+            seeds = []
+            cellmap, G = graph_from_seeds(seeds, self)
+            self.G = G  # DiGraph object that represents the view of the Spreadsheet
+            self.cellmap = cellmap  # dict that link addresses (str) to Cell objects.
             self.addr_to_name = None
             self.addr_to_range = None
             self.outputs = None
