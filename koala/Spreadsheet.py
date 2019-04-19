@@ -28,7 +28,6 @@ class Spreadsheet(object):
             # create empty version of this object
             self.cells = None  # precursor for cellmap: dict that link addresses (str) to Cell objects.
             self.named_ranges = {}
-            self.range = None
             self.pointers = None  # set listing the pointers
             self.debug = None  # boolean
 
@@ -43,6 +42,7 @@ class Spreadsheet(object):
             self.save_history = None
             self.history = None
             self.count = None
+            self.range = RangeFactory(cellmap)
             self.pointer_to_remove = None
             self.pointers_to_reset = None
             self.reset_buffer = None
@@ -218,7 +218,7 @@ class Spreadsheet(object):
         self.pointer_to_remove = ["INDEX", "OFFSET"]
         self.pointers = pointers
         self.pointers_to_reset = pointers
-        self.Range = RangeFactory(cellmap)
+        self.range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
         self.fixed_cells = {}
