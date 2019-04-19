@@ -668,10 +668,8 @@ class Spreadsheet(object):
                 return ExcelError('#NULL', 'Cell %s is empty' % cell)
 
         # no formula, fixed value
-        if cell.should_eval == 'normal':
-            if not cell.need_update:
-                if (cell.value is not None) or (not cell.formula) or (cell.should_eval == 'never'):
-                    return cell.value if cell.value != '' else None
+        if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
+            return cell.value if cell.value != '' else None
         try:
             if cell.is_range:
                 for child in cell.range.cells:
