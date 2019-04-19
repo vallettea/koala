@@ -28,7 +28,7 @@ class Spreadsheet(object):
             # create empty version of this object
             self.cells = None  # precursor for cellmap: dict that link addresses (str) to Cell objects.
             self.named_ranges = {}
-            self.pointers = None  # set listing the pointers
+            self.pointers = set()  # set listing the pointers
             self.debug = None  # boolean
 
             seeds = []
@@ -44,9 +44,9 @@ class Spreadsheet(object):
             self.count = None
             self.range = RangeFactory(cellmap)
             self.pointer_to_remove = None
-            self.pointers_to_reset = None
+            self.pointers_to_reset = set()
             self.reset_buffer = None
-            self.fixed_cells = None
+            self.fixed_cells = {}
         else:
             # fill in what the ExcelCompiler used to do
             super(Spreadsheet, self).__init__() # generate an empty spreadsheet
