@@ -55,6 +55,11 @@ class Spreadsheet(object):
         self.debug = debug
         self.fixed_cells = {}
 
+        # make sure that all cells that don't have a value defined are updated.
+        for cell in self.cellmap.values():
+            if cell.value is None and cell.formula is not None:
+                cell.needs_update = True
+
 
     def activate_history(self):
         self.save_history = True
