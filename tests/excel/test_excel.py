@@ -51,6 +51,67 @@ class Test_NamedRanges(unittest.TestCase):
         self.assertTrue(self.graph.evaluate('INPUT') == 2025 and self.graph.evaluate('Sheet1!A1') == 2025 and self.graph.evaluate('RESULT') == 2211)
 
 
+class Test_EmptyCellInRange(unittest.TestCase):
+
+
+    def setUp(self):
+        c = ExcelCompiler("./tests/files/EmptyCellInRange.xlsx")
+        self.graph = c.gen_graph()
+        sys.setrecursionlimit(10000)
+
+    def test_set_value(self):
+        excel = self.graph
+
+        self.assertEqual(excel.evaluate('Data_vert!A2'), 1)
+        excel.set_value('Data_vert!A2', 1)
+        self.assertEqual(excel.evaluate('Data_vert!B2'), "A")
+        excel.set_value('Data_vert!B2', "A")
+
+        self.assertEqual(excel.evaluate('DataJump_vert!A3'), 1)
+        excel.set_value('DataJump_vert!A3', 1)
+        self.assertEqual(excel.evaluate('DataJump_vert!B3'), "A")
+        excel.set_value('DataJump_vert!B3', "A")
+
+        self.assertEqual(excel.evaluate('Data_hor!B1'), 1)
+        excel.set_value('Data_hor!B1', 1)
+        self.assertEqual(excel.evaluate('Data_hor!B2'), "A")
+        excel.set_value('Data_hor!B2', "A")
+
+        self.assertEqual(excel.evaluate('DataJump_hor!C1'), 1)
+        excel.set_value('DataJump_hor!C1', 1)
+        self.assertEqual(excel.evaluate('DataJump_hor!C2'), "A")
+        excel.set_value('DataJump_hor!C2', "A")
+
+    def test_sumifs(self):
+        excel = self.graph
+
+        # test normal links, criterion as string in function
+        self.assertEqual(excel.evaluate('Sumifs!B1'), 10)  # horizontal, 1:1 style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B2'), 10)  # vertical, A:A style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B3'), 10)  # horizontal, 1:1 style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('Sumifs!B4'), 10)  # vertical, A:A style ranges with empty cells in range
+
+        # test normal links, criterion via link to cell
+        self.assertEqual(excel.evaluate('Sumifs!B6'), 10)  # horizontal, 1:1 style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B7'), 10)  # vertical, A:A style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B8'), 10)  # horizontal, 1:1 style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('Sumifs!B9'), 10)  # vertical, A:A style ranges with empty cells in range
+
+        # test hard links, criterion via link to cell
+        self.assertEqual(excel.evaluate('Sumifs!B11'), 10)  # horizontal, 1:1 style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B12'), 10)  # vertical, A:A style ranges
+        self.assertEqual(excel.evaluate('Sumifs!B13'), 10)  # horizontal, 1:1 style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('Sumifs!B14'), 10)  # vertical, A:A style ranges with empty cells in range
+
+    def test_index_match(self):
+        excel = self.graph
+
+        self.assertEqual(excel.evaluate('IndexMatch!B1'), 1)  # horizontal, 1:1 style ranges
+        self.assertEqual(excel.evaluate('IndexMatch!B2'), 1)  # vertical, A:A style ranges
+        self.assertEqual(excel.evaluate('IndexMatch!B3'), 1)  # horizontal, 1:1 style ranges with empty cells in range
+        self.assertEqual(excel.evaluate('IndexMatch!B4'), 1)  # vertical, A:A style ranges with empty cells in range
+
+
 class Test_DumpDict(unittest.TestCase):
 
     def setUp(self):

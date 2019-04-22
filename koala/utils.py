@@ -100,7 +100,30 @@ def split_address(address):
         return (sheet,col,row)
 
 
+def max_dimension(cellmap, sheet = None):
+    """
+    This function calculates the maximum dimension of the workbook or optionally the worksheet. It returns a tupple
+    of two integers, the first being the rows and the second being the columns.
+
+    :param cellmap: all the cells that should be used to calculate the maximum.
+    :param sheet:  (optionally) a string with the sheet name.
+    :return: a tupple of two integers, the first being the rows and the second being the columns.
+    """
+
+    cells = list(cellmap.values())
+    rows = 0
+    cols = 0
+    for cell in cells:
+        if sheet is None or cell.sheet == sheet:
+            rows = max(rows, int(cell.row))
+            cols = max(cols, int(col2num(cell.col)))
+
+    return (rows, cols)
+
+
 resolve_range_cache = {}
+
+
 def resolve_range(rng, should_flatten = False, sheet=''):
     # print 'RESOLVE RANGE splitting', rng
     if ':' not in rng:

@@ -8,7 +8,7 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from openpyxl.compat import unicode
 
-from koala.utils import uniqueify, flatten
+from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
@@ -540,6 +540,37 @@ def graph_from_seeds(seeds, cell_source):
                             cell_source.pointers.add(address)
                 else:
                     address = dep_name
+
+                    # get a list of the addresses in this range that are not yet in the graph
+                    range_addresses = list(resolve_range(reference, should_flatten=True)[0])
+                    cellmap_add_addresses = [addr for addr in range_addresses if addr not in cellmap.keys()]
+
+                    if len(cellmap_add_addresses) > 0:
+                        # this means there are cells to be added
+
+                        # get row and col dimensions for the sheet, assuming the whole range is in one sheet
+                        sheet_initial = split_address(cellmap_add_addresses[0])[0]
+                        max_rows, max_cols = max_dimension(cellmap, sheet_initial)
+
+                        # create empty cells that aren't in the cellmap
+                        for addr in cellmap_add_addresses:
+                            sheet_new, col_new, row_new = split_address(addr)
+
+                            # if somehow a new sheet comes up in the range, get the new dimensions
+                            if sheet_new != sheet_initial:
+                                sheet_initial = sheet_new
+                                max_rows, max_cols = max_dimension(cellmap, sheet_new)
+
+                            # add the empty cells
+                            if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
+                                # only add cells within the maximum bounds of the sheet to avoid too many evaluations
+                                # for A:A or 1:1 ranges
+
+                                cell_new = Cell(addr, sheet_new, value="", should_eval='False') # create new cell object
+                                cellmap[addr] = cell_new # add it to the cellmap
+                                G.add_node(cell_new) # add it to the graph
+                                cell_source.cells[addr] = cell_new # add it to the cell_source, used in this function
+
                     rng = cell_source.Range(reference)
 
                 if address in cellmap:
