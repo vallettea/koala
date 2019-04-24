@@ -5,6 +5,7 @@ import pyximport; pyximport.install()
 import unittest
 
 from koala.excellib import *
+from koala.ExcelError import ExcelError
 
 
 class Test_VDB(unittest.TestCase):
@@ -434,26 +435,19 @@ class Test_Date(unittest.TestCase):
     def test_year_regular(self):
         self.assertEqual(date(2008, 11, 3), 39755)
 
+
 class Test_Mid(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1.1, 2)
+        self.assertRaises(Exception, mid('Romain', 1.1, 2))
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, 2.1)
+        self.assertRaises(Exception, mid('Romain', 1, 2.1))
 
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_superior_or_equal_to_1(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 0, 3)
+        self.assertRaises(Exception, mid('Romain', 0, 3))
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, -1)
+        self.assertRaises(Exception, mid('Romain', 1, -1))
 
     def test_mid(self):
         self.assertEqual(mid('Romain', 3, 4), 'main')
