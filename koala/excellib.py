@@ -8,6 +8,7 @@ Python equivalents of various excel functions
 
 from __future__ import absolute_import, division
 
+import itertools
 import numpy as np
 import scipy.optimize
 import datetime
@@ -95,7 +96,6 @@ IND_FUN = [
     "OFFSET",
     "SUMPRODUCT",
     "IFERROR",
-    "IRR",
     "XIRR",
     "VLOOKUP",
     "VDB",
@@ -396,15 +396,19 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
     return coefs
 
 
-# NEEDS TEST
-def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
-    discount_rate = args[0]
-    cashflow = args[1]
+def npv(rate, *values): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
+    cashflow = list(flatten_list(list(values)))
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(cashflow):
+        return numeric_error(cashflow, 'values')
 
     if isinstance(cashflow, Range):
         cashflow = cashflow.values
 
-    return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
+    return sum([float(x)*(1+rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
 def rows(array):
