@@ -456,7 +456,9 @@ class Test_Mid(unittest.TestCase):
             mid('Romain', 1, -1)
 
     def test_mid(self):
-        self.assertEqual(mid('Romain', 2, 4), 'main')
+        self.assertEqual(mid('Romain', 3, 4), 'main')
+        self.assertEqual(mid('Romain', 1, 2), 'Ro')
+        self.assertEqual(mid('Romain', 3, 6), 'main')
 
 
 class Test_Round(unittest.TestCase):
