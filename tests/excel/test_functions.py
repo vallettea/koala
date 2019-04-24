@@ -72,6 +72,11 @@ class Test_Irr(unittest.TestCase):
 
 
 class Test_Xirr(unittest.TestCase):
+    def test_xirr_errors(self):
+        self.assertIsInstance(xirr([-100, 30, 30, 30, ExcelError('#NUM')], [43571, 43721, 43871, 44021, 44171], 0), ExcelError)
+        self.assertIsInstance(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, ExcelError('#NUM')], 0), ExcelError)
+
+
     def test_xirr_basic(self):
         self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
         self.assertEqual(round(xirr([-130, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), -0.0743828)
