@@ -143,6 +143,18 @@ class Test_Max(unittest.TestCase):
         self.assertEqual(xmax(range, value), 23)
 
 
+class Test_Rows(unittest.TestCase):
+    def test_rows(self):
+        range = Range('A1:A3', [1, 23, 3])
+        self.assertEqual(rows(range), 3)
+
+
+class Test_Columns(unittest.TestCase):
+    def test_rows(self):
+        range = Range('A1:C1', [1, 23, 3])
+        self.assertEqual(columns(range), 3)
+
+
 class Test_Sum(unittest.TestCase):
     def test_sum_ignores_non_numeric(self):
         range = Range('A1:A3', [1, 'e', 3])
