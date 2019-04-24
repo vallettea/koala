@@ -355,6 +355,21 @@ def uniqueify(seq):
     seen_add = seen.add
     return [ x for x in seq if x not in seen and not seen_add(x)]
 
+
+def is_not_number_input(input_value):
+    if isinstance(input_value, list):
+        return not all([is_number(i) for i in input_value])
+    else:
+        return not is_number(input_value)
+
+
+def numeric_error(input_value, input_name):
+    if isinstance(input_value, ExcelError):
+        return input_value
+    else:
+        return ExcelError('#NUM!', '`excel cannot handle a non-numeric `%s`' % input_name)
+
+
 def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
     try:
         float(s)
