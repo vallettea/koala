@@ -7,6 +7,7 @@ import numbers
 import re
 import datetime as dt
 from six import string_types
+from copy import deepcopy
 
 from openpyxl.compat import unicode
 
@@ -361,6 +362,25 @@ def is_not_number_input(input_value):
         return not all([is_number(i) for i in input_value])
     else:
         return not is_number(input_value)
+
+
+def flatten_list(nested_list):
+    """Flatten an arbitrarily nested list, without recursion (to avoid
+    stack overflows). Returns a new list, the original list is unchanged.
+    >> list(flatten_list([1, 2, 3, [4], [], [[[[[[[[[5]]]]]]]]]]))
+    [1, 2, 3, 4, 5]
+    >> list(flatten_list([[1, 2], 3]))
+    [1, 2, 3]
+    """
+    nested_list = deepcopy(nested_list)
+
+    while nested_list:
+        sublist = nested_list.pop(0)
+
+        if isinstance(sublist, list):
+            nested_list = sublist + nested_list
+        else:
+            yield sublist
 
 
 def numeric_error(input_value, input_name):
