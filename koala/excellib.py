@@ -960,6 +960,9 @@ def irr(values, guess = None):
     if isinstance(values, Range):
         values = values.values
 
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
     if guess is not None and guess != 0:
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
