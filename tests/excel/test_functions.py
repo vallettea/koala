@@ -73,6 +73,7 @@ class Test_Irr(unittest.TestCase):
 class Test_Xirr(unittest.TestCase):
     def test_xirr_basic(self):
         self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
+        self.assertEqual(round(xirr([-130, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), -0.0743828)
 
 
 class Test_Offset(unittest.TestCase):

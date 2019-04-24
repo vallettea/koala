@@ -988,9 +988,9 @@ def xirr(values, dates, guess=0):
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
         try:
-            return scipy.optimize.newton(lambda r: xnpv(r, values, dates), 0.0)
+            return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate=False), 0.0)
         except RuntimeError:  # Failed to converge?
-            return scipy.optimize.brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+            return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate=False), -1.0, 1e10)
 
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
@@ -1126,7 +1126,7 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
     return result
 
 
-def xnpv(rate, values, dates):  # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
+def xnpv(rate, values, dates, lim_rate = True):  # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
     """
     Function to calculate the net present value (NPV) using payments and non-periodic dates. It resembles the excel function XPNV().
 
@@ -1144,7 +1144,7 @@ def xnpv(rate, values, dates):  # Excel reference: https://support.office.com/en
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
 
-    if rate < 0:
+    if lim_rate and rate < 0:
         return ExcelError('#NUM!', '`excel cannot handle a negative `rate`' % (len(values), len(dates)))
 
     xnpv = 0
