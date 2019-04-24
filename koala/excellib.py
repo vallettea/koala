@@ -984,6 +984,12 @@ def xirr(values, dates, guess=0):
     if isinstance(dates, Range):
         dates = dates.values
 
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
+
     if guess is not None and guess != 0:
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
@@ -1140,6 +1146,15 @@ def xnpv(rate, values, dates, lim_rate = True):  # Excel reference: https://supp
 
     if isinstance(dates, Range):
         dates = dates.values
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
 
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
