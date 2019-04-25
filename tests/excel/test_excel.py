@@ -205,3 +205,7 @@ class Test_DumpJson(unittest.TestCase):
         self.assertTrue(graph.evaluate('INPUT') == 1)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
         self.assertTrue(graph.evaluate('RESULT') == 187)
+
+        # Set value and check result in clone.
+        graph.set_value('Sheet1!A1', 2025)
+        self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)

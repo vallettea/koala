@@ -133,9 +133,11 @@ class Test_Average(unittest.TestCase):
 
 class Test_Min(unittest.TestCase):
     def test_min_range_and_value(self):
-        range = Range('A1:A3', [1, 23, 3])
+        range1 = Range('A1:A3', [1, 23, 3])
+        range2 = Range('A1:A3', [1, 23, "A"])
         value = 20
-        self.assertEqual(xmin(range, value), 1)
+        self.assertEqual(xmin(range1, value), 1)
+        self.assertEqual(xmin(range2, value), 1)
 
 
 class Test_Max(unittest.TestCase):

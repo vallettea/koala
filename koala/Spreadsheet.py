@@ -55,6 +55,11 @@ class Spreadsheet(object):
         self.debug = debug
         self.fixed_cells = {}
 
+        # make sure that all cells that don't have a value defined are updated.
+        for cell in self.cellmap.values():
+            if cell.value is None and cell.formula is not None:
+                cell.needs_update = True
+
 
     def activate_history(self):
         self.save_history = True
@@ -651,11 +656,14 @@ class Spreadsheet(object):
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
 
-            if self.cellmap[addr].need_update:
-                new_value = self.evaluate(addr)
+            if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
+                self.evaluate(addr)
 
 
     def evaluate(self,cell,is_addr=True):
+        if isinstance(cell, Cell):
+            is_addr = False
+
         if is_addr:
             try:
                 cell = self.cellmap[cell]

@@ -418,6 +418,8 @@ def rows(array):
 
     if isinstance(array, (float, int)):
         rows = 1  # special case for A1:A1 type ranges which for some reason only return an int/float
+    elif array is None:
+        rows = 1  # some A1:A1 ranges return None (issue with ref cell)
     else:
         rows = len(array.values)
 
