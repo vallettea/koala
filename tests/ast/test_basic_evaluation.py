@@ -3,6 +3,7 @@ import unittest
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Cell import Cell
+from koala.ExcelError import ExcelError
 
 
 class Test_Excel(unittest.TestCase):
@@ -65,6 +66,12 @@ class Test_Excel(unittest.TestCase):
     def test_J2(self):
         self.sp.set_value('Sheet1!B2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
+
+    def test_power(self):
+        self.assertEqual(self.sp.evaluate('Sheet1!L8'), 4)
+        self.sp.set_value('Sheet1!K8', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!L8'), 8)
+        self.assertIsInstance(self.sp.evaluate('Sheet1!L9'), ExcelError)
 
     def test_J22(self):
         cell = self.sp.cellmap['Sheet1!J22']

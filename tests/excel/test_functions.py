@@ -14,19 +14,19 @@ class Test_Basics(unittest.TestCase):
     def test_divide(self):
         self.assertEqual(RangeCore.divide(2, 2), 1)
         self.assertEqual(RangeCore.divide(1, 0), ExcelError)
-        self.assertEqual(RangeCore.divide(ExcelError('#VALUE'), 1), ExcelError)
-        self.assertEqual(RangeCore.divide(1, ExcelError('#VALUE')), ExcelError)
+        self.assertIsInstance(RangeCore.divide(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.divide(1, ExcelError('#VALUE')), ExcelError)
 
     def test_multiply(self):
         self.assertEqual(RangeCore.multiply(2, 2), 4)
         self.assertEqual(RangeCore.multiply(1, 0), 0)
-        self.assertEqual(RangeCore.multiply(ExcelError('#VALUE'), 1), ExcelError)
-        self.assertEqual(RangeCore.multiply(1, ExcelError('#VALUE')), ExcelError)
+        self.assertIsInstance(RangeCore.multiply(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.multiply(1, ExcelError('#VALUE')), ExcelError)
 
     def test_power(self):
         self.assertEqual(RangeCore.power(2, 2), 4)
-        self.assertEqual(RangeCore.power(ExcelError('#VALUE'), 1), ExcelError)
-        self.assertEqual(RangeCore.power(1, ExcelError('#VALUE')), ExcelError)
+        self.assertIsInstance(RangeCore.power(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.power(1, ExcelError('#VALUE')), ExcelError)
 
 
 class Test_VDB(unittest.TestCase):
