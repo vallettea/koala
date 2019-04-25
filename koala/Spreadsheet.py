@@ -18,7 +18,8 @@ from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
+    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug=False):
+        self._raise_on_excel_error = debug
         super(Spreadsheet,self).__init__()
         self.G = G
         self.cellmap = cellmap
@@ -449,8 +450,8 @@ class Spreadsheet(object):
         dump(self, fname)
 
     @staticmethod
-    def load(fname):
-        return Spreadsheet(*load(fname))
+    def load(fname, debug=False):
+        return Spreadsheet(*load(fname), debug=debug)
 
     @staticmethod
     def load_json(fname):
@@ -659,8 +660,7 @@ class Spreadsheet(object):
             if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
                 self.evaluate(addr)
 
-
-    def evaluate(self,cell,is_addr=True):
+    def evaluate(self, cell,is_addr=True):
         if isinstance(cell, Cell):
             is_addr = False
 
@@ -721,6 +721,9 @@ class Spreadsheet(object):
                 raise e
             else:
                 raise Exception("Problem evalling: %s for %s, %s" % (e,cell.address(),cell.python_expression))
+
+        if self._raise_on_excel_error and isinstance(cell.value, ExcelError):
+            raise cell.value
 
         return cell.value
 
