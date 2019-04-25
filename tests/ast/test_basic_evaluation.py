@@ -26,44 +26,41 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A6', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!L6'), 10)
 
-    def test_D1(self):
+    def test_add_ranges(self):
         self.sp.set_value('Sheet1!A1', 10)
-
         self.assertEqual(self.sp.evaluate('Sheet1!D1'), 20)
 
-    def test_D2(self):
         self.sp.set_value('Sheet1!A2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D2'), 30)
 
-    def test_D3(self):
         self.sp.set_value('Sheet1!A3', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D3'), 40)
 
-    def test_E1(self):
+    def test_add_ranges_and_integers(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!E1'), 22)
 
-    def test_F1(self):
+    def test_add__named_ranges_and_ranges(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!F1'), 120)
 
-    def test_G1(self):
+    def test_add__named_ranges(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!G1'), 41)
 
-    def test_D8(self):
+    def test_add_non_aligned_ranges(self):
         self.sp.set_value('Sheet1!A8', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D8'), 17)
 
-    def test_B6(self):
+    def test_multiply_ranges(self):
         self.sp.set_value('Sheet1!A6', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!B6'), 20)
 
-    def test_J1(self):
+    def test_if_error(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!J1'), 4)
 
-    def test_J2(self):
+    def test_min_with_string(self):
         self.sp.set_value('Sheet1!B2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
 
