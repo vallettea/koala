@@ -6,6 +6,27 @@ import unittest
 
 from koala.excellib import *
 from koala.ExcelError import ExcelError
+from koala.Range import RangeCore
+
+
+# https://support.office.com/en-ie/article/power-function-d3f2908b-56f4-4c3f-895a-07fb519c362a
+class Test_Basics(unittest.TestCase):
+    def test_divide(self):
+        self.assertEqual(RangeCore.divide(2, 2), 1)
+        self.assertEqual(RangeCore.divide(1, 0), ExcelError)
+        self.assertEqual(RangeCore.divide(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertEqual(RangeCore.divide(1, ExcelError('#VALUE')), ExcelError)
+
+    def test_multiply(self):
+        self.assertEqual(RangeCore.multiply(2, 2), 4)
+        self.assertEqual(RangeCore.multiply(1, 0), 0)
+        self.assertEqual(RangeCore.multiply(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertEqual(RangeCore.multiply(1, ExcelError('#VALUE')), ExcelError)
+
+    def test_power(self):
+        self.assertEqual(RangeCore.power(2, 2), 4)
+        self.assertEqual(RangeCore.power(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertEqual(RangeCore.power(1, ExcelError('#VALUE')), ExcelError)
 
 
 class Test_VDB(unittest.TestCase):
@@ -754,6 +775,7 @@ class Test_Power(unittest.TestCase):
 
     def test_floats(self):
         self.assertEqual(power(98.6, 3.2), 2401077.2220695773)
+
 
 # https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdfa
 class Test_Sqrt(unittest.TestCase):
