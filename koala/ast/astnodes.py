@@ -102,7 +102,6 @@ class OperatorNode(ASTNode):
         self.debug = debug
         # convert the operator to python equivalents
         self.opmap = {
-                 "^":"**",
                  "=":"==",
                  "&":"+",
                  "":"+" #union
@@ -113,6 +112,7 @@ class OperatorNode(ASTNode):
             "/": "divide",
             "+": "add",
             "-": "substract",
+            "^": "power",
             "==": "is_equal",
             "<>": "is_not_equal",
             ">": "is_strictly_superior",
