@@ -5,6 +5,7 @@ import pyximport; pyximport.install()
 import unittest
 
 from koala.excellib import *
+from koala.ExcelError import ExcelError
 
 
 class Test_VDB(unittest.TestCase):
@@ -435,29 +436,24 @@ class Test_Date(unittest.TestCase):
     def test_year_regular(self):
         self.assertEqual(date(2008, 11, 3), 39755)
 
+
 class Test_Mid(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1.1, 2)
+        self.assertIsInstance(mid('Romain', 1.1, 2), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, 2.1)
+        self.assertIsInstance(mid('Romain', 1, 2.1), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_superior_or_equal_to_1(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 0, 3)
+        self.assertIsInstance(mid('Romain', 0, 3), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, -1)
+        self.assertIsInstance(mid('Romain', 1, -1), ExcelError)  # error is not raised but returned
 
     def test_mid(self):
-        self.assertEqual(mid('Romain', 2, 4), 'main')
+        self.assertEqual(mid('Romain', 3, 4), 'main')
+        self.assertEqual(mid('Romain', 1, 2), 'Ro')
+        self.assertEqual(mid('Romain', 3, 6), 'main')
 
 
 class Test_Round(unittest.TestCase):

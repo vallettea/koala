@@ -708,7 +708,7 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
     if num_chars < 0:
         return ExcelError('#VALUE!', '%s is < 0' % str(num_chars))
 
-    return text[start_num : start_num + num_chars]
+    return text[(start_num - 1): (start_num - 1 + num_chars)]
 
 
 def date(year, month, day): # Excel reference: https://support.office.com/en-us/article/DATE-function-e36c0c8c-4104-49da-ab83-82328b832349
