@@ -13,7 +13,7 @@ from koala.Range import RangeCore
 class Test_Basics(unittest.TestCase):
     def test_divide(self):
         self.assertEqual(RangeCore.divide(2, 2), 1)
-        self.assertEqual(RangeCore.divide(1, 0), ExcelError)
+        self.assertIsInstance(RangeCore.divide(1, 0), ExcelError)
         self.assertIsInstance(RangeCore.divide(ExcelError('#VALUE'), 1), ExcelError)
         self.assertIsInstance(RangeCore.divide(1, ExcelError('#VALUE')), ExcelError)
 
