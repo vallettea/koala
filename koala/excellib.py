@@ -990,9 +990,12 @@ def xirr(values, dates, guess=0):
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
         try:
-            return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), 0.0)
-        except (RuntimeError, FloatingPointError, ExcelError):  # Failed to converge?
-            return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e10)
+            try:
+                return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), 0.0)
+            except (RuntimeError, FloatingPointError, ExcelError):  # Failed to converge?
+                return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e10)
+        except Exception:
+            return ExcelError('#NUM', 'IRR did not converge.')
 
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
