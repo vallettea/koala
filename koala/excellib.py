@@ -991,7 +991,7 @@ def xirr(values, dates, guess=0):
     else:
         try:
             return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), 0.0)
-        except (RuntimeError, FloatingPointError):  # Failed to converge?
+        except (RuntimeError, FloatingPointError, ExcelError):  # Failed to converge?
             return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e10)
 
 
@@ -1152,7 +1152,7 @@ def xnpv(rate, values, dates, lim_rate_low=True, lim_rate_high=False):  # Excel 
         return ExcelError('#NUM!', '`excel cannot handle a negative `rate`' % (len(values), len(dates)))
 
     if lim_rate_high and rate > 1000:
-        return ExcelError('#NUM!', '`will result in an overflow error due to high `rate`' % (len(values), len(dates)))
+        raise ExcelError('#NUM!', '`will result in an overflow error due to high `rate`')
 
     xnpv = 0
     np.seterr(all='raise')
