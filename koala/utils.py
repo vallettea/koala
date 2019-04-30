@@ -6,7 +6,10 @@ import collections
 import numbers
 import re
 import datetime as dt
-from functools import lru_cache
+try:
+    from functools import lru_cache
+except ImportError:  # fix for Python 2.7
+    from backports.functools_lru_cache import lru_cache
 from six import string_types
 
 from openpyxl.compat import unicode

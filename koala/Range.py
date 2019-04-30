@@ -4,8 +4,6 @@ from koala.CellBase import CellBase
 from koala.ExcelError import ErrorCodes, ExcelError
 from koala.utils import *
 
-from functools import lru_cache
-
 from openpyxl.compat import unicode
 
 
