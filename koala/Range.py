@@ -4,6 +4,8 @@ from koala.CellBase import CellBase
 from koala.ExcelError import ErrorCodes, ExcelError
 from koala.utils import *
 
+from functools import lru_cache
+
 from openpyxl.compat import unicode
 
 
@@ -250,10 +252,7 @@ class RangeCore(dict):
     @property
     def values(self):
         if self.__cellmap:
-            values = []
-            for cell in self.cells:
-                values.append(cell.value)
-            return values
+            return [cell.value for cell in self.cells]
         else:
             return self.cells
 
