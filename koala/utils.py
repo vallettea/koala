@@ -426,6 +426,8 @@ def date_from_int(nb):
     if not is_number(nb):
         raise TypeError("%s is not a number" % str(nb))
 
+    nb = int(nb)
+
     # origin of the Excel date system
     current_year = 1900
     current_month = 0
@@ -457,7 +459,6 @@ def int_from_date(date):
     return float(delta.days) + (float(delta.seconds) / 86400)
 
 def criteria_parser(criteria):
-
     if is_number(criteria):
         def check(x):
             try:

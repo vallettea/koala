@@ -821,6 +821,8 @@ class Test_Eomonth(unittest.TestCase):
 
     def test_results(self):
         self.assertEqual(eomonth(43566, 2), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.1), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.99), 43646)  # 11/04/2019, add 2 months
         self.assertEqual(eomonth(43831, 5), 44012)  # 01/01/2020, add 5 months
         self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
         self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month
