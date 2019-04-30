@@ -7,6 +7,7 @@ import numbers
 import re
 import datetime as dt
 from six import string_types
+from functools import lru_cache
 
 from openpyxl.compat import unicode
 
@@ -514,15 +515,22 @@ def criteria_parser(criteria):
 
 
 def find_corresponding_index(list, criteria):
+    t = tuple(list)
+    return _find_corresponding_index(t, criteria)
+
+
+@lru_cache(maxsize=1024)
+def _find_corresponding_index(l, criteria):
 
     # parse criteria
     check = criteria_parser(criteria)
 
-    valid = []
+    # valid = []
 
-    for index, item in enumerate(list):
-        if check(item):
-            valid.append(index)
+    valid = [index for index, item in enumerate(l) if check(item)]
+    # for index, item in enumerate(list):
+    #     if check(item):
+    #         valid.append(index)
 
     return valid
 
@@ -540,13 +548,15 @@ def extract_numeric_values(*args):
 
     for arg in args:
         if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str and type(arg) != unicode: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
-            for x in arg.values:
-                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
-                    values.append(x)
+            values.extend([x for x in arg.values if is_number(x) and type(x) is not bool])
+            # for x in arg.values:
+            #     if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+            #         values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            for x in arg:
-                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
-                    values.append(x)
+            values.extend([x for x in arg if is_number(x) and type(x) is not bool])
+            # for x in arg:
+            #     if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+            #         values.append(x)
         elif is_number(arg):
             values.append(arg)
 
