@@ -6,8 +6,8 @@ import collections
 import numbers
 import re
 import datetime as dt
-from six import string_types
 from functools import lru_cache
+from six import string_types
 
 from openpyxl.compat import unicode
 
