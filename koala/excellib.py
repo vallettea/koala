@@ -983,6 +983,9 @@ def xirr(values, dates, guess=0):
     if isinstance(values, Range):
         values = values.values
 
+    if all(value < 0 for value in values):
+        return 0
+
     if isinstance(dates, Range):
         dates = dates.values
 
@@ -993,7 +996,7 @@ def xirr(values, dates, guess=0):
             try:
                 return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), 0.0)
             except (RuntimeError, FloatingPointError, ExcelError):  # Failed to converge?
-                return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e10)
+                return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e5)
         except Exception:
             return ExcelError('#NUM', 'IRR did not converge.')
 
