@@ -578,6 +578,13 @@ class RangeCore(dict):
             return ExcelError('#DIV/0!', e)
 
     @staticmethod
+    def power(a, b):
+        try:
+            return pow(float(check_value(a)), float(check_value(b)))
+        except Exception as e:
+            return ExcelError('#VALUE!', e)
+
+    @staticmethod
     def is_equal(a, b):
         try:
             if not isinstance(a, (str, unicode)):
@@ -640,6 +647,7 @@ func_dict = {
     "divide": RangeCore.divide,
     "add": RangeCore.add,
     "substract": RangeCore.substract,
+    "power": RangeCore.power,
     "minus": RangeCore.minus,
     "is_equal": RangeCore.is_equal,
     "is_not_equal": RangeCore.is_not_equal,
