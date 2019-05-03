@@ -8,6 +8,7 @@ Python equivalents of various excel functions
 
 from __future__ import absolute_import, division
 
+import itertools
 import numpy as np
 import scipy.optimize
 import datetime
@@ -95,7 +96,6 @@ IND_FUN = [
     "OFFSET",
     "SUMPRODUCT",
     "IFERROR",
-    "IRR",
     "XIRR",
     "VLOOKUP",
     "VDB",
@@ -396,15 +396,19 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
     return coefs
 
 
-# NEEDS TEST
-def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
-    discount_rate = args[0]
-    cashflow = args[1]
+def npv(rate, *values): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
+    cashflow = list(flatten_list(list(values)))
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(cashflow):
+        return numeric_error(cashflow, 'values')
 
     if isinstance(cashflow, Range):
         cashflow = cashflow.values
 
-    return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
+    return sum([float(x)*(1+rate)**-(i+1) for (i,x) in enumerate(cashflow)])
 
 
 def rows(array):
@@ -958,6 +962,9 @@ def irr(values, guess = None):
     if isinstance(values, Range):
         values = values.values
 
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
     if guess is not None and guess != 0:
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
@@ -985,6 +992,12 @@ def xirr(values, dates, guess=0):
 
     if isinstance(dates, Range):
         dates = dates.values
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
 
     if guess is not None and guess != 0:
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
@@ -1142,6 +1155,15 @@ def xnpv(rate, values, dates, lim_rate = True):  # Excel reference: https://supp
 
     if isinstance(dates, Range):
         dates = dates.values
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
 
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))

@@ -84,6 +84,9 @@ class Test_Choose(unittest.TestCase):
 
 
 class Test_Irr(unittest.TestCase):
+    def test_irr_errors(self):
+        self.assertIsInstance(irr([-100, 39, 59, 55, ExcelError('#NUM')], 0), ExcelError)
+
     def test_irr_basic(self):
         self.assertEqual(round(irr([-100, 39, 59, 55, 20], 0), 7), 0.2809484)
 
@@ -93,9 +96,26 @@ class Test_Irr(unittest.TestCase):
 
 
 class Test_Xirr(unittest.TestCase):
+    def test_xirr_errors(self):
+        self.assertIsInstance(xirr([-100, 30, 30, 30, ExcelError('#NUM')], [43571, 43721, 43871, 44021, 44171], 0), ExcelError)
+        self.assertIsInstance(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, ExcelError('#NUM')], 0), ExcelError)
+
+
     def test_xirr_basic(self):
         self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
         self.assertEqual(round(xirr([-130, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), -0.0743828)
+
+
+class Test_Npv(unittest.TestCase):
+    def test_npv_errors(self):
+        self.assertIsInstance(npv(0.06, [1, 2, ExcelError('#NUM')]), ExcelError)
+        self.assertIsInstance(npv(ExcelError('#NUM'), [1, 2, 3]), ExcelError)
+
+
+    def test_npv_basic(self):
+        self.assertEqual(round(npv(0.06, [1, 2, 3]), 7), 5.2422470)
+        self.assertEqual(round(npv(0.06, 1, 2, 3), 7), 5.2422470)
+        self.assertEqual(round(npv(0.06, 1), 7), 0.9433962)
 
 
 class Test_Offset(unittest.TestCase):
