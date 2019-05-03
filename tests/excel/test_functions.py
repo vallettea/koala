@@ -104,6 +104,13 @@ class Test_Xirr(unittest.TestCase):
     def test_xirr_basic(self):
         self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
         self.assertEqual(round(xirr([-130, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), -0.0743828)
+        self.assertIsInstance(xirr(
+            [-0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1312.46, -565.86, -711.87, -1410.09, -1495.17, -2943.51, -1450.77,
+             -783.22, -112.72, -137.33, 428.64, -1340.84, -256.75],
+            [43646, 43830, 44012, 44196, 44377, 44561, 44742, 44926, 45107, 45291, 45473, 45657, 45838, 46022, 46203,
+             46387, 46568, 46752, 46934, 47118, 47299, 47483, 47664, 47848, 48029],
+            0),
+                              ExcelError)  # under this example, Excel would actually return a wrong value
 
 
 class Test_Npv(unittest.TestCase):
@@ -863,6 +870,8 @@ class Test_Eomonth(unittest.TestCase):
 
     def test_results(self):
         self.assertEqual(eomonth(43566, 2), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.1), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.99), 43646)  # 11/04/2019, add 2 months
         self.assertEqual(eomonth(43831, 5), 44012)  # 01/01/2020, add 5 months
         self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
         self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month

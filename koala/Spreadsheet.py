@@ -698,7 +698,7 @@ class Spreadsheet(object):
                     if 'new' not in list(self.history[cell.address()].keys()):
                         if type(ori_value) == list and type(cell.value) == list \
                                 and all([not is_almost_equal(x_y[0], x_y[1]) for x_y in zip(ori_value, cell.value)]) \
-                            or not is_almost_equal(ori_value, cell.value):
+                                or not is_almost_equal(ori_value, cell.value):
 
                             self.count += 1
                             self.history[cell.address()]['formula'] = str(cell.formula)
