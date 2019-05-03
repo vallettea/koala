@@ -250,10 +250,7 @@ class RangeCore(dict):
     @property
     def values(self):
         if self.__cellmap:
-            values = []
-            for cell in self.cells:
-                values.append(cell.value)
-            return values
+            return [cell.value for cell in self.cells]
         else:
             return self.cells
 
