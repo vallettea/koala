@@ -1183,9 +1183,9 @@ def xnpv(rate, values, dates, lim_rate_low=True, lim_rate_high=False):  # Excel 
         raise ExcelError('#NUM!', '`will result in an overflow error due to high `rate`')
 
     xnpv = 0
-    np.seterr(all='raise')
-    for v, d in zip(values, dates):
-        xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+    with np.errstate(all='raise'):
+        for v, d in zip(values, dates):
+            xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
 
     return xnpv
 
