@@ -694,11 +694,11 @@ class Spreadsheet(object):
             if cell.is_range:
                 cells_to_set = []
 
-                if not isinstance(val, list):
-                    val = [val] * len(cells_to_set)
+                if not isinstance(value, list):
+                    value = [value] * len(cells_to_set)
 
                 self.cell_reset(cell.address())
-                cell.range.values = val
+                cell.range.values = value
 
             # case where the address refers to a single value
             else:
@@ -709,19 +709,19 @@ class Spreadsheet(object):
                         ref_cell = self.cellmap[ref_address]
                     else:
                         ref_cell = Cell(
-                            ref_address, None, value=val,
+                            ref_address, None, value=value,
                             formula=None, is_range=False, is_named_range=False)
                         self.cell_add(cell=ref_cell)
 
-                    ref_cell.value = val
+                    ref_cell.value = value
 
-                if cell.value != val:
+                if cell.value != value:
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
                     self.cell_reset(cell.address())
                     # set the value
-                    cell.value = val
+                    cell.value = value
 
             for vol in self.pointers_to_reset:  # reset all pointers
                 self.cell_reset(self.cellmap[vol].address())
@@ -909,8 +909,8 @@ class Spreadsheet(object):
                             return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    val = self.evaluate(addr1)
-                    return val
+                    value = self.evaluate(addr1)
+                    return value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     addr1, addr2 = addr1.split(':')
                     if '!' in addr1:
