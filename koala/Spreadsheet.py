@@ -251,9 +251,11 @@ class Spreadsheet(object):
         Adds a cell to the Spreadsheet. Either the cell argument can be specified, or any combination of the other
         arguments.
 
+        :param address: the address of the cell
         :param cell: a Cell object to add
         :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
                       an address.
+        :param formula:
         """
         if cell is None:
             cell = Cell(address, value=value, formula=formula)
@@ -278,6 +280,12 @@ class Spreadsheet(object):
         return self.cell_set_formula(addr, formula)
 
     def cell_set_formula(self, address, formula):
+        """
+        Set the formula of a cell.
+
+        :param address: the address of a cell
+        :param formula: the new formula
+        """
         if address in self.cellmap:
             cell = self.cellmap[address]
         else:
@@ -666,7 +674,13 @@ class Spreadsheet(object):
         )
         return self.cell_set_value(address, val)
 
-    def cell_set_value(self, address, val):
+    def cell_set_value(self, address, value):
+        """
+        Set the value of a cell
+
+        :param address: the address of a cell
+        :param value: the new value
+        """
         self.reset_buffer = set()
 
         try:
@@ -774,6 +788,11 @@ class Spreadsheet(object):
         return self.cell_fix(address)
 
     def cell_fix(self, address):
+        """
+        Fix the value of a cell
+
+        :param address: the address of the cell
+        """
         try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
@@ -791,6 +810,11 @@ class Spreadsheet(object):
         return self.cell_free(address)
 
     def cell_free(self, address=None):
+        """
+        Free the cell (opposite of fix)
+
+        :param address: the address of the cell
+        """
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
@@ -929,6 +953,12 @@ class Spreadsheet(object):
         return self.cell_evaluate(address)
 
     def cell_evaluate(self, address):
+        """
+        Evaluate the cell.
+
+        :param address: the address of the cell
+        :return:
+        """
         try:
             cell = self.cellmap[address]
         except:
