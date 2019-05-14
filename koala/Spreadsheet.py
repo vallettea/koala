@@ -918,18 +918,23 @@ class Spreadsheet(object):
             if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
                 self.evaluate(addr)
 
-
-    def evaluate(self,cell,is_addr=True):
+    def evaluate(self, cell, is_addr=True):
         if isinstance(cell, Cell):
             is_addr = False
 
         if is_addr:
-            try:
-                cell = self.cellmap[cell]
-            except:
-                if self.debug:
-                    print('WARNING: Empty cell at ' + cell)
-                return ExcelError('#NULL', 'Cell %s is empty' % cell)
+            address = cell
+        else:
+            address = cell.address
+        return self.cell_evaluate(address)
+
+    def cell_evaluate(self, address):
+        try:
+            cell = self.cellmap[address]
+        except:
+            if self.debug:
+                print('WARNING: Empty cell at ' + address)
+            return ExcelError('#NULL', 'Cell %s is empty' % address)
 
         # no formula, fixed value
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
