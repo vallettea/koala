@@ -658,6 +658,15 @@ class Spreadsheet(object):
         return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
+        # previously set_value was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_value. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_value(address, val)
+
+    def cell_set_value(self, address, val):
         self.reset_buffer = set()
 
         try:
@@ -757,6 +766,14 @@ class Spreadsheet(object):
                 self.cell_reset(child.address())
 
     def fix_cell(self, address):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_fix(address)
+
+    def cell_fix(self, address):
         try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
@@ -766,6 +783,14 @@ class Spreadsheet(object):
             raise Exception('Cell %s not in cellmap' % address)
 
     def free_cell(self, address=None):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_free(address)
+
+    def cell_free(self, address=None):
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
