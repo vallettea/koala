@@ -269,10 +269,19 @@ class Spreadsheet(object):
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     def set_formula(self, addr, formula):
-        if addr in self.cellmap:
-            cell = self.cellmap[addr]
+        # previously set_formula was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_formula. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_formula(addr, formula)
+
+    def cell_set_formula(self, address, formula):
+        if address in self.cellmap:
+            cell = self.cellmap[address]
         else:
-            raise Exception('Cell %s not in cellmap' % addr)
+            raise Exception('Cell %s not in cellmap' % address)
 
         seeds = [cell]
 
@@ -294,10 +303,10 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.G = G
 
-        should_eval = self.cellmap[addr].should_eval
-        self.cellmap[addr].should_eval = 'always'
-        self.evaluate(addr)
-        self.cellmap[addr].should_eval = should_eval
+        should_eval = self.cellmap[address].should_eval
+        self.cellmap[address].should_eval = 'always'
+        self.evaluate(address)
+        self.cellmap[address].should_eval = should_eval
 
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
