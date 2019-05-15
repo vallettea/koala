@@ -782,7 +782,7 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
 
         delta = date(*end) - date(*start)
 
-        if delta <= 365:
+        if delta <= 366:
             if is_leap_year(y1) and is_leap_year(y2):
                 denom = 366
             elif is_leap_year(y1) and date(y1, m1, d1) <= date(y1, 2, 29):
