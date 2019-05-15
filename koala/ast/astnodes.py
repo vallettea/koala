@@ -29,26 +29,25 @@ def to_str(my_string):
 class ASTNode(object):
     """A generic node in the AST"""
 
-    def __init__(self,token, debug = False):
+    def __init__(self, token, debug=False):
         super(ASTNode,self).__init__()
         self.token = token
         self.debug = debug
-    def __str__(self):
-        # if type(self.token.tvalue) == unicode:
 
+    def __str__(self):
         return self.token.tvalue
-    def __getattr__(self,name):
+
+    def __getattr__(self, name):
         return getattr(self.token,name)
 
-    def children(self,ast):
+    def children(self, ast):
         args = ast.predecessors(self)
         args = sorted(args,key=lambda x: ast.node[x]['pos'])
         return args
 
-    def parent(self,ast):
+    def parent(self, ast):
         args = list(ast.successors(self))
         return args[0] if args else None
-
 
     def find_special_function(self, ast):
         found = False
@@ -88,7 +87,6 @@ class ASTNode(object):
             return True
         else:
             return False
-
 
     def emit(self,ast,context=None, pointer = False):
         """Emit code"""

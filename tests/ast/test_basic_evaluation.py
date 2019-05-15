@@ -114,6 +114,11 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!N1'), 3)
 
+    def test_sheet_with_name(self):
+        self.assertEqual(self.sp.evaluate('Sheet1!N8'), 1)
+        self.sp.set_value("'Sheet with space'!A1'", 2)
+        self.assertEqual(self.sp.evaluate('Sheet1!N8'), 2)
+
     def test_E32(self):
         self.sp.set_value('Sheet1!A31', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!E32'), 19)
