@@ -810,6 +810,11 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
         return ExcelError('#VALUE!', 'start_date %s must be positive' % str(start_date))
     if end_date < 0:
         return ExcelError('#VALUE!', 'end_date %s must be positive' % str(end_date))
+    if not isinstance(basis, (int, float)):
+        return ExcelError('#VALUE!', 'basis %s must be numeric' % str(basis))
+    basis = int(basis)  # parse potential float to int
+    if basis < 0 or basis > 4:
+        return ExcelError('#NUM!', 'basis %s must be between 0 and 4' % str(basis))
 
     if start_date > end_date: # switch dates if start_date > end_date
         temp = end_date
