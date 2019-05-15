@@ -402,71 +402,69 @@ class Test_IsNa(unittest.TestCase):
 
 class Test_Yearfrac(unittest.TestCase):
     def test_start_date_must_be_number(self):
-        self.assertEqual(type(yearfrac('not a number', 1)), ExcelError)
+        self.assertIsInstance(yearfrac('not a number', 1), ExcelError)
 
     def test_end_date_must_be_number(self):
-        self.assertEqual(type(yearfrac(1, 'not a number')), ExcelError)
+        self.assertIsInstance(yearfrac(1, 'not a number'), ExcelError)
 
     def test_start_date_must_be_positive(self):
-        self.assertEqual(type(yearfrac(-1, 0)), ExcelError)
+        self.assertIsInstance(yearfrac(-1, 0), ExcelError)
 
     def test_end_date_must_be_positive(self):
-        self.assertEqual(type(yearfrac(0, -1)), ExcelError)
+        self.assertIsInstance(yearfrac(0, -1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_basis_must_be_between_0_and_4(self):
-        with self.assertRaises(ExcelError):
-            yearfrac(1, 2, 5)
+        self.assertIsInstance(yearfrac(1, 2, 5), ExcelError)
+        self.assertIsInstance(yearfrac(1, 2, -1), ExcelError)
 
     def test_yearfrac_basis_0(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20)), 7.30277777777778)
+        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 0), 7.30277777777778)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 0), 1)
 
     def test_yearfrac_basis_1(self):
-        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 1), 7.299110198)
+        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 1), 7.299110198)  # multi year
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2024, 12, 31), 1), 0.99726776)  # day before leap
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 1), 1)  # first day leap
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 2), 1), 1.004103967)  # second day leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2025, 12, 31), 1), 0.997260273972)  # day before non-leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2026, 1, 1), 1), 1)  # first day non-leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2026, 1, 2), 1), 1.0027397260274)  # second day non-leap
 
     def test_yearfrac_basis_2(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 2), 7.405555556)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 2), 1.01666666666667)
 
     def test_yearfrac_basis_3(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 3), 7.304109589)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 3), 1.0027397260274)
 
     def test_yearfrac_basis_4(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 4), 7.302777778)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 4), 1)
 
     def test_yearfrac_inverted(self):
         self.assertAlmostEqual(yearfrac(date(2015, 4, 20), date(2008, 1, 1)), yearfrac(date(2008, 1, 1), date(2015, 4, 20)))
 
 
 class Test_Date(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_year_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date('2016', 1, 1)
+        self.assertIsInstance(date('2016', 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_month_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, '1', 1)
+        self.assertIsInstance(date(2016, '1', 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_day_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, 1, '1')
+        self.assertIsInstance(date(2016, 1, '1'), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            date(-1, 1, 1)
+        self.assertIsInstance(date(-1, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_have_less_than_10000(self):
-        with self.assertRaises(ExcelError):
-            date(10000, 1, 1)
+        self.assertIsInstance(date(10000, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_result_must_be_positive(self):
-        with self.assertRaises(ArithmeticError):
-            date(1900, 1, -1)
+        self.assertIsInstance(date(1900, 1, -1), ExcelError)
 
     def test_not_stricly_positive_month_substracts(self):
         self.assertEqual(date(2009, -1, 1), date(2008, 11, 1))
@@ -484,7 +482,11 @@ class Test_Date(unittest.TestCase):
         self.assertEqual(date(2008, 2, 29), 39507)
 
     def test_year_regular(self):
+        self.assertEqual(date(2000, 1, 1), 36526)
         self.assertEqual(date(2008, 11, 3), 39755)
+        self.assertEqual(date(2024, 1, 1), 45292)
+        self.assertEqual(date(2025, 1, 1), 45658)
+        self.assertEqual(date(2026, 1, 1), 46023)
 
 
 class Test_Mid(unittest.TestCase):
