@@ -8,7 +8,7 @@ import json
 from openpyxl.formula.translate import Translator
 from openpyxl.cell.text import Text
 from openpyxl.utils.indexed_list import IndexedList
-from openpyxl.xml.functions import iterparse, fromstring, safe_iterator
+from openpyxl.xml.functions import iterparse, fromstring
 try:
     from xml.etree.cElementTree import ElementTree as ET
 except ImportError:
@@ -33,7 +33,7 @@ with open('%s/functions.json' % curfile, 'r') as file:
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
 from koala.Cell import Cell
-from koala.utils import CELL_REF_RE, col2num
+from koala.utils import CELL_REF_RE, col2num, safe_iterator
 
 FLOAT_REGEX = re.compile(r"\.|[E-e]")
 CENTRAL_DIRECTORY_SIGNATURE = b'\x50\x4b\x05\x06'
