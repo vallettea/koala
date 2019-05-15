@@ -438,35 +438,23 @@ class Test_Yearfrac(unittest.TestCase):
 
 
 class Test_Date(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_year_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date('2016', 1, 1)
+        self.assertIsInstance(date('2016', 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_month_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, '1', 1)
+        self.assertIsInstance(date(2016, '1', 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_day_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, 1, '1')
+        self.assertIsInstance(date(2016, 1, '1'), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            date(-1, 1, 1)
+        self.assertIsInstance(date(-1, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_have_less_than_10000(self):
-        with self.assertRaises(ExcelError):
-            date(10000, 1, 1)
+        self.assertIsInstance(date(10000, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_result_must_be_positive(self):
-        with self.assertRaises(ArithmeticError):
-            date(1900, 1, -1)
+        self.assertIsInstance(date(1900, 1, -1), ExcelError)
 
     def test_not_stricly_positive_month_substracts(self):
         self.assertEqual(date(2009, -1, 1), date(2008, 11, 1))
@@ -484,7 +472,11 @@ class Test_Date(unittest.TestCase):
         self.assertEqual(date(2008, 2, 29), 39507)
 
     def test_year_regular(self):
+        self.assertEqual(date(2000, 1, 1), 36526)
         self.assertEqual(date(2008, 11, 3), 39755)
+        self.assertEqual(date(2024, 1, 1), 45292)
+        self.assertEqual(date(2025, 1, 1), 45658)
+        self.assertEqual(date(2026, 1, 1), 46023)
 
 
 class Test_Mid(unittest.TestCase):
