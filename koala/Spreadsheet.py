@@ -12,6 +12,7 @@ from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
 
+import warnings
 import os.path
 import networkx
 from networkx.readwrite import json_graph
@@ -231,19 +232,36 @@ class Spreadsheet(object):
 
     def add_cell(self, cell, value = None):
         """
-        Adds a cell to the Spreadsheet
-
-        :param cell: a Cell object to add
-        :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
-                      an address.
+        Depricated, see cell_add().
         """
 
         if type(cell) != Cell:
             cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
 
-        addr = cell.address()
-        if addr in self.cellmap:
-            raise Exception('Cell %s already in cellmap' % addr)
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        self.cell_add(cell=cell)
+
+    def cell_add(self, address=None, cell=None, value=None, formula=None):
+        """
+        Adds a cell to the Spreadsheet. Either the cell argument can be specified, or any combination of the other
+        arguments.
+
+        :param address: the address of the cell
+        :param cell: a Cell object to add
+        :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
+                      an address.
+        :param formula:
+        """
+        if cell is None:
+            cell = Cell(address, value=value, formula=formula)
+
+        if address in self.cellmap:
+            raise Exception('Cell %s already in cellmap' % address)
 
         cellmap, G = graph_from_seeds([cell], self)
 
@@ -253,10 +271,25 @@ class Spreadsheet(object):
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     def set_formula(self, addr, formula):
-        if addr in self.cellmap:
-            cell = self.cellmap[addr]
+        # previously set_formula was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_formula. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_formula(addr, formula)
+
+    def cell_set_formula(self, address, formula):
+        """
+        Set the formula of a cell.
+
+        :param address: the address of a cell
+        :param formula: the new formula
+        """
+        if address in self.cellmap:
+            cell = self.cellmap[address]
         else:
-            raise Exception('Cell %s not in cellmap' % addr)
+            raise Exception('Cell %s not in cellmap' % address)
 
         seeds = [cell]
 
@@ -278,10 +311,10 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.G = G
 
-        should_eval = self.cellmap[addr].should_eval
-        self.cellmap[addr].should_eval = 'always'
-        self.evaluate(addr)
-        self.cellmap[addr].should_eval = should_eval
+        should_eval = self.cellmap[address].should_eval
+        self.cellmap[address].should_eval = 'always'
+        self.evaluate(address)
+        self.cellmap[address].should_eval = should_eval
 
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
@@ -633,6 +666,21 @@ class Spreadsheet(object):
         return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
+        # previously set_value was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_value. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_value(address, val)
+
+    def cell_set_value(self, address, value):
+        """
+        Set the value of a cell
+
+        :param address: the address of a cell
+        :param value: the new value
+        """
         self.reset_buffer = set()
 
         try:
@@ -646,11 +694,11 @@ class Spreadsheet(object):
             if cell.is_range:
                 cells_to_set = []
 
-                if not isinstance(val, list):
-                    val = [val] * len(cells_to_set)
+                if not isinstance(value, list):
+                    value = [value] * len(cells_to_set)
 
-                self.reset(cell)
-                cell.range.values = val
+                self.cell_reset(cell.address())
+                cell.range.values = value
 
             # case where the address refers to a single value
             else:
@@ -661,28 +709,62 @@ class Spreadsheet(object):
                         ref_cell = self.cellmap[ref_address]
                     else:
                         ref_cell = Cell(
-                            ref_address, None, value=val,
+                            ref_address, None, value=value,
                             formula=None, is_range=False, is_named_range=False)
-                        self.add_cell(ref_cell)
+                        self.cell_add(cell=ref_cell)
 
-                    ref_cell.value = val
+                    ref_cell.value = value
 
-                if cell.value != val:
+                if cell.value != value:
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
-                    self.reset(cell)
+                    self.cell_reset(cell.address())
                     # set the value
-                    cell.value = val
+                    cell.value = value
 
             for vol in self.pointers_to_reset:  # reset all pointers
-                self.reset(self.cellmap[vol])
+                self.cell_reset(self.cellmap[vol].address())
         except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def reset(self, cell):
-        addr = cell.address()
-        if cell.value is None and addr not in self.named_ranges:
+    def reset(self, depricated=None):
+        """
+        Resets all the cells in a spreadsheet and indicates that an update is required.
+
+        :return: nothing
+        """
+
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        if depricated is not None:
+            warnings.warn(
+                "reset() is used to reset the full spreadsheet, cell_reset() should be used to reset only one cell. "
+                "This behaviour will be removed in a future version.",
+                PendingDeprecationWarning
+            )
+            self.cell_reset(depricated.address())
+
+        for cell in self.cellmap.values:
+            self.cell_reset(cell.address())
+        return
+
+    def cell_reset(self, address):
+        """
+        Resets the value of the cell and indicates that an update is required. Also resets all of its dependents.
+
+        :param address: the address of the cell to be reset.
+        :return: nothing
+        """
+
+        if address in self.cellmap:
+            cell = self.cellmap[address]
+        else:
+            return
+        if cell.value is None and address not in self.named_ranges:
+            return
+
+        # check if cell has to be reset
+        if cell.value is None and cell.need_update:
             return
 
         # update cells
@@ -695,9 +777,22 @@ class Spreadsheet(object):
 
         for child in self.G.successors(cell):
             if child not in self.reset_buffer:
-                self.reset(child)
+                self.cell_reset(child.address())
 
     def fix_cell(self, address):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_fix(address)
+
+    def cell_fix(self, address):
+        """
+        Fix the value of a cell
+
+        :param address: the address of the cell
+        """
         try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
@@ -707,6 +802,19 @@ class Spreadsheet(object):
             raise Exception('Cell %s not in cellmap' % address)
 
     def free_cell(self, address=None):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_free(address)
+
+    def cell_free(self, address=None):
+        """
+        Free the cell (opposite of fix)
+
+        :param address: the address of the cell
+        """
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
@@ -801,8 +909,8 @@ class Spreadsheet(object):
                             return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    val = self.evaluate(addr1)
-                    return val
+                    value = self.evaluate(addr1)
+                    return value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     addr1, addr2 = addr1.split(':')
                     if '!' in addr1:
@@ -834,18 +942,29 @@ class Spreadsheet(object):
             if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
                 self.evaluate(addr)
 
-
-    def evaluate(self,cell,is_addr=True):
+    def evaluate(self, cell, is_addr=True):
         if isinstance(cell, Cell):
             is_addr = False
 
         if is_addr:
-            try:
-                cell = self.cellmap[cell]
-            except:
-                if self.debug:
-                    print('WARNING: Empty cell at ' + cell)
-                return ExcelError('#NULL', 'Cell %s is empty' % cell)
+            address = cell
+        else:
+            address = cell.address
+        return self.cell_evaluate(address)
+
+    def cell_evaluate(self, address):
+        """
+        Evaluate the cell.
+
+        :param address: the address of the cell
+        :return:
+        """
+        try:
+            cell = self.cellmap[address]
+        except:
+            if self.debug:
+                print('WARNING: Empty cell at ' + address)
+            return ExcelError('#NULL', 'Cell %s is empty' % address)
 
         # no formula, fixed value
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
