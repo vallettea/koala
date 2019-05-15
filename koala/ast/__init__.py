@@ -62,7 +62,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     if expression.startswith('='):
         expression = expression[1:]
 
-    p = ExcelParser(tokenize_range = tokenize_range);
+    p = ExcelParser(tokenize_range=tokenize_range)
     p.parse(expression)
 
     # insert tokens for '(' and ')', to make things clearer below
@@ -370,7 +370,7 @@ def cell2code(cell, named_ranges):
 
         e = shunting_yard(cell.formula, named_ranges, ref=ref, tokenize_range = False)
 
-        ast,root = build_ast(e, debug = debug)
+        ast, root = build_ast(e, debug = debug)
         code = root.emit(ast, context=sheet)
 
         # print 'CODE', code, ref

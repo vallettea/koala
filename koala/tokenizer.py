@@ -252,22 +252,22 @@ class ExcelParser(ExcelParserTokens):
         def EOF():
             return offset >= len(formula)
 
-        tokens     = f_tokens()
+        tokens = f_tokens()
         tokenStack = f_tokenStack()
-        offset     = 0
-        token      = ""
-        inString   = False
-        inPath     = False
-        inRange    = False
-        inError    = False
+        offset = 0
+        token = ""
+        inString = False
+        inPath = False
+        inRange = False
+        inError = False
 
-        while (len(formula) > 0):
-            if (formula[0] in (" ", "\n")):
+        while len(formula) > 0:
+            if formula[0] in (" ", "\n"):
                 formula = formula[1:]
             else:
-                if (formula[0] == "="):
+                if formula[0] == "=":
                     formula = formula[1:]
-                break;
+                break
 
         # state-dependent character evaluation (order is important)
         while not EOF():
@@ -300,8 +300,8 @@ class ExcelParser(ExcelParserTokens):
                         inPath = False
                 else:
                     token += currentChar()
-                offset += 1;
-                continue;
+                offset += 1
+                continue
 
             # bracketed strings (range offset or linked workbook name)
             # no embeds (changed to "()" by Excel)
@@ -322,18 +322,18 @@ class ExcelParser(ExcelParserTokens):
                     inError = False
                     tokens.add(token, self.TOK_TYPE_OPERAND, self.TOK_SUBTYPE_ERROR)
                     token = ""
-                continue;
+                continue
 
             # scientific notation check
-            regexSN = '^[1-9]{1}(\.[0-9]+)?[eE]{1}$';
-            if (("+-").find(currentChar()) != -1):
+            regexSN = '^[1-9]{1}(\.[0-9]+)?[eE]{1}$'
+            if ("+-").find(currentChar()) != -1:
                 if len(token) > 1:
                     if re.match(regexSN,token):
-                        token += currentChar();
-                        offset += 1;
-                        continue;
+                        token += currentChar()
+                        offset += 1
+                        continue
 
-            # independent character evaulation (order not important)
+            # independent character evaluation (order not important)
             #
             # establish state-dependent character evaluations
             if currentChar() == "\"":
@@ -354,7 +354,7 @@ class ExcelParser(ExcelParserTokens):
                 offset += 1
                 continue
 
-            if (currentChar() == "["):
+            if currentChar() == "[":
                 inRange = True
                 token += currentChar()
                 offset += 1
