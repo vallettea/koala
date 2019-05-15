@@ -616,5 +616,12 @@ def old_div(a, b):
         return a / b
 
 
+def safe_iterator(node, tag=None):
+    """Return an iterator or an empty list"""
+    if node is None:
+        return []
+    return node.iter(tag)
+
+
 if __name__ == '__main__':
     pass
