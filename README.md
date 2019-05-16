@@ -160,6 +160,12 @@ The graph can also be created from scratch (not by using a file).
 
 ```
 sp_scratch = Spreadsheet()
+
+sp_scratch.cell_add('Sheet1!A1', value=1)
+sp_scratch.cell_add('Sheet1!A2', value=2)
+sp_scratch.cell_add('Sheet1!A3', formula='=SUM(Sheet1!A1, Sheet1!A2)')
+
+sp_scratch.cell_evaluate('Sheet1!A3')
 ```
 
 ## Origins
