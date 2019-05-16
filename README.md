@@ -31,13 +31,12 @@ python setup.py install
 #### Graph generation
 
 The first thing you need is to convert your workbook into a graph.
-This operation may take some time depending on the size of your workbook (we've used koalo on workbooks containg more than 45 000 intricated formulas).
+This operation may take some time depending on the size of your workbook (we've used koalo on workbooks containg more than 100 000 intricated formulas).
 
 ```
 from koala.ExcelCompiler import ExcelCompiler
 
-c = ExcelCompiler("examples/basic.xlsx")
-sp = c.gen_graph()
+sp = Spreadsheet("examples/basic.xlsx")
 ```
 
 If this step fails, ensure that your Excel file is recent and in standalone mode (open it with Excel and save, it should rewrite the file and the resulting file should be three of four times heavier).
@@ -59,11 +58,11 @@ sp = Spreadsheet.load('file.gzip')
 
 #### Graph Evaluation
 
-You can read the values of some cells with `evaluate`. It will only evaluate the calculation if a parent cell has been modified with `set_value`.
+You can read the values of some cells with `cell_evaluate`. It will only evaluate the calculation if a parent cell has been modified with `cell_set_value`.
 
 ```
-sp.set_value('Sheet1!A1', 10)
-sp.evaluate('Sheet1!D1')
+sp.cell_set_value('Sheet1!A1', 10)
+sp.cell_evaluate('Sheet1!D1')
 ```
 
 #### Named cells or range
@@ -71,7 +70,7 @@ sp.evaluate('Sheet1!D1')
 If your Excel file has names defined, you can use them freely:
 
 ```
-sp.set_value('myNamedCell', 0)
+sp.cell_set_value('myNamedCell', 0)
 ```
 
 ### Advanced
@@ -81,7 +80,7 @@ sp.set_value('myNamedCell', 0)
 You can pass `ignore_sheets` to ignore a list of Sheets, and `ignore_hidden` to ignore all hidden cells:
 
 ```
-c = ExcelCompiler(file, ignore_sheets = ['Sheet2'], ignore_hidden = True)
+sp = Spreadsheet(file, ignore_sheets = ['Sheet2'], ignore_hidden = True)
 ```
 
 In case you have very big files, you might want to reduce the size of the output graph. Here are a few methods.
@@ -104,7 +103,7 @@ WIP: we are working on automatic detection of the required pointers.
 You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size wil be reduced.
 
 ```
-sp = c.gen_graph(inputs = ['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
+sp = sp.gen_graph(inputs=['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
 ```
 
 #### Pruning inputs
@@ -121,16 +120,16 @@ You might need to fix a Cell, so that its value is not reevaluated.
 You can do that with:
 
 ```
-sp.fix_cell('Sheet1!D1')
+sp.cell_fix('Sheet1!D1')
 ```
 
-By default, all Cells on which you use `sp.set_value()` will be fixed.
+By default, all Cells on which you use `sp.cell_set_value()` will be fixed.
 
 You can free your fixed cells with:
 
 ```
-sp.free_cell('Sheet1!D1') # frees a single Cell
-sp.free_cell() # frees all fixed Cells
+sp.cell_free('Sheet1!D1') # frees a single Cell
+sp.cell_free() # frees all fixed Cells
 ```
 
 When you free a Cell, it is automatically reevaluated.
@@ -140,7 +139,7 @@ When you free a Cell, it is automatically reevaluated.
 If you need to change a Cell's formula, you can use:
 
 ```
-sp.set_formula('Sheet1!D1', 'Sheet1!A1 * 1000')
+sp.cell_set_formula('Sheet1!D1', 'Sheet1!A1 * 1000')
 ```
 
 The `string` you pass as argument needs to be written with Excel syntax.
@@ -154,7 +153,14 @@ To check if you have "alive pointers", i.e, pointer functions that have one of y
 sp.detect_alive(inputs = [...], outputs = [...])
 ```
 
-This will also change the `Spreadsheet.pointers_to_reset` list, so that only alive pointers are resetted on `set_value()`.
+This will also change the `Spreadsheet.pointers_to_reset` list, so that only alive pointers are resetted on `cell_set_value()`.
+
+#### Create from scratch
+The graph can also be created from scratch (not by using a file).
+
+```
+sp_scratch = Spreadsheet()
+```
 
 ## Origins
 This project is a "double fork" of two awesome projects:
