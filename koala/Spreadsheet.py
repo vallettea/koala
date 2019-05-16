@@ -71,13 +71,13 @@ class Spreadsheet(object):
         self.named_ranges = cleaned_ranged_names
         self.pointers = set()
 
-    def gen_graph(self, outputs = [], inputs = []):
+    def gen_graph(self, outputs=[], inputs=[]):
         """
         Generate the contents of the Spreadsheet from the read cells in the binary files.
         Specifically this function generates the graph.
 
-        :param outputs:
-        :param inputs:
+        :param outputs: can be used to specify the outputs. All not affected cells are removed from the graph.
+        :param inputs: can be used to specify the inputs. All not affected cells are removed from the graph.
         """
         # print('___### Generating Graph ###___')
 
