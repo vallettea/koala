@@ -1,3 +1,4 @@
+import io
 import sys
 import unittest
 
@@ -23,3 +24,18 @@ class Test_Spreadsheet(unittest.TestCase):
         self.assertEqual(spreadsheet.evaluate('Sheet1!A3'), 11)  # test function
         self.assertEqual(spreadsheet.evaluate('Sheet1!A4'), 11)  # test range
         self.assertEqual(spreadsheet.evaluate('Sheet1!A5'), 1)  # test short range
+
+
+    def test_load_filename(self):
+        file_name = os.path.abspath("./tests/excel/VDB.xlsx")
+        spreadsheet = Spreadsheet(file_name)
+        # really just testing the loading from "fin", but check one cell to be sure it read
+        self.assertEqual(spreadsheet.evaluate('Sheet1!A2'), "Init")
+
+
+    def test_load_stream(self):
+        file_name = os.path.abspath("./tests/excel/VDB.xlsx")
+        with open(file_name, 'rb') as fin:
+            spreadsheet = Spreadsheet(fin)
+        # really just testing the loading from "fin", but check one cell to be sure it read
+        self.assertEqual(spreadsheet.evaluate('Sheet1!A2'), "Init")

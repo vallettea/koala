@@ -44,5 +44,7 @@
 "SLN",
 "XNPV",
 "PMT",
-"ROUNDUP"
+"ROUNDUP",
+"RANDBETWEEN",
+"RAND"
 ]
