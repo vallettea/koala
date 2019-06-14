@@ -1070,14 +1070,6 @@ class Spreadsheet(object):
     @staticmethod
     def from_dict(input_data):
 
-        def find_cell(nodes, address):
-            for node in nodes:
-                cell = node['id']
-                if cell.address() == address:
-                    return cell
-
-            assert False
-
         data = dict(input_data)
 
         nodes = list(
@@ -1100,12 +1092,13 @@ class Spreadsheet(object):
         data["nodes"] = [{'id': node} for node in nodes]
 
         links = []
+        idmap = { node.address(): node for node in nodes }
         for el in data['links']:
             source_address = el['source']
             target_address = el['target']
             link = {
-                'source': find_cell(data['nodes'], source_address),
-                'target': find_cell(data['nodes'], target_address)
+                'source': idmap[source_address],
+                'target': idmap[target_address],
             }
             links.append(link)
 
