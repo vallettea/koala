@@ -12,6 +12,7 @@ import itertools
 import numpy as np
 import scipy.optimize
 import datetime
+import random
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from calendar import monthrange
@@ -109,6 +110,8 @@ IND_FUN = [
     "YEAR",
     "MONTH",
     "EOMONTH",
+    "RANDBETWEEN",
+    "RAND",
 ]
 
 CELL_CHARACTER_LIMIT = 32767
@@ -1273,6 +1276,22 @@ def concatenate(*args):
         return ExcelError('#VALUE', 'Too long. concatentaed string should be no longer than %s but is %s' % (CELL_CHARACTER_LIMIT, len(cat_String)))
 
     return cat_string
+
+
+# https://support.office.com/en-us/article/randbetween-function-4cc7f0d1-87dc-4eb7-987f-a469ab381685
+def randbetween(bottom, top):
+    # instantiating a new random class so repeated calls don't share state
+    r = random.Random()
+    return r.randint(bottom, top)
+
+
+# https://support.office.com/en-us/article/rand-function-4cbfa695-8869-4788-8d90-021ea9f5be73
+def rand():
+    # instantiating a new random class so repeated calls don't share state
+    r = random.Random()
+    return r.random()
+
+
 
 if __name__ == '__main__':
     pass

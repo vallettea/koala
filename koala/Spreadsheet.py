@@ -50,9 +50,11 @@ class Spreadsheet(object):
         else:
             # fill in what the ExcelCompiler used to do
             super(Spreadsheet, self).__init__() # generate an empty spreadsheet
-            file_name = os.path.abspath(file)
             # Decompose subfiles structure in zip file
-            archive = read_archive(file_name)
+            if hasattr(file, 'read'):   # file-like object
+                archive = read_archive(file)
+            else:                       # assume file path
+                archive = read_archive(os.path.abspath(file))
             # Parse cells
             self.cells = read_cells(archive, ignore_sheets, ignore_hidden)
             # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}

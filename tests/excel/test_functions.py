@@ -878,3 +878,28 @@ class Test_Eomonth(unittest.TestCase):
         self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
         self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month
         self.assertNotEqual(eomonth(36525, 15), 36980)  # 31/12/1999, add 15 month
+
+
+class Test_Rand(unittest.TestCase):
+
+    def test_results(self):
+        # generate 10 random numbers
+        for i in range(10):
+            num = rand()
+            self.assertIsInstance(num, float)
+            self.assertGreaterEqual(num, 0.0)
+            self.assertLessEqual(num, 1.0)
+
+
+class Test_RandBetween(unittest.TestCase):
+
+    def test_results(self):
+        # a number between 0 and 10
+        num = randbetween(0, 10)
+        self.assertIsInstance(num, int)
+        self.assertGreaterEqual(num, 0)
+        self.assertLessEqual(num, 10)
+        # the number 1 every time
+        num = randbetween(1, 1)
+        self.assertIsInstance(num, int)
+        self.assertEqual(num, 1)
