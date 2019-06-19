@@ -1,13 +1,17 @@
 """Setup script."""
 
 from setuptools import setup, find_packages
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 if __name__ == '__main__':
     setup(
         name="koala2",
 
-        version="0.0.34",
+        version="0.0.35",
 
         author="Ants, open innovation lab",
         author_email="contact@weareants.fr",
@@ -23,8 +27,8 @@ if __name__ == '__main__':
             "A python module to extract all the content of an Excel document "
             "and enable calculation without Excel"
         ),
-
-        long_description=open("README.md").read(),
+        long_description_content_type='text/markdown',
+        long_description=long_description,
 
         install_requires=[
             'networkx >= 2.1',
