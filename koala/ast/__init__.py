@@ -8,7 +8,7 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from openpyxl.compat import unicode
 
-from koala.utils import uniqueify, flatten
+from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
@@ -62,7 +62,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     if expression.startswith('='):
         expression = expression[1:]
 
-    p = ExcelParser(tokenize_range = tokenize_range);
+    p = ExcelParser(tokenize_range=tokenize_range)
     p.parse(expression)
 
     # insert tokens for '(' and ')', to make things clearer below
@@ -370,7 +370,7 @@ def cell2code(cell, named_ranges):
 
         e = shunting_yard(cell.formula, named_ranges, ref=ref, tokenize_range = False)
 
-        ast,root = build_ast(e, debug = debug)
+        ast, root = build_ast(e, debug = debug)
         code = root.emit(ast, context=sheet)
 
         # print 'CODE', code, ref
@@ -528,7 +528,7 @@ def graph_from_seeds(seeds, cell_source):
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
                     start_end = prepare_pointer(reference, names, ref_cell = c1)
-                    rng = cell_source.Range(start_end)
+                    rng = cell_source.range(start_end)
 
                     if dep_name in names: # dep is a pointer range
                         address = dep_name
@@ -540,7 +540,38 @@ def graph_from_seeds(seeds, cell_source):
                             cell_source.pointers.add(address)
                 else:
                     address = dep_name
-                    rng = cell_source.Range(reference)
+
+                    # get a list of the addresses in this range that are not yet in the graph
+                    range_addresses = list(resolve_range(reference, should_flatten=True)[0])
+                    cellmap_add_addresses = [addr for addr in range_addresses if addr not in cellmap.keys()]
+
+                    if len(cellmap_add_addresses) > 0:
+                        # this means there are cells to be added
+
+                        # get row and col dimensions for the sheet, assuming the whole range is in one sheet
+                        sheet_initial = split_address(cellmap_add_addresses[0])[0]
+                        max_rows, max_cols = max_dimension(cellmap, sheet_initial)
+
+                        # create empty cells that aren't in the cellmap
+                        for addr in cellmap_add_addresses:
+                            sheet_new, col_new, row_new = split_address(addr)
+
+                            # if somehow a new sheet comes up in the range, get the new dimensions
+                            if sheet_new != sheet_initial:
+                                sheet_initial = sheet_new
+                                max_rows, max_cols = max_dimension(cellmap, sheet_new)
+
+                            # add the empty cells
+                            if int(row_new) <= max_rows and int(col2num(col_new)) <= max_cols:
+                                # only add cells within the maximum bounds of the sheet to avoid too many evaluations
+                                # for A:A or 1:1 ranges
+
+                                cell_new = Cell(addr, sheet_new, value="", should_eval='False') # create new cell object
+                                cellmap[addr] = cell_new # add it to the cellmap
+                                G.add_node(cell_new) # add it to the graph
+                                cell_source.cells[addr] = cell_new # add it to the cell_source, used in this function
+
+                    rng = cell_source.range(reference)
 
                 if address in cellmap:
                     virtual_cell = cellmap[address]

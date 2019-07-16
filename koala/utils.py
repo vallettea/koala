@@ -5,7 +5,13 @@ from __future__ import absolute_import, division
 import collections
 import numbers
 import re
+import datetime as dt
+try:
+    from functools import lru_cache
+except ImportError:  # fix for Python 2.7
+    from backports.functools_lru_cache import lru_cache
 from six import string_types
+from copy import deepcopy
 
 from openpyxl.compat import unicode
 
@@ -57,6 +63,7 @@ def split_range(rng):
 
 split_address_cache = {}
 
+
 def split_address(address):
 
     if address in split_address_cache:
@@ -65,7 +72,7 @@ def split_address(address):
     else:
         sheet = None
         if address.find('!') > 0:
-            sheet,addr = address.split('!')
+            sheet, addr = address.split('!')
         else:
             addr = address
 
@@ -74,7 +81,7 @@ def split_address(address):
 
         # regular <col><row> format
         if re.match('^[A-Z\$]+[\d\$]+$', addr):
-            col,row = [_f for _f in re.split('([A-Z\$]+)',addr) if _f]
+            col,row = [_f for _f in re.split('([A-Z\$]+)', addr) if _f]
         # R<row>C<col> format
         elif re.match('^R\d+C\d+$', addr):
             row,col = addr.split('C')
@@ -84,14 +91,45 @@ def split_address(address):
             row,col = addr.split('C')
             row = row[2:-1]
             col = col[2:-1]
+        # [<row>] format
+        elif re.match('^[\d\$]+$', addr):
+            row = addr
+            col = None
+        # [<col>] format
+        elif re.match('^[A-Z\$]$', addr):
+            row = None
+            col = addr
         else:
             raise Exception('Invalid address format ' + addr)
 
         split_address_cache[address] = (sheet, col, row)
-        return (sheet,col,row)
+        return sheet, col, row
+
+
+def max_dimension(cellmap, sheet = None):
+    """
+    This function calculates the maximum dimension of the workbook or optionally the worksheet. It returns a tupple
+    of two integers, the first being the rows and the second being the columns.
+
+    :param cellmap: all the cells that should be used to calculate the maximum.
+    :param sheet:  (optionally) a string with the sheet name.
+    :return: a tupple of two integers, the first being the rows and the second being the columns.
+    """
+
+    cells = list(cellmap.values())
+    rows = 0
+    cols = 0
+    for cell in cells:
+        if sheet is None or cell.sheet == sheet:
+            rows = max(rows, int(cell.row))
+            cols = max(cols, int(col2num(cell.col)))
+
+    return (rows, cols)
 
 
 resolve_range_cache = {}
+
+
 def resolve_range(rng, should_flatten = False, sheet=''):
     # print 'RESOLVE RANGE splitting', rng
     if ':' not in rng:
@@ -124,10 +162,23 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         return resolve_range_cache[key]
     else:
         if not is_range(rng):  return ([sheet + rng],1,1)
-
         # single cell, no range
-        sh, start_col, start_row = split_address(start)
-        sh, end_col, end_row = split_address(end)
+        if start.isdigit() and end.isdigit():
+            # This copes with 1:1 style ranges
+            start_col = "A"
+            start_row = start
+            end_col = "XFD"
+            end_row = end
+        elif start.isalpha() and end.isalpha():
+            # This copes with A:A style ranges
+            start_col = start
+            start_row = 1
+            end_col = end
+            end_row = 2**20
+        else:
+            sh, start_col, start_row = split_address(start)
+            sh, end_col, end_row = split_address(end)
+
         start_col_idx = col2num(start_col)
         end_col_idx = col2num(end_col);
 
@@ -310,6 +361,40 @@ def uniqueify(seq):
     seen_add = seen.add
     return [ x for x in seq if x not in seen and not seen_add(x)]
 
+
+def is_not_number_input(input_value):
+    if isinstance(input_value, list):
+        return not all([is_number(i) for i in input_value])
+    else:
+        return not is_number(input_value)
+
+
+def flatten_list(nested_list):
+    """Flatten an arbitrarily nested list, without recursion (to avoid
+    stack overflows). Returns a new list, the original list is unchanged.
+    >> list(flatten_list([1, 2, 3, [4], [], [[[[[[[[[5]]]]]]]]]]))
+    [1, 2, 3, 4, 5]
+    >> list(flatten_list([[1, 2], 3]))
+    [1, 2, 3]
+    """
+    nested_list = deepcopy(nested_list)
+
+    while nested_list:
+        sublist = nested_list.pop(0)
+
+        if isinstance(sublist, list):
+            nested_list = sublist + nested_list
+        else:
+            yield sublist
+
+
+def numeric_error(input_value, input_name):
+    if isinstance(input_value, ExcelError):
+        return input_value
+    else:
+        return ExcelError('#NUM!', '`excel cannot handle a non-numeric `%s`' % input_name)
+
+
 def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
     try:
         float(s)
@@ -381,6 +466,8 @@ def date_from_int(nb):
     if not is_number(nb):
         raise TypeError("%s is not a number" % str(nb))
 
+    nb = int(nb)
+
     # origin of the Excel date system
     current_year = 1900
     current_month = 0
@@ -400,16 +487,25 @@ def date_from_int(nb):
             if nb > max_days:
                 nb -= max_days
             else:
-                current_day = nb
+                current_day = int(nb)
                 nb = 0
 
     return (current_year, current_month, current_day)
 
-def criteria_parser(criteria):
+def int_from_date(date):
+    temp = dt.date(1899, 12, 30)    # Note, not 31st Dec but 30th!
+    delta = date - temp
 
+    return float(delta.days) + (float(delta.seconds) / 86400)
+
+def criteria_parser(criteria):
     if is_number(criteria):
         def check(x):
-            return x == criteria #and type(x) == type(criteria)
+            try:
+                x = float(x)
+            except:
+                return False
+            return x == float(criteria) #and type(x) == type(criteria)
     elif type(criteria) == str:
         search = re.search('(\W*)(.*)', criteria.lower()).group
         operator = search(1)
@@ -419,31 +515,39 @@ def criteria_parser(criteria):
         if operator == '<':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x < value
         elif operator == '>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x > value
         elif operator == '>=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x >= value
         elif operator == '<=':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x <= value
         elif operator == '<>':
             def check(x):
                 if not is_number(x):
-                    raise TypeError('excellib.countif() doesnt\'t work for checking non number items against non equality')
+                    return False # Excel returns False when a string is compared with a value
                 return x != value
+        elif operator == '=' and is_number(value):
+            def check(x):
+                if not is_number(x):
+                    return False # Excel returns False when a string is compared with a value
+                return x == value
+        elif operator == '=':
+            def check(x):
+                return str(x).lower() == str(value)
         else:
             def check(x):
-                return x == criteria
+                return str(x).lower() == criteria.lower()
     else:
         raise Exception('Could\'t parse criteria %s' % criteria)
 
@@ -451,17 +555,25 @@ def criteria_parser(criteria):
 
 
 def find_corresponding_index(list, criteria):
+    t = tuple(list)
+    return _find_corresponding_index(t, criteria)
+
+
+@lru_cache(maxsize=1024)
+def _find_corresponding_index(l, criteria):
 
     # parse criteria
     check = criteria_parser(criteria)
 
-    valid = []
+    # valid = []
 
-    for index, item in enumerate(list):
-        if check(item):
-            valid.append(index)
+    valid = [index for index, item in enumerate(l) if check(item)]
+    # for index, item in enumerate(list):
+    #     if check(item):
+    #         valid.append(index)
 
     return valid
+
 
 def check_length(range1, range2):
 
@@ -470,18 +582,21 @@ def check_length(range1, range2):
     else:
         return range2
 
+
 def extract_numeric_values(*args):
     values = []
 
     for arg in args:
-        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
-            for x in arg.values:
-                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
-                    values.append(x)
+        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str and type(arg) != unicode: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+            values.extend([x for x in arg.values if is_number(x) and type(x) is not bool])
+            # for x in arg.values:
+            #     if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+            #         values.append(x)
         elif type(arg) is tuple or type(arg) is list:
-            for x in arg:
-                if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
-                    values.append(x)
+            values.extend([x for x in arg if is_number(x) and type(x) is not bool])
+            # for x in arg:
+            #     if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
+            #         values.append(x)
         elif is_number(arg):
             values.append(arg)
 
@@ -500,6 +615,13 @@ def old_div(a, b):
         return a // b
     else:
         return a / b
+
+
+def safe_iterator(node, tag=None):
+    """Return an iterator or an empty list"""
+    if node is None:
+        return []
+    return node.iter(tag)
 
 
 if __name__ == '__main__':

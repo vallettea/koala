@@ -4,7 +4,7 @@ from __future__ import print_function
 from openpyxl.compat import unicode
 
 from koala.excellib import FUNCTION_MAP, IND_FUN
-from koala.utils import is_range, split_range, split_address
+from koala.utils import is_range, split_range, split_address, resolve_range
 from koala.ExcelError import *
 
 
@@ -29,26 +29,25 @@ def to_str(my_string):
 class ASTNode(object):
     """A generic node in the AST"""
 
-    def __init__(self,token, debug = False):
+    def __init__(self, token, debug=False):
         super(ASTNode,self).__init__()
         self.token = token
         self.debug = debug
-    def __str__(self):
-        # if type(self.token.tvalue) == unicode:
 
+    def __str__(self):
         return self.token.tvalue
-    def __getattr__(self,name):
+
+    def __getattr__(self, name):
         return getattr(self.token,name)
 
-    def children(self,ast):
+    def children(self, ast):
         args = ast.predecessors(self)
         args = sorted(args,key=lambda x: ast.node[x]['pos'])
         return args
 
-    def parent(self,ast):
+    def parent(self, ast):
         args = list(ast.successors(self))
         return args[0] if args else None
-
 
     def find_special_function(self, ast):
         found = False
@@ -89,7 +88,6 @@ class ASTNode(object):
         else:
             return False
 
-
     def emit(self,ast,context=None, pointer = False):
         """Emit code"""
         self.token.tvalue
@@ -102,7 +100,6 @@ class OperatorNode(ASTNode):
         self.debug = debug
         # convert the operator to python equivalents
         self.opmap = {
-                 "^":"**",
                  "=":"==",
                  "&":"+",
                  "":"+" #union
@@ -113,6 +110,7 @@ class OperatorNode(ASTNode):
             "/": "divide",
             "+": "add",
             "-": "substract",
+            "^": "power",
             "==": "is_equal",
             "<>": "is_not_equal",
             ">": "is_strictly_superior",
@@ -144,7 +142,7 @@ class OperatorNode(ASTNode):
         if self.ttype == "operator-prefix":
             return 'RangeCore.apply_one("minus", %s, None, %s)' % (args[0].emit(ast,context=context), to_str(self.ref))
 
-        if op in ["+", "-", "*", "/", "==", "<>", ">", "<", ">=", "<="]:
+        if op in ["+", "-", "*", "/", "^", "==", "<>", ">", "<", ">=", "<="]:
             is_special = self.find_special_function(ast)
             call = 'apply' + ('_all' if is_special else '')
             function = self.op_range_translator.get(op)

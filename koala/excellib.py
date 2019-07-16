@@ -8,10 +8,15 @@ Python equivalents of various excel functions
 
 from __future__ import absolute_import, division
 
+import itertools
 import numpy as np
-from datetime import datetime
+import scipy.optimize
+import datetime
+import random
 from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
+from calendar import monthrange
+from dateutil.relativedelta import relativedelta
 
 from openpyxl.compat import unicode
 
@@ -45,9 +50,32 @@ FUNCTION_MAP = {
 IND_FUN = [
     "SUM",
     "MIN",
+    "IF",
+    "TAN",
+    "ATAN2",
+    "PI",
+    "ARRAY",
+    "ARRAYROW",
+    "AND",
+    "OR",
+    "ALL",
+    "VALUE",
+    "LOG",
     "MAX",
     "SUMPRODUCT",
     "IRR",
+    "MIN",
+    "SUM",
+    "CHOOSE",
+    "SUMIF",
+    "AVERAGE",
+    "RIGHT",
+    "INDEX",
+    "LOOKUP",
+    "LINEST",
+    "NPV",
+    "MATCH",
+    "MOD",
     "COUNT",
     "COUNTA",
     "COUNTIF",
@@ -56,15 +84,43 @@ IND_FUN = [
     "LOOKUP",
     "INDEX",
     "AVERAGE",
-    "SUMIF",
+    "SUMIFS",
+    "ROUND",
+    "ROWS",
+    "COLUMNS",
+    "MID",
+    "DATE",
+    "YEARFRAC",
+    "ISNA",
+    "ISBLANK",
+    "ISTEXT",
+    "OFFSET",
+    "SUMPRODUCT",
+    "IFERROR",
+    "XIRR",
+    "VLOOKUP",
+    "VDB",
+    "SLN",
     "XNPV",
     "PMT",
     "ROUNDUP",
+    "POWER",
+    "SQRT",
+    "TODAY",
+    "YEAR",
+    "MONTH",
+    "EOMONTH",
+    "RANDBETWEEN",
+    "RAND",
 ]
+
+CELL_CHARACTER_LIMIT = 32767
+EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 
 ######################################################################################
 # List of excel equivalent functions
 # TODO: needs unit testing
+
 
 def value(text):
     # make the distinction for naca numbers
@@ -118,6 +174,7 @@ def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM
     else:
         return sum(values)
 
+
 def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
 
     index = int(index_num)
@@ -155,6 +212,41 @@ def sumif(range, criteria, sum_range = None): # Excel reference: https://support
 
     else:
         return sum([range.values[x] for x in indexes])
+
+
+def sumifs(*args):
+    # Excel reference: https://support.office.com/en-us/article/
+    #   sumifs-function-c9e748f5-7ea7-455d-9406-611cebce642b
+
+    nb_criteria = (len(args)-1) / 2
+
+    args = list(args)
+
+    # input checks
+    if nb_criteria == 0:
+        return TypeError('At least one criteria and criteria range should be provided.')
+    if int(nb_criteria) != nb_criteria:
+        return TypeError('Number of criteria an criteria ranges should be equal.')
+    nb_criteria = int(nb_criteria)
+
+    # separate arguments
+    sum_range = args[0]
+    criteria_ranges = args[1::2]
+    criteria = args[2::2]
+    index = list(range(0, len(sum_range)))
+
+    for i in range(nb_criteria):
+
+        criteria_range = criteria_ranges[i]
+        criterion = str(criteria[i])
+
+        index_tmp = find_corresponding_index(criteria_range.values, criterion)
+        index = np.intersect1d(index, index_tmp)
+
+    sum_select = [sum_range.values[i] for i in index]
+    res = sum(sum_select)
+
+    return res
 
 
 def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
@@ -203,6 +295,11 @@ def index(my_range, row, col = None): # Excel reference: https://support.office.
 
     if row == 0 and col == 0:
         return ExcelError('#VALUE!', 'No index asked for Range')
+
+    if col is None and nr == 1 and row <= nc:
+        # special case where index is matched on row, and the second row input can be used as a col
+        col = row
+        row = None
 
     if row is not None and row > nr:
         return ExcelError('#VALUE!', 'Index %i out of range' % row)
@@ -273,6 +370,7 @@ def lookup(value, lookup_range, result_range = None): # Excel reference: https:/
             else:
                 return output_range[i-1]
 
+
 # NEEDS TEST
 def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us/article/LINEST-function-84d7d0d9-6e50-4101-977a-fa7abf772b6d
 
@@ -300,15 +398,51 @@ def linest(*args, **kwargs): # Excel reference: https://support.office.com/en-us
 
     return coefs
 
-# NEEDS TEST
-def npv(*args): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
-    discount_rate = args[0]
-    cashflow = args[1]
+
+def npv(rate, *values): # Excel reference: https://support.office.com/en-us/article/NPV-function-8672cb67-2576-4d07-b67b-ac28acf2a568
+    cashflow = list(flatten_list(list(values)))
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(cashflow):
+        return numeric_error(cashflow, 'values')
 
     if isinstance(cashflow, Range):
         cashflow = cashflow.values
 
-    return sum([float(x)*(1+discount_rate)**-(i+1) for (i,x) in enumerate(cashflow)])
+    return sum([float(x)*(1+rate)**-(i+1) for (i,x) in enumerate(cashflow)])
+
+
+def rows(array):
+    """
+    Function to find the number of rows in an array.
+    Excel reference: https://support.office.com/en-ie/article/rows-function-b592593e-3fc2-47f2-bec1-bda493811597
+
+    :param array: the array of which the rows should be counted.
+    :return: the number of rows.
+    """
+
+    if isinstance(array, (float, int)):
+        rows = 1  # special case for A1:A1 type ranges which for some reason only return an int/float
+    elif array is None:
+        rows = 1  # some A1:A1 ranges return None (issue with ref cell)
+    else:
+        rows = len(array.values)
+
+    return rows
+
+
+def columns(array):
+    """
+    Function to find the number of columns in an array.
+    Excel reference: https://support.office.com/en-us/article/columns-function-4e8e7b4e-e603-43e8-b177-956088fa48ca
+
+    :param array: the array of which the columns should be counted.
+    :return: the number of columns.
+    """
+
+    return rows(array)
 
 
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
@@ -325,6 +459,13 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
             value = 0
 
         return value;
+    def type_convert_float(value):
+        if is_number(value):
+            value = float(value)
+        else:
+            value = None
+
+        return value
 
     lookup_value = type_convert(lookup_value)
 
@@ -338,8 +479,9 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
         for i in range(range_length):
             current = type_convert(range_values[i])
 
-            if i is not range_length-1 and current > type_convert(range_values[i+1]):
-                return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
+            if i < range_length - 1:
+                if current > type_convert(range_values[i + 1]):
+                    return ExcelError('#VALUE!', 'for match_type 1, lookup_range must be sorted ascending')
             if current <= lookup_value:
                 posMax = i
         if posMax == -1:
@@ -349,7 +491,12 @@ def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://
     elif match_type == 0:
         # No string wildcard
         try:
-            return [type_convert(x) for x in range_values].index(lookup_value) + 1
+            if is_number(lookup_value):
+                lookup_value = float(lookup_value)
+                output = [type_convert_float(x) for x in range_values].index(lookup_value) + 1
+            else:
+                output = [str(x).lower() for x in range_values].index(lookup_value) + 1
+            return output
         except:
             return ExcelError('#VALUE!', '%s not found' % lookup_value)
 
@@ -377,6 +524,48 @@ def mod(nb, q): # Excel Reference: https://support.office.com/en-us/article/MOD-
         return nb % q
 
 
+def eomonth(start_date, months): # Excel reference: https://support.office.com/en-us/article/eomonth-function-7314ffa1-2bc9-4005-9d66-f49db127d628
+    if not is_number(start_date):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(start_date))
+    if start_date < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(start_date))
+
+    if not is_number(months):
+        return ExcelError('#VALUE!', 'months %s must be a number' % str(months))
+
+    y1, m1, d1 = date_from_int(start_date)
+    start_date_d = datetime.date(year=y1, month=m1, day=d1)
+    end_date_d = start_date_d + relativedelta(months=int(months))
+    y2 = end_date_d.year
+    m2 = end_date_d.month
+    d2 = monthrange(y2, m2)[1]
+    res = int(int_from_date(datetime.date(y2, m2, d2)))
+
+    return res
+
+
+def year(serial_number): # Excel reference: https://support.office.com/en-us/article/year-function-c64f017a-1354-490d-981f-578e8ec8d3b9
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return y1
+
+
+def month(serial_number): # Excel reference: https://support.office.com/en-us/article/month-function-579a2881-199b-48b2-ab90-ddba0eba86e8
+    if not is_number(serial_number):
+        return ExcelError('#VALUE!', 'start_date %s must be a number' % str(serial_number))
+    if serial_number < 0:
+        return ExcelError('#VALUE!', 'start_date %s must be positive' % str(serial_number))
+
+    y1, m1, d1 = date_from_int(serial_number)
+
+    return m1
+
+
 def count(*args): # Excel reference: https://support.office.com/en-us/article/COUNT-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
     l = list(args)
 
@@ -390,6 +579,7 @@ def count(*args): # Excel reference: https://support.office.com/en-us/article/CO
 
     return total
 
+
 def counta(range):
     if isinstance(range, ExcelError) or range in ErrorCodes:
         if range.value == '#NULL':
@@ -399,6 +589,7 @@ def counta(range):
             # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
     else:
         return len([x for x in range.values if x != None])
+
 
 def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
 
@@ -513,6 +704,9 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
 
     text = str(text)
 
+    if len(text) > CELL_CHARACTER_LIMIT:
+        return ExcelError('#VALUE!', 'text is too long. Is %s needs to be %s or less.' % (len(text), CELL_CHARACTER_LIMIT))
+
     if type(start_num) != int:
         return ExcelError('#VALUE!', '%s is not an integer' % str(start_num))
     if type(num_chars) != int:
@@ -523,7 +717,7 @@ def mid(text, start_num, num_chars): # Excel reference: https://support.office.c
     if num_chars < 0:
         return ExcelError('#VALUE!', '%s is < 0' % str(num_chars))
 
-    return text[start_num:num_chars]
+    return text[(start_num - 1): (start_num - 1 + num_chars)]
 
 
 def date(year, month, day): # Excel reference: https://support.office.com/en-us/article/DATE-function-e36c0c8c-4104-49da-ab83-82328b832349
@@ -545,10 +739,10 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
 
     year, month, day = normalize_year(year, month, day) # taking into account negative month and day values
 
-    date_0 = datetime(1900, 1, 1)
-    date = datetime(year, month, day)
+    date_0 = datetime.datetime(1900, 1, 1)
+    date = datetime.datetime(year, month, day)
 
-    result = (datetime(year, month, day) - date_0).days + 2
+    result = (datetime.datetime(year, month, day) - date_0).days + 2
 
     if result <= 0:
         return ExcelError('#VALUE!', 'Date result is negative')
@@ -556,7 +750,17 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
         return result
 
 
-def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://support.office.com/en-us/article/YEARFRAC-function-3844141e-c76d-4143-82b6-208454ddc6a8
+def yearfrac(start_date, end_date, basis=0):
+    """
+    Function to calculate the fraction of the year between two dates
+
+    Excel reference: https://support.office.com/en-us/article/YEARFRAC-function-3844141e-c76d-4143-82b6-208454ddc6a8
+
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
 
     def actual_nb_days_ISDA(start, end): # needed to separate days_in_leap_year from days_not_leap_year
         y1, m1, d1 = start
@@ -585,13 +789,13 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
 
         return (days_not_in_leap_year, days_in_leap_year)
 
-    def actual_nb_days_AFB_alter(start, end): # http://svn.finmath.net/finmath%20lib/trunk/src/main/java/net/finmath/time/daycount/DayCountConvention_ACT_ACT_YEARFRAC.java
+    def actual_nb_days_AFB_alter(start, end):  # http://svn.finmath.net/finmath%20lib/trunk/src/main/java/net/finmath/time/daycount/DayCountConvention_ACT_ACT_YEARFRAC.java
         y1, m1, d1 = start
         y2, m2, d2 = end
 
         delta = date(*end) - date(*start)
 
-        if delta <= 365:
+        if delta <= 366:
             if is_leap_year(y1) and is_leap_year(y2):
                 denom = 366
             elif is_leap_year(y1) and date(y1, m1, d1) <= date(y1, 2, 29):
@@ -619,8 +823,13 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
         return ExcelError('#VALUE!', 'start_date %s must be positive' % str(start_date))
     if end_date < 0:
         return ExcelError('#VALUE!', 'end_date %s must be positive' % str(end_date))
+    if not isinstance(basis, (int, float)):
+        return ExcelError('#VALUE!', 'basis %s must be numeric' % str(basis))
+    basis = int(basis)  # parse potential float to int
+    if basis < 0 or basis > 4:
+        return ExcelError('#NUM!', 'basis %s must be between 0 and 4' % str(basis))
 
-    if start_date > end_date: # switch dates if start_date > end_date
+    if start_date > end_date:  # switch dates if start_date > end_date
         temp = end_date
         end_date = start_date
         start_date = temp
@@ -628,23 +837,23 @@ def yearfrac(start_date, end_date, basis = 0): # Excel reference: https://suppor
     y1, m1, d1 = date_from_int(start_date)
     y2, m2, d2 = date_from_int(end_date)
 
-    if basis == 0: # US 30/360
+    if basis == 0:  # US 30/360
         d2 = 30 if d2 == 31 and (d1 == 31 or d1 == 30) else min(d2, 31)
         d1 = 30 if d1 == 31 else d1
 
         count = 360 * (y2 - y1) + 30 * (m2 - m1) + (d2 - d1)
         result = count / 360
 
-    elif basis == 1: # Actual/actual
+    elif basis == 1:  # Actual/actual
         result = actual_nb_days_AFB_alter((y1, m1, d1), (y2, m2, d2))
 
-    elif basis == 2: # Actual/360
+    elif basis == 2:  # Actual/360
         result = (end_date - start_date) / 360
 
-    elif basis == 3: # Actual/365
+    elif basis == 3:  # Actual/365
         result = (end_date - start_date) / 365
 
-    elif basis == 4: # Eurobond 30/360
+    elif basis == 4:  # Eurobond 30/360
         d2 = 30 if d2 == 31 else d2
         d1 = 30 if d1 == 31 else d1
 
@@ -666,11 +875,14 @@ def isna(value):
     except:
         return True
 
+
 def isblank(value):
     return value is None
 
+
 def istext(value):
     return type(value) == str
+
 
 def offset(reference, rows, cols, height=None, width=None): # Excel reference: https://support.office.com/en-us/article/OFFSET-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     # This function accepts a list of addresses
@@ -727,6 +939,7 @@ def offset(reference, rows, cols, height=None, width=None): # Excel reference: h
 
     return ref_sheet + start_address + end_address
 
+
 def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e
     range_list = list(ranges)
 
@@ -744,6 +957,7 @@ def sumproduct(*ranges): # Excel reference: https://support.office.com/en-us/art
 
     return reduce(lambda X, Y: X + Y, reduce(lambda x, y: Range.apply_all('multiply', x, y), range_list).values)
 
+
 def iferror(value, value_if_error): # Excel reference: https://support.office.com/en-us/article/IFERROR-function-c526fd07-caeb-47b8-8bb6-63f3e417f611
 
     if isinstance(value, ExcelError) or value in ErrorCodes:
@@ -751,10 +965,23 @@ def iferror(value, value_if_error): # Excel reference: https://support.office.co
     else:
         return value
 
-def irr(values, guess = None): # Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
-                               # Numpy reference: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.irr.html
-    if (isinstance(values, Range)):
+
+def irr(values, guess = None):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and periodic dates. It resembles the
+    excel function IRR().
+
+    Excel reference: https://support.office.com/en-us/article/IRR-function-64925eaa-9988-495b-b290-3ad0c163c1bc
+
+    :param values: the payments of which at least one has to be negative.
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+    if isinstance(values, Range):
         values = values.values
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
 
     if guess is not None and guess != 0:
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
@@ -763,6 +990,47 @@ def irr(values, guess = None): # Excel reference: https://support.office.com/en-
             return np.irr(values)
         except Exception as e:
             return ExcelError('#NUM!', e)
+
+
+def xirr(values, dates, guess=0):
+    """
+    Function to calculate the internal rate of return (IRR) using payments and non-periodic dates. It resembles the
+    excel function XIRR().
+
+    Excel reference: https://support.office.com/en-ie/article/xirr-function-de1242ec-6477-445b-b11b-a303ad9adc9d
+
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+
+    if isinstance(values, Range):
+        values = values.values
+
+    if all(value < 0 for value in values):
+        return 0
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
+
+    if guess is not None and guess != 0:
+        raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
+    else:
+        try:
+            try:
+                return scipy.optimize.newton(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), 0.0)
+            except (RuntimeError, FloatingPointError, ExcelError):  # Failed to converge?
+                return scipy.optimize.brentq(lambda r: xnpv(r, values, dates, lim_rate_low=False, lim_rate_high=True), -1.0, 1e5)
+        except Exception:
+            return ExcelError('#NUM', 'IRR did not converge.')
+
 
 def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # https://support.office.com/en-us/article/VLOOKUP-function-0bbc8083-26fe-4963-8ab8-93a18ad188a1
 
@@ -795,6 +1063,7 @@ def vlookup(lookup_value, table_array, col_index_num, range_lookup = True): # ht
 
     return Range.find_associated_value(ref, result_column)
 
+
 def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-us/article/SLN-function-cdb666e5-c1c6-40a7-806a-e695edc2f1c8
 
     for arg in [cost, salvage, life]:
@@ -802,6 +1071,7 @@ def sln(cost, salvage, life): # Excel reference: https://support.office.com/en-u
             return arg
 
     return (cost - salvage) / life
+
 
 def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = False): # Excel reference: https://support.office.com/en-us/article/VDB-function-dde4e207-f3fa-488d-91d2-66d55e861d73
 
@@ -894,17 +1164,49 @@ def vdb(cost, salvage, life, start_period, end_period, factor = 2, no_switch = F
 
     return result
 
-def xnpv(*args): # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
-    rate = args[0]
-    # ignore non numeric cells and boolean cells
-    values = extract_numeric_values(args[1])
-    dates = extract_numeric_values(args[2])
+
+def xnpv(rate, values, dates, lim_rate_low=True, lim_rate_high=False):  # Excel reference: https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
+    """
+    Function to calculate the net present value (NPV) using payments and non-periodic dates. It resembles the excel function XPNV().
+
+    :param rate: the discount rate.
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param lim_rate_low: to limit the rate below 0.
+    :param lim_rate_high: to limit the rate above 1000 to avoid overflow errors.
+    :return: a float being the NPV.
+    """
+    if isinstance(values, Range):
+        values = values.values
+
+    if isinstance(dates, Range):
+        dates = dates.values
+
+    if is_not_number_input(rate):
+        return numeric_error(rate, 'rate')
+
+    if is_not_number_input(values):
+        return numeric_error(values, 'values')
+
+    if is_not_number_input(dates):
+        return numeric_error(dates, 'dates')
+
     if len(values) != len(dates):
         return ExcelError('#NUM!', '`values` range must be the same length as `dates` range in XNPV, %s != %s' % (len(values), len(dates)))
+
+    if lim_rate_low and rate < 0:
+        return ExcelError('#NUM!', '`excel cannot handle a negative `rate`' % (len(values), len(dates)))
+
+    if lim_rate_high and rate > 1000:
+        raise ExcelError('#NUM!', '`will result in an overflow error due to high `rate`')
+
     xnpv = 0
-    for v, d in zip(values, dates):
-        xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+    with np.errstate(all='raise'):
+        for v, d in zip(values, dates):
+            xnpv += v / np.power(1.0 + rate, (d - dates[0]) / 365)
+
     return xnpv
+
 
 def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-function-0214da64-9a63-4996-bc20-214433fa6441
     rate = args[0]
@@ -916,6 +1218,80 @@ def pmt(*args): # Excel reference: https://support.office.com/en-us/article/PMT-
     return -present_value * rate / (1 - np.power(1 + rate, -num_payments))
 
 
+# https://support.office.com/en-us/article/POWER-function-D3F2908B-56F4-4C3F-895A-07FB519C362A
+def power(number, power):
+
+    if number == power == 0:
+        # Really excel?  What were you thinking?
+        return ExcelError('#NUM!', 'Number and power cannot both be zero' % str(number))
+
+    if power < 1 and number < 0:
+        return ExcelError('#NUM!', '%s must be non-negative' % str(number))
+
+    return np.power(number, power)
+
+
+# https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdf
+def sqrt(number):
+    if number < 0:
+        return ExcelError('#NUM!', '%s must be non-negative' % str(index_num))
+    return np.sqrt(number)
+
+
+# https://support.office.com/en-ie/article/today-function-5eb3078d-a82c-4736-8930-2f51a028fdd9
+def today():
+    reference_date = datetime.datetime.today().date()
+    days_since_epoch = reference_date - EXCEL_EPOCH
+    # why +2 ?
+    # 1 based from 1900-01-01
+    # I think it is "inclusive" / to the _end_ of the day.
+    # https://support.office.com/en-us/article/date-function-e36c0c8c-4104-49da-ab83-82328b832349
+    """Note: Excel stores dates as sequential serial numbers so that they can be used in calculations.
+    January 1, 1900 is serial number 1, and January 1, 2008 is serial number 39448 because it is 39,447 days after January 1, 1900.
+     You will need to change the number format (Format Cells) in order to display a proper date."""
+    return days_since_epoch.days + 2
+
+
+# https://support.office.com/en-us/article/concat-function-9b1a9a3f-94ff-41af-9736-694cbd6b4ca2
+def concat(*args):
+    return concatenate(*tuple(flatten(args)))
+
+
+# https://support.office.com/en-us/article/CONCATENATE-function-8F8AE884-2CA8-4F7A-B093-75D702BEA31D
+# Important: In Excel 2016, Excel Mobile, and Excel Online, this function has
+# been replaced with the CONCAT function. Although the CONCATENATE function is
+# still available for backward compatibility, you should consider using CONCAT
+# from now on. This is because CONCATENATE may not be available in future
+# versions of Excel.
+#
+# BE AWARE; there are functional differences between CONACTENATE AND CONCAT
+#
+def concatenate(*args):
+    if tuple(flatten(args)) != args:
+        return ExcelError('#VALUE', 'Could not process arguments %s' % (args))
+
+    cat_string = ''.join(str(a) for a in args)
+
+    if len(cat_string) > CELL_CHARACTER_LIMIT:
+        return ExcelError('#VALUE', 'Too long. concatentaed string should be no longer than %s but is %s' % (CELL_CHARACTER_LIMIT, len(cat_String)))
+
+    return cat_string
+
+
+# https://support.office.com/en-us/article/randbetween-function-4cc7f0d1-87dc-4eb7-987f-a469ab381685
+def randbetween(bottom, top):
+    # instantiating a new random class so repeated calls don't share state
+    r = random.Random()
+    return r.randint(bottom, top)
+
+
+# https://support.office.com/en-us/article/rand-function-4cbfa695-8869-4788-8d90-021ea9f5be73
+def rand():
+    # instantiating a new random class so repeated calls don't share state
+    r = random.Random()
+    return r.random()
+
+
+
 if __name__ == '__main__':
     pass
-

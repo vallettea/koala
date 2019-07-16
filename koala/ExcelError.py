@@ -11,7 +11,7 @@ ErrorCodes = (
 
 
 class ExcelError(Exception):
-    def __init__(self, value, info=None):
+    def __init__(self, value=None, info=None):
         self.value = value
         self.info = info
 

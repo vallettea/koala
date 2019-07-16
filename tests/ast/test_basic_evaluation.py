@@ -3,6 +3,7 @@ import unittest
 
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Cell import Cell
+from koala.ExcelError import ExcelError
 
 
 class Test_Excel(unittest.TestCase):
@@ -25,46 +26,49 @@ class Test_Excel(unittest.TestCase):
         self.sp.set_value('Sheet1!A6', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!L6'), 10)
 
-    def test_D1(self):
+    def test_add_ranges(self):
         self.sp.set_value('Sheet1!A1', 10)
-
         self.assertEqual(self.sp.evaluate('Sheet1!D1'), 20)
 
-    def test_D2(self):
         self.sp.set_value('Sheet1!A2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D2'), 30)
 
-    def test_D3(self):
         self.sp.set_value('Sheet1!A3', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D3'), 40)
 
-    def test_E1(self):
+    def test_add_ranges_and_integers(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!E1'), 22)
 
-    def test_F1(self):
+    def test_add__named_ranges_and_ranges(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!F1'), 120)
 
-    def test_G1(self):
+    def test_add__named_ranges(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!G1'), 41)
 
-    def test_D8(self):
+    def test_add_non_aligned_ranges(self):
         self.sp.set_value('Sheet1!A8', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!D8'), 17)
 
-    def test_B6(self):
+    def test_multiply_ranges(self):
         self.sp.set_value('Sheet1!A6', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!B6'), 20)
 
-    def test_J1(self):
+    def test_if_error(self):
         self.sp.set_value('Sheet1!B1', 20)
         self.assertEqual(self.sp.evaluate('Sheet1!J1'), 4)
 
-    def test_J2(self):
+    def test_min_with_string(self):
         self.sp.set_value('Sheet1!B2', 10)
         self.assertEqual(self.sp.evaluate('Sheet1!J2'), 0)
+
+    def test_power(self):
+        self.assertEqual(self.sp.evaluate('Sheet1!L8'), 4)
+        self.sp.set_value('Sheet1!K8', 3)
+        self.assertEqual(self.sp.evaluate('Sheet1!L8'), 8)
+        self.assertIsInstance(self.sp.evaluate('Sheet1!L9'), ExcelError)
 
     def test_J22(self):
         cell = self.sp.cellmap['Sheet1!J22']
@@ -109,6 +113,11 @@ class Test_Excel(unittest.TestCase):
     def test_N1(self):
         self.sp.set_value('Sheet1!A1', 3)
         self.assertEqual(self.sp.evaluate('Sheet1!N1'), 3)
+
+    def test_sheet_with_name(self):
+        self.assertEqual(self.sp.evaluate('Sheet1!N8'), 1)
+        self.sp.set_value("'Sheet with space'!A1'", 2)
+        self.assertEqual(self.sp.evaluate('Sheet1!N8'), 2)
 
     def test_E32(self):
         self.sp.set_value('Sheet1!A31', 3)
@@ -171,6 +180,6 @@ class Test_Excel(unittest.TestCase):
         self.assertEqual(self.sp.evaluate('Sheet1!A41'), 'George')
 
     def test_Modify_graph(self):
-        self.sp.add_cell(Cell('Sheet1!A4', formula = 'A1 + 10'))
+        self.sp.add_cell(Cell('Sheet1!P4', formula ='A1 + 10'))
         self.sp.set_value('Sheet1!A1', 3)
-        self.assertEqual(self.sp.evaluate('Sheet1!A4'), 13)
+        self.assertEqual(self.sp.evaluate('Sheet1!P4'), 13)

@@ -13,3 +13,4 @@ dist
 build
 eval*
 .pytest_cache
+.tox

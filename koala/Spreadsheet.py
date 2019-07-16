@@ -4,6 +4,7 @@ from __future__ import absolute_import, print_function
 from koala.Range import get_cell_address, parse_cell_address
 
 from koala.ast import *
+from koala.reader import read_archive, read_named_ranges, read_cells
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
 from openpyxl.formula.translate import Translator
@@ -11,6 +12,8 @@ from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
 
+import warnings
+import os.path
 import networkx
 from networkx.readwrite import json_graph
 
@@ -18,8 +21,175 @@ from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
-        super(Spreadsheet,self).__init__()
+    def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, debug=False):
+        # print("___### Initializing Excel Compiler ###___")
+
+        if file is None:
+            # create empty version of this object
+            self.cells = None  # precursor for cellmap: dict that link addresses (str) to Cell objects.
+            self.named_ranges = {}
+            self.pointers = set()  # set listing the pointers
+            self.debug = None  # boolean
+
+            seeds = []
+            cellmap, G = graph_from_seeds(seeds, self)
+            self.G = G  # DiGraph object that represents the view of the Spreadsheet
+            self.cellmap = cellmap  # dict that link addresses (str) to Cell objects.
+            self.addr_to_name = None
+            self.addr_to_range = None
+            self.outputs = None
+            self.inputs = None
+            self.save_history = None
+            self.history = None
+            self.count = None
+            self.range = RangeFactory(cellmap)
+            self.pointer_to_remove = None
+            self.pointers_to_reset = set()
+            self.reset_buffer = None
+            self.fixed_cells = {}
+        else:
+            # fill in what the ExcelCompiler used to do
+            super(Spreadsheet, self).__init__() # generate an empty spreadsheet
+            # Decompose subfiles structure in zip file
+            if hasattr(file, 'read'):   # file-like object
+                archive = read_archive(file)
+            else:                       # assume file path
+                archive = read_archive(os.path.abspath(file))
+            # Parse cells
+            self.cells = read_cells(archive, ignore_sheets, ignore_hidden)
+            # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
+            self.named_ranges = read_named_ranges(archive)
+            self.range = RangeFactory(self.cells)
+            self.pointers = set()
+            self.debug = debug
+
+            # now add the stuff what was originally done by the Spreadsheet
+            self.gen_graph()
+
+    def clean_pointer(self):
+        spreadsheet = Spreadsheet()
+        sp = spreadsheet.build_spreadsheet(networkx.DiGraph(),self.cells, self.named_ranges, debug = self.debug)
+
+        cleaned_cells, cleaned_ranged_names = sp.clean_pointer()
+        self.cells = cleaned_cells
+        self.named_ranges = cleaned_ranged_names
+        self.pointers = set()
+
+    def gen_graph(self, outputs=[], inputs=[]):
+        """
+        Generate the contents of the Spreadsheet from the read cells in the binary files.
+        Specifically this function generates the graph.
+
+        :param outputs: can be used to specify the outputs. All not affected cells are removed from the graph.
+        :param inputs: can be used to specify the inputs. All not affected cells are removed from the graph.
+        """
+        # print('___### Generating Graph ###___')
+
+        if len(outputs) == 0:
+            preseeds = set(list(flatten(self.cells.keys())) + list(self.named_ranges.keys())) # to have unicity
+        else:
+            preseeds = set(outputs)
+
+        preseeds = list(preseeds) # to be able to modify the list
+
+        seeds = []
+        for o in preseeds:
+            if o in self.named_ranges:
+                reference = self.named_ranges[o]
+
+                if is_range(reference):
+                    if 'OFFSET' in reference or 'INDEX' in reference:
+                        start_end = prepare_pointer(reference, self.named_ranges)
+                        rng = self.range(start_end)
+                        self.pointers.add(o)
+                    else:
+                        rng = self.range(reference)
+
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        preseeds.append(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
+                else:
+                    # might need to be changed to actual cells Cell, not a copy
+                    if 'OFFSET' in reference or 'INDEX' in reference:
+                        self.pointers.add(o)
+
+                    value = self.cells[reference].value if reference in self.cells else None
+                    virtual_cell = Cell(o, None, value = value, formula = reference, is_range = False, is_named_range = True)
+                    seeds.append(virtual_cell)
+            else:
+                if is_range(o):
+                    rng = self.range(o)
+                    for address in rng.addresses: # this is avoid pruning deletion
+                        preseeds.append(address)
+                    virtual_cell = Cell(o, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                    seeds.append(virtual_cell)
+                else:
+                    seeds.append(self.cells[o])
+
+        seeds = set(seeds)
+        # print("Seeds %s cells" % len(seeds))
+        outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
+
+        cellmap, G = graph_from_seeds(seeds, self)
+
+        if len(inputs) != 0: # otherwise, we'll set inputs to cellmap inside Spreadsheet
+            inputs = list(set(inputs))
+
+            # add inputs that are outside of calculation chain
+            for i in inputs:
+                if i not in cellmap:
+                    if i in self.named_ranges:
+                        reference = self.named_ranges[i]
+                        if is_range(reference):
+
+                            rng = self.range(reference)
+                            for address in rng.addresses: # this is avoid pruning deletion
+                                inputs.append(address)
+                            virtual_cell = Cell(i, None, value = rng, formula = reference, is_range = True, is_named_range = True )
+                            cellmap[i] = virtual_cell
+                            G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+
+                        else:
+                            # might need to be changed to actual cells Cell, not a copy
+                            virtual_cell = Cell(i, None, value = self.cells[reference].value, formula = reference, is_range = False, is_named_range = True)
+                            cellmap[i] = virtual_cell
+                            G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                    else:
+                        if is_range(i):
+                            rng = self.range(i)
+                            for address in rng.addresses: # this is avoid pruning deletion
+                                inputs.append(address)
+                            virtual_cell = Cell(i, None, value = rng, formula = o, is_range = True, is_named_range = True )
+                            cellmap[i] = virtual_cell
+                            G.add_node(virtual_cell) # edges are not needed here since the input here is not in the calculation chain
+                        else:
+                            cellmap[i] = self.cells[i]
+                            G.add_node(self.cells[i]) # edges are not needed here since the input here is not in the calculation chain
+
+            inputs = set(inputs)
+
+
+        # print("Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+
+        # undirected = networkx.Graph(G)
+        # print "Number of connected components %s", str(number_connected_components(undirected))
+
+        self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
+
+    def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
+        """
+        Writes the elements created by gen_graph to the object
+
+        :param G:
+        :param cellmap:
+        :param named_ranges:
+        :param pointers:
+        :param outputs:
+        :param inputs:
+        :param debug:
+        """
+
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
@@ -50,23 +220,52 @@ class Spreadsheet(object):
         self.pointer_to_remove = ["INDEX", "OFFSET"]
         self.pointers = pointers
         self.pointers_to_reset = pointers
-        self.Range = RangeFactory(cellmap)
+        self.range = RangeFactory(cellmap)
         self.reset_buffer = set()
         self.debug = debug
         self.fixed_cells = {}
+
+        # make sure that all cells that don't have a value defined are updated.
+        for cell in self.cellmap.values():
+            if cell.value is None and cell.formula is not None:
+                cell.needs_update = True
 
 
     def activate_history(self):
         self.save_history = True
 
     def add_cell(self, cell, value = None):
+        """
+        Depricated, see cell_add().
+        """
 
         if type(cell) != Cell:
             cell = Cell(cell, None, value = value, formula = None, is_range = False, is_named_range = False)
 
-        addr = cell.address()
-        if addr in self.cellmap:
-            raise Exception('Cell %s already in cellmap' % addr)
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        self.cell_add(cell=cell)
+
+    def cell_add(self, address=None, cell=None, value=None, formula=None):
+        """
+        Adds a cell to the Spreadsheet. Either the cell argument can be specified, or any combination of the other
+        arguments.
+
+        :param address: the address of the cell
+        :param cell: a Cell object to add
+        :param value: (optional) a new value for the cell. In this case, the first argument cell is processed as
+                      an address.
+        :param formula:
+        """
+        if cell is None:
+            cell = Cell(address, value=value, formula=formula)
+
+        if address in self.cellmap:
+            raise Exception('Cell %s already in cellmap' % address)
 
         cellmap, G = graph_from_seeds([cell], self)
 
@@ -76,10 +275,25 @@ class Spreadsheet(object):
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     def set_formula(self, addr, formula):
-        if addr in self.cellmap:
-            cell = self.cellmap[addr]
+        # previously set_formula was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_formula. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_formula(addr, formula)
+
+    def cell_set_formula(self, address, formula):
+        """
+        Set the formula of a cell.
+
+        :param address: the address of a cell
+        :param formula: the new formula
+        """
+        if address in self.cellmap:
+            cell = self.cellmap[address]
         else:
-            raise Exception('Cell %s not in cellmap' % addr)
+            raise Exception('Cell %s not in cellmap' % address)
 
         seeds = [cell]
 
@@ -101,10 +315,10 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.G = G
 
-        should_eval = self.cellmap[addr].should_eval
-        self.cellmap[addr].should_eval = 'always'
-        self.evaluate(addr)
-        self.cellmap[addr].should_eval = should_eval
+        should_eval = self.cellmap[address].should_eval
+        self.cellmap[address].should_eval = 'always'
+        self.evaluate(address)
+        self.cellmap[address].should_eval = should_eval
 
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
@@ -207,7 +421,8 @@ class Spreadsheet(object):
                         subgraph.add_node(self.cellmap[i]) # edges are not needed here since the input here is not in the calculation chain
 
 
-        return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
+        spreadsheet = Spreadsheet()
+        return spreadsheet.build_spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
     def clean_pointer(self):
         print('___### Cleaning Pointers ###___')
@@ -445,7 +660,9 @@ class Spreadsheet(object):
 
     @staticmethod
     def load(fname):
-        return Spreadsheet(*load(fname))
+        spreadsheet = Spreadsheet()
+        spreadsheet.build_spreadsheet(*load(fname))
+        return spreadsheet
 
     @staticmethod
     def load_json(fname):
@@ -453,10 +670,26 @@ class Spreadsheet(object):
         return Spreadsheet.from_dict(data)
 
     def set_value(self, address, val):
+        # previously set_value was used. Capture this behaviour.
+        warnings.warn(
+            "This function is depricated and will be replaced by cell_set_value. Please use this function instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_set_value(address, val)
+
+    def cell_set_value(self, address, value):
+        """
+        Set the value of a cell
+
+        :param address: the address of a cell
+        :param value: the new value
+        """
         self.reset_buffer = set()
 
         try:
             address = address.replace('$', '')
+            address = address.replace("'", '')
             cell = self.cellmap[address]
 
             # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
@@ -466,11 +699,11 @@ class Spreadsheet(object):
             if cell.is_range:
                 cells_to_set = []
 
-                if not isinstance(val, list):
-                    val = [val] * len(cells_to_set)
+                if not isinstance(value, list):
+                    value = [value] * len(cells_to_set)
 
-                self.reset(cell)
-                cell.range.values = val
+                self.cell_reset(cell.address())
+                cell.range.values = value
 
             # case where the address refers to a single value
             else:
@@ -481,28 +714,62 @@ class Spreadsheet(object):
                         ref_cell = self.cellmap[ref_address]
                     else:
                         ref_cell = Cell(
-                            ref_address, None, value=val,
+                            ref_address, None, value=value,
                             formula=None, is_range=False, is_named_range=False)
-                        self.add_cell(ref_cell)
+                        self.cell_add(cell=ref_cell)
 
-                    ref_cell.value = val
+                    ref_cell.value = value
 
-                if cell.value != val:
+                if cell.value != value:
                     if cell.value is None:
                         cell.value = 'notNone'  # hack to avoid the direct return in reset() when value is None
                     # reset the node + its dependencies
-                    self.reset(cell)
+                    self.cell_reset(cell.address())
                     # set the value
-                    cell.value = val
+                    cell.value = value
 
             for vol in self.pointers_to_reset:  # reset all pointers
-                self.reset(self.cellmap[vol])
+                self.cell_reset(self.cellmap[vol].address())
         except KeyError:
             raise Exception('Cell %s not in cellmap' % address)
 
-    def reset(self, cell):
-        addr = cell.address()
-        if cell.value is None and addr not in self.named_ranges:
+    def reset(self, depricated=None):
+        """
+        Resets all the cells in a spreadsheet and indicates that an update is required.
+
+        :return: nothing
+        """
+
+        # previously reset was used to only reset one cell. Capture this behaviour.
+        if depricated is not None:
+            warnings.warn(
+                "reset() is used to reset the full spreadsheet, cell_reset() should be used to reset only one cell. "
+                "This behaviour will be removed in a future version.",
+                PendingDeprecationWarning
+            )
+            self.cell_reset(depricated.address())
+
+        for cell in self.cellmap.values:
+            self.cell_reset(cell.address())
+        return
+
+    def cell_reset(self, address):
+        """
+        Resets the value of the cell and indicates that an update is required. Also resets all of its dependents.
+
+        :param address: the address of the cell to be reset.
+        :return: nothing
+        """
+
+        if address in self.cellmap:
+            cell = self.cellmap[address]
+        else:
+            return
+        if cell.value is None and address not in self.named_ranges:
+            return
+
+        # check if cell has to be reset
+        if cell.value is None and cell.need_update:
             return
 
         # update cells
@@ -515,9 +782,22 @@ class Spreadsheet(object):
 
         for child in self.G.successors(cell):
             if child not in self.reset_buffer:
-                self.reset(child)
+                self.cell_reset(child.address())
 
     def fix_cell(self, address):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_fix(address)
+
+    def cell_fix(self, address):
+        """
+        Fix the value of a cell
+
+        :param address: the address of the cell
+        """
         try:
             if address not in self.fixed_cells:
                 cell = self.cellmap[address]
@@ -527,6 +807,19 @@ class Spreadsheet(object):
             raise Exception('Cell %s not in cellmap' % address)
 
     def free_cell(self, address=None):
+        warnings.warn(
+            "xxx_cell functions are depricated and replaced by cell_xxx functions. Please use those functions instead. "
+            "This behaviour will be removed in a future version.",
+            PendingDeprecationWarning
+        )
+        return self.cell_free(address)
+
+    def cell_free(self, address=None):
+        """
+        Free the cell (opposite of fix)
+
+        :param address: the address of the cell
+        """
         if address is None:
             for addr in self.fixed_cells:
                 cell = self.cellmap[addr]
@@ -621,8 +914,8 @@ class Spreadsheet(object):
                             return cell1.range
 
                 elif addr1 in self.named_ranges or not is_range(addr1):
-                    val = self.evaluate(addr1)
-                    return val
+                    value = self.evaluate(addr1)
+                    return value
                 else: # addr1 = Sheet1!A1:A2 or Sheet1!A1:Sheet1!A2
                     addr1, addr2 = addr1.split(':')
                     if '!' in addr1:
@@ -651,18 +944,32 @@ class Spreadsheet(object):
         for index, key in enumerate(range.order):
             addr = get_cell_address(range.sheet, key)
 
-            if self.cellmap[addr].need_update:
-                new_value = self.evaluate(addr)
+            if self.cellmap[addr].need_update or self.cellmap[addr].value is None:
+                self.evaluate(addr)
 
+    def evaluate(self, cell, is_addr=True):
+        if isinstance(cell, Cell):
+            is_addr = False
 
-    def evaluate(self,cell,is_addr=True):
         if is_addr:
-            try:
-                cell = self.cellmap[cell]
-            except:
-                if self.debug:
-                    print('WARNING: Empty cell at ' + cell)
-                return ExcelError('#NULL', 'Cell %s is empty' % cell)
+            address = cell
+        else:
+            address = cell.address
+        return self.cell_evaluate(address)
+
+    def cell_evaluate(self, address):
+        """
+        Evaluate the cell.
+
+        :param address: the address of the cell
+        :return:
+        """
+        try:
+            cell = self.cellmap[address]
+        except:
+            if self.debug:
+                print('WARNING: Empty cell at ' + address)
+            return ExcelError('#NULL', 'Cell %s is empty' % address)
 
         # no formula, fixed value
         if cell.should_eval == 'normal' and not cell.need_update and cell.value is not None or not cell.formula or cell.should_eval == 'never':
@@ -690,7 +997,7 @@ class Spreadsheet(object):
                     if 'new' not in list(self.history[cell.address()].keys()):
                         if type(ori_value) == list and type(cell.value) == list \
                                 and all([not is_almost_equal(x_y[0], x_y[1]) for x_y in zip(ori_value, cell.value)]) \
-                            or not is_almost_equal(ori_value, cell.value):
+                                or not is_almost_equal(ori_value, cell.value):
 
                             self.count += 1
                             self.history[cell.address()]['formula'] = str(cell.formula)
@@ -763,14 +1070,6 @@ class Spreadsheet(object):
     @staticmethod
     def from_dict(input_data):
 
-        def find_cell(nodes, address):
-            for node in nodes:
-                cell = node['id']
-                if cell.address() == address:
-                    return cell
-
-            assert False
-
         data = dict(input_data)
 
         nodes = list(
@@ -793,12 +1092,13 @@ class Spreadsheet(object):
         data["nodes"] = [{'id': node} for node in nodes]
 
         links = []
+        idmap = { node.address(): node for node in nodes }
         for el in data['links']:
             source_address = el['source']
             target_address = el['target']
             link = {
-                'source': find_cell(data['nodes'], source_address),
-                'target': find_cell(data['nodes'], target_address)
+                'source': idmap[source_address],
+                'target': idmap[target_address],
             }
             links.append(link)
 
@@ -811,6 +1111,8 @@ class Spreadsheet(object):
         inputs = data["inputs"]
         outputs = data["outputs"]
 
-        return Spreadsheet(
+        spreadsheet = Spreadsheet()
+        spreadsheet.build_spreadsheet(
             G, cellmap, named_ranges,
             inputs=inputs, outputs=outputs)
+        return spreadsheet

@@ -5,6 +5,28 @@ import pyximport; pyximport.install()
 import unittest
 
 from koala.excellib import *
+from koala.ExcelError import ExcelError
+from koala.Range import RangeCore
+
+
+# https://support.office.com/en-ie/article/power-function-d3f2908b-56f4-4c3f-895a-07fb519c362a
+class Test_Basics(unittest.TestCase):
+    def test_divide(self):
+        self.assertEqual(RangeCore.divide(2, 2), 1)
+        self.assertIsInstance(RangeCore.divide(1, 0), ExcelError)
+        self.assertIsInstance(RangeCore.divide(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.divide(1, ExcelError('#VALUE')), ExcelError)
+
+    def test_multiply(self):
+        self.assertEqual(RangeCore.multiply(2, 2), 4)
+        self.assertEqual(RangeCore.multiply(1, 0), 0)
+        self.assertIsInstance(RangeCore.multiply(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.multiply(1, ExcelError('#VALUE')), ExcelError)
+
+    def test_power(self):
+        self.assertEqual(RangeCore.power(2, 2), 4)
+        self.assertIsInstance(RangeCore.power(ExcelError('#VALUE'), 1), ExcelError)
+        self.assertIsInstance(RangeCore.power(1, ExcelError('#VALUE')), ExcelError)
 
 
 class Test_VDB(unittest.TestCase):
@@ -62,12 +84,45 @@ class Test_Choose(unittest.TestCase):
 
 
 class Test_Irr(unittest.TestCase):
+    def test_irr_errors(self):
+        self.assertIsInstance(irr([-100, 39, 59, 55, ExcelError('#NUM')], 0), ExcelError)
+
     def test_irr_basic(self):
         self.assertEqual(round(irr([-100, 39, 59, 55, 20], 0), 7), 0.2809484)
 
     def test_irr_with_guess_non_null(self):
         with self.assertRaises(ValueError):
             irr([-100, 39, 59, 55, 20], 2)
+
+
+class Test_Xirr(unittest.TestCase):
+    def test_xirr_errors(self):
+        self.assertIsInstance(xirr([-100, 30, 30, 30, ExcelError('#NUM')], [43571, 43721, 43871, 44021, 44171], 0), ExcelError)
+        self.assertIsInstance(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, ExcelError('#NUM')], 0), ExcelError)
+
+
+    def test_xirr_basic(self):
+        self.assertEqual(round(xirr([-100, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), 0.1981947)
+        self.assertEqual(round(xirr([-130, 30, 30, 30, 30], [43571, 43721, 43871, 44021, 44171], 0), 7), -0.0743828)
+        self.assertIsInstance(xirr(
+            [-0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1312.46, -565.86, -711.87, -1410.09, -1495.17, -2943.51, -1450.77,
+             -783.22, -112.72, -137.33, 428.64, -1340.84, -256.75],
+            [43646, 43830, 44012, 44196, 44377, 44561, 44742, 44926, 45107, 45291, 45473, 45657, 45838, 46022, 46203,
+             46387, 46568, 46752, 46934, 47118, 47299, 47483, 47664, 47848, 48029],
+            0),
+                              ExcelError)  # under this example, Excel would actually return a wrong value
+
+
+class Test_Npv(unittest.TestCase):
+    def test_npv_errors(self):
+        self.assertIsInstance(npv(0.06, [1, 2, ExcelError('#NUM')]), ExcelError)
+        self.assertIsInstance(npv(ExcelError('#NUM'), [1, 2, 3]), ExcelError)
+
+
+    def test_npv_basic(self):
+        self.assertEqual(round(npv(0.06, [1, 2, 3]), 7), 5.2422470)
+        self.assertEqual(round(npv(0.06, 1, 2, 3), 7), 5.2422470)
+        self.assertEqual(round(npv(0.06, 1), 7), 0.9433962)
 
 
 class Test_Offset(unittest.TestCase):
@@ -126,9 +181,11 @@ class Test_Average(unittest.TestCase):
 
 class Test_Min(unittest.TestCase):
     def test_min_range_and_value(self):
-        range = Range('A1:A3', [1, 23, 3])
+        range1 = Range('A1:A3', [1, 23, 3])
+        range2 = Range('A1:A3', [1, 23, "A"])
         value = 20
-        self.assertEqual(xmin(range, value), 1)
+        self.assertEqual(xmin(range1, value), 1)
+        self.assertEqual(xmin(range2, value), 1)
 
 
 class Test_Max(unittest.TestCase):
@@ -136,6 +193,18 @@ class Test_Max(unittest.TestCase):
         range = Range('A1:A3', [1, 23, 3])
         value = 20
         self.assertEqual(xmax(range, value), 23)
+
+
+class Test_Rows(unittest.TestCase):
+    def test_rows(self):
+        range = Range('A1:A3', [1, 23, 3])
+        self.assertEqual(rows(range), 3)
+
+
+class Test_Columns(unittest.TestCase):
+    def test_rows(self):
+        range = Range('A1:C1', [1, 23, 3])
+        self.assertEqual(columns(range), 3)
 
 
 class Test_Sum(unittest.TestCase):
@@ -200,6 +269,7 @@ class Test_Index(unittest.TestCase):
 
     def test_index_1_dim(self):
         self.assertEqual(index(resolve_range('A1:A3'), 3), 'A3')
+        self.assertEqual(index(resolve_range('A1:C1'), 3), 'C1')
 
     @unittest.skip('This test fails.')
     def test_index_2_dim_1_coord(self):
@@ -290,6 +360,34 @@ class Test_SumIf(unittest.TestCase):
         self.assertEqual(sumif(range1, ">=3", range2), 35)
 
 
+class Test_SumIfs(unittest.TestCase):
+
+    def test_criteria_numeric(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '<=2'), 3)
+        self.assertEqual(sumifs(sum_range, criteria_range, '>2'), 3)
+
+    def test_criteria_string(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range = Range('B1:B3', ['A', 'B', 'C'])
+
+        self.assertEqual(sumifs(sum_range, criteria_range, '=A'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range, '=B'), 2)
+        self.assertEqual(sumifs(sum_range, criteria_range, 'C'), 3)
+
+    def test__multiple_criteria(self):
+        sum_range = Range('A1:A3', [1, 2, 3])
+        criteria_range1 = Range('B1:B3', ['A', 'B', 'B'])
+        criteria_range2 = Range('B1:B3', [1, 2, 3])
+
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=A', criteria_range2, '<2'), 1)
+        self.assertEqual(sumifs(sum_range, criteria_range1, '=B', criteria_range2, '>1'), 5)
+        self.assertEqual(sumifs(sum_range, criteria_range1, 'B', criteria_range2, '<3'), 2)
+
+
 class Test_IsNa(unittest.TestCase):
     # This function might need more solid testing
 
@@ -304,71 +402,69 @@ class Test_IsNa(unittest.TestCase):
 
 class Test_Yearfrac(unittest.TestCase):
     def test_start_date_must_be_number(self):
-        self.assertEqual(type(yearfrac('not a number', 1)), ExcelError)
+        self.assertIsInstance(yearfrac('not a number', 1), ExcelError)
 
     def test_end_date_must_be_number(self):
-        self.assertEqual(type(yearfrac(1, 'not a number')), ExcelError)
+        self.assertIsInstance(yearfrac(1, 'not a number'), ExcelError)
 
     def test_start_date_must_be_positive(self):
-        self.assertEqual(type(yearfrac(-1, 0)), ExcelError)
+        self.assertIsInstance(yearfrac(-1, 0), ExcelError)
 
     def test_end_date_must_be_positive(self):
-        self.assertEqual(type(yearfrac(0, -1)), ExcelError)
+        self.assertIsInstance(yearfrac(0, -1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_basis_must_be_between_0_and_4(self):
-        with self.assertRaises(ExcelError):
-            yearfrac(1, 2, 5)
+        self.assertIsInstance(yearfrac(1, 2, 5), ExcelError)
+        self.assertIsInstance(yearfrac(1, 2, -1), ExcelError)
 
     def test_yearfrac_basis_0(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20)), 7.30277777777778)
+        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 0), 7.30277777777778)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 0), 1)
 
     def test_yearfrac_basis_1(self):
-        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 1), 7.299110198)
+        self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 1), 7.299110198)  # multi year
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2024, 12, 31), 1), 0.99726776)  # day before leap
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 1), 1)  # first day leap
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 2), 1), 1.004103967)  # second day leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2025, 12, 31), 1), 0.997260273972)  # day before non-leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2026, 1, 1), 1), 1)  # first day non-leap
+        self.assertAlmostEqual(yearfrac(date(2025, 1, 1), date(2026, 1, 2), 1), 1.0027397260274)  # second day non-leap
 
     def test_yearfrac_basis_2(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 2), 7.405555556)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 2), 1.01666666666667)
 
     def test_yearfrac_basis_3(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 3), 7.304109589)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 3), 1.0027397260274)
 
     def test_yearfrac_basis_4(self):
         self.assertAlmostEqual(yearfrac(date(2008, 1, 1), date(2015, 4, 20), 4), 7.302777778)
+        self.assertAlmostEqual(yearfrac(date(2024, 1, 1), date(2025, 1, 1), 4), 1)
 
     def test_yearfrac_inverted(self):
         self.assertAlmostEqual(yearfrac(date(2015, 4, 20), date(2008, 1, 1)), yearfrac(date(2008, 1, 1), date(2015, 4, 20)))
 
 
 class Test_Date(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_year_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date('2016', 1, 1)
+        self.assertIsInstance(date('2016', 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_month_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, '1', 1)
+        self.assertIsInstance(date(2016, '1', 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_day_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            date(2016, 1, '1')
+        self.assertIsInstance(date(2016, 1, '1'), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            date(-1, 1, 1)
+        self.assertIsInstance(date(-1, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_year_must_have_less_than_10000(self):
-        with self.assertRaises(ExcelError):
-            date(10000, 1, 1)
+        self.assertIsInstance(date(10000, 1, 1), ExcelError)
 
-    @unittest.skip('This test fails.')
     def test_result_must_be_positive(self):
-        with self.assertRaises(ArithmeticError):
-            date(1900, 1, -1)
+        self.assertIsInstance(date(1900, 1, -1), ExcelError)
 
     def test_not_stricly_positive_month_substracts(self):
         self.assertEqual(date(2009, -1, 1), date(2008, 11, 1))
@@ -386,31 +482,30 @@ class Test_Date(unittest.TestCase):
         self.assertEqual(date(2008, 2, 29), 39507)
 
     def test_year_regular(self):
+        self.assertEqual(date(2000, 1, 1), 36526)
         self.assertEqual(date(2008, 11, 3), 39755)
+        self.assertEqual(date(2024, 1, 1), 45292)
+        self.assertEqual(date(2025, 1, 1), 45658)
+        self.assertEqual(date(2026, 1, 1), 46023)
+
 
 class Test_Mid(unittest.TestCase):
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1.1, 2)
+        self.assertIsInstance(mid('Romain', 1.1, 2), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_integer(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, 2.1)
+        self.assertIsInstance(mid('Romain', 1, 2.1), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_start_num_must_be_superior_or_equal_to_1(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 0, 3)
+        self.assertIsInstance(mid('Romain', 0, 3), ExcelError)  # error is not raised but returned
 
-    @unittest.skip('This test fails.')
     def test_num_chars_must_be_positive(self):
-        with self.assertRaises(ExcelError):
-            mid('Romain', 1, -1)
+        self.assertIsInstance(mid('Romain', 1, -1), ExcelError)  # error is not raised but returned
 
     def test_mid(self):
-        self.assertEqual(mid('Romain', 2, 9), 'main')
+        self.assertEqual(mid('Romain', 3, 4), 'main')
+        self.assertEqual(mid('Romain', 1, 2), 'Ro')
+        self.assertEqual(mid('Romain', 3, 6), 'main')
 
 
 class Test_Round(unittest.TestCase):
@@ -605,6 +700,17 @@ class Test_Match(unittest.TestCase):
         # Value is found
         self.assertEqual(match('a', range, 0), 2)
 
+    def test_mixed_string_floats_in_exact_mode(self):
+        range = Range('A1:A4', ['aab', '3.0', 'rars', 3.3])
+        # Value is found
+        self.assertEqual(match('aab', range, 0), 1)
+        self.assertEqual(match('3.0', range, 0), 2)
+        self.assertEqual(match(3, range, 0), 2)
+        self.assertEqual(match(3.0, range, 0), 2)
+        self.assertEqual(match('rars', range, 0), 3)
+        self.assertEqual(match('3.3', range, 0), 4)
+        self.assertEqual(match(3.3, range, 0), 4)
+
     @unittest.skip('This test fails.')
     def test_string_in_exact_mode_not_found(self):
         range = Range('A1:A3', ['aab', 'a', 'rars'])
@@ -679,3 +785,121 @@ class Test_Match(unittest.TestCase):
         range = Range('A1:A3', [False, True, False])
         with self.assertRaises(ExcelError):
             match(True, range, -1)
+
+
+# https://support.office.com/en-ie/article/power-function-d3f2908b-56f4-4c3f-895a-07fb519c362a
+class Test_Power(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            power(-1, 2)
+
+    @unittest.skip('This test fails.')
+    def test_second_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            power(1, 0)
+
+    def test_integers(self):
+        self.assertEqual(power(5, 2), 25)
+
+    def test_floats(self):
+        self.assertEqual(power(98.6, 3.2), 2401077.2220695773)
+
+
+# https://support.office.com/en-ie/article/sqrt-function-654975c2-05c4-4831-9a24-2c65e4040fdfa
+class Test_Sqrt(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            sqrt(-16)
+
+    def test_positive_integers(self):
+        self.assertEqual(sqrt(16), 4)
+
+
+class Test_Sqrt(unittest.TestCase):
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            sqrt(-16)
+
+    def test_positive_integers(self):
+        self.assertEqual(sqrt(16), 4)
+
+    def test_float(self):
+        self.assertEqual(sqrt(.25), .5)
+
+
+class Test_Today(unittest.TestCase):
+
+    EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
+    reference_date = datetime.datetime.today().date()
+    days_since_epoch = reference_date - EXCEL_EPOCH
+    todays_ordinal = days_since_epoch.days + 2
+
+    def test_positive_integers(self):
+        self.assertEqual(today(), self.todays_ordinal)
+
+
+class Test_Concatenate(unittest.TestCase):
+
+    @unittest.skip('This test fails.')
+    def test_first_argument_validity(self):
+        with self.assertRaises(ExcelError):
+            concatenate("Hello ", 2, [' World!'])
+
+    def test_concatenate(self):
+        self.assertEqual(concatenate("Hello", " ", "World!"), "Hello World!")
+
+
+class Test_Year(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(year(43566), 2019)  # 11/04/2019
+        self.assertEqual(year(43831), 2020)  # 01/01/2020
+        self.assertEqual(year(36525), 1999)  # 31/12/1999
+
+
+class Test_Month(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(month(43566), 4)  # 11/04/2019
+        self.assertEqual(month(43831), 1)  # 01/01/2020
+        self.assertEqual(month(36525), 12)  # 31/12/1999
+
+
+class Test_Eomonth(unittest.TestCase):
+
+    def test_results(self):
+        self.assertEqual(eomonth(43566, 2), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.1), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43566, 2.99), 43646)  # 11/04/2019, add 2 months
+        self.assertEqual(eomonth(43831, 5), 44012)  # 01/01/2020, add 5 months
+        self.assertEqual(eomonth(36525, 1), 36556)  # 31/12/1999, add 1 month
+        self.assertEqual(eomonth(36525, 15), 36981)  # 31/12/1999, add 15 month
+        self.assertNotEqual(eomonth(36525, 15), 36980)  # 31/12/1999, add 15 month
+
+
+class Test_Rand(unittest.TestCase):
+
+    def test_results(self):
+        # generate 10 random numbers
+        for i in range(10):
+            num = rand()
+            self.assertIsInstance(num, float)
+            self.assertGreaterEqual(num, 0.0)
+            self.assertLessEqual(num, 1.0)
+
+
+class Test_RandBetween(unittest.TestCase):
+
+    def test_results(self):
+        # a number between 0 and 10
+        num = randbetween(0, 10)
+        self.assertIsInstance(num, int)
+        self.assertGreaterEqual(num, 0)
+        self.assertLessEqual(num, 10)
+        # the number 1 every time
+        num = randbetween(1, 1)
+        self.assertIsInstance(num, int)
+        self.assertEqual(num, 1)

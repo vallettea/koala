@@ -58,7 +58,9 @@ def check_value(a):
         return ExcelError(a)
 
     try:  # This is to avoid None or Exception returned by Range operations
-        if float(a) or isinstance(a, (unicode, str)):
+        if isinstance(a, (unicode, str)):
+            return a
+        elif float(a):
             return a
         else:
             return 0
@@ -248,10 +250,7 @@ class RangeCore(dict):
     @property
     def values(self):
         if self.__cellmap:
-            values = []
-            for cell in self.cells:
-                values.append(cell.value)
-            return values
+            return [cell.value for cell in self.cells]
         else:
             return self.cells
 
@@ -537,7 +536,12 @@ class RangeCore(dict):
     @staticmethod
     def add(a, b):
         try:
-            return check_value(a) + check_value(b)
+            a = check_value(a)
+            b = check_value(b)
+            if isinstance(a, str) or isinstance(b, str):
+                a = str(a)
+                b = str(b)
+            return a + b
         except Exception as e:
             return ExcelError('#N/A', e)
 
@@ -569,6 +573,13 @@ class RangeCore(dict):
             return old_div(float(check_value(a)), float(check_value(b)))
         except Exception as e:
             return ExcelError('#DIV/0!', e)
+
+    @staticmethod
+    def power(a, b):
+        try:
+            return pow(float(check_value(a)), float(check_value(b)))
+        except Exception as e:
+            return ExcelError('#VALUE!', e)
 
     @staticmethod
     def is_equal(a, b):
@@ -633,6 +644,7 @@ func_dict = {
     "divide": RangeCore.divide,
     "add": RangeCore.add,
     "substract": RangeCore.substract,
+    "power": RangeCore.power,
     "minus": RangeCore.minus,
     "is_equal": RangeCore.is_equal,
     "is_not_equal": RangeCore.is_not_equal,
