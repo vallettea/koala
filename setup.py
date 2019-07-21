@@ -14,13 +14,13 @@ if __name__ == '__main__':
         version="0.0.35",
 
         author="Ants, open innovation lab",
-        author_email="contact@weareants.fr",
+        author_email="vallettea@gmail.com",
 
         packages=find_packages(),
 
         include_package_data=True,
 
-        url="https://github.com/anthill/koala",
+        url="https://github.com/vallettea/koala",
 
         license="GNU GPL3",
         description=(
