@@ -37,5 +37,18 @@ if __name__ == '__main__':
             'Cython >= 0.28.2',
             'lxml >= 4.1.1',
             'six >= 1.11.0',
+            'scipy>=1.0.0',
+            'python-dateutil==2.8.0',
+            'backports.functools_lru_cache==1.5'
         ]
     )
+
+    networkx==2.1
+    openpyxl==2.5.3
+    numpy>=1.14.2
+    Cython==0.28.2
+    lxml==4.1.1
+    six==1.11.0
+    scipy>=1.0.0
+    python-dateutil==2.8.0
+    backports.functools_lru_cache==1.5
