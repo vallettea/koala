@@ -5,10 +5,10 @@ The objective was to be **able to process many Excel files of high complexity, i
 
 ## Origins
 
-This project was born from the need of one of our clients, a french gaz company. One department is entitled to anticipate the evolution of the global gaz market, and indentify the appropriate investments.
+This project was born from the need of one of our clients, a French gas company. One department is entitled to anticipate the evolution of the global gas market, and identify the appropriate investments.
 The process they use is based upon 14k gas fields business plans (in activity or in project), which are able to give the estimated rentability of a field over the next 100 years or so.
 
-Each business plan (i.e each field) is represented as an Excel table holding about 50k+ cells and 250k+ relations between these cells.
+Each business plan (i.e. each field) is represented as an Excel table holding about 50k+ cells and 250k+ relations between these cells.
 Processing a field requires to operate a dichotomy in order to find the equilibrium of the field, which can lead to dozens of iterations on the same table.
 
 Initially, the whole operation on all the 14k+ files as conducted by our client used to take about a week of computation. Way too much to be efficient.
@@ -26,7 +26,7 @@ This is a full API able to read/write/manipulate `.xlsx` and `.xlsm` files.
 
 What's good:
 - totally independent of Excel
-- gets all the informations (formulas, styles, macros, charts...)
+- gets all the information (formulas, styles, macros, charts...)
 
 What's bad:
 - does not calculate
@@ -86,16 +86,7 @@ Some Excel functions are not available, and some bugs might appear in very trick
 
 This is why we need some feedback.
 
-If you find situations that are not handled correctly by Koala, please contact us so that we can fix it. 
-If you're interested in the technical details of this project, you can [contribute](https://github.com/anthill/koala).
+If you find situations that are not handled correctly by Koala, please contact us so that we can fix it.
+If you're interested in the technical details of this project, you can [contribute](https://github.com/vallettea/koala).
 If you are in situation that can be solved by Koala, but you're not sure how to use it, we can help you deal with it.
 If you have comments of any kind, feel free to say hi !
-
-
-
-
-
-
-
-
-
