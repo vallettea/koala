@@ -1,6 +1,6 @@
 # Koala
 
-[![Build Status](https://travis-ci.org/anthill/koala.svg?branch=master)](https://travis-ci.org/anthill/koala)
+[![Build Status](https://travis-ci.org/vallettea/koala.svg?branch=master)](https://travis-ci.org/vallettea/koala)
 
 Koala converts any Excel workbook into a python object that enables on the fly calculation without the need of Excel.
 
@@ -19,7 +19,7 @@ pip install koala2
 alternatively, you can download it and install the last version from github:
 
 ```
-git clone https://github.com/anthill/koala.git
+git clone https://github.com/vallettea/koala.git
 cd koala
 python setup.py install
 ```

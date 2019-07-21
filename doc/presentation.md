@@ -87,7 +87,7 @@ Some Excel functions are not available, and some bugs might appear in very trick
 This is why we need some feedback.
 
 If you find situations that are not handled correctly by Koala, please contact us so that we can fix it. 
-If you're interested in the technical details of this project, you can [contribute](https://github.com/anthill/koala).
+If you're interested in the technical details of this project, you can [contribute](https://github.com/vallettea/koala).
 If you are in situation that can be solved by Koala, but you're not sure how to use it, we can help you deal with it.
 If you have comments of any kind, feel free to say hi !
 
