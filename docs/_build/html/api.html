@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>API Documentation &#8212; koala2  documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to koala2’s documentation!" href="index.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>koala2  documentation</span></a></h1>
+        <h2 class="heading"><span>API Documentation</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="index.html">Welcome to koala2’s documentation!</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-koala">
+<span id="api-documentation"></span><span id="api"></span><h1>API Documentation<a class="headerlink" href="#module-koala" title="Permalink to this headline">¶</a></h1>
+<p>For normal use, all you have to do is import the package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">koala</span>
+</pre></div>
+</div>
+<p>This will import the following:</p>
+<ul class="simple">
+<li><p>My amazing <a class="reference internal" href="#koala.Spreadsheet" title="koala.Spreadsheet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spreadsheet</span></code></a> class.</p></li>
+<li><p>The awesome <code class="xref py py-func docutils literal notranslate"><span class="pre">clean_pointer()</span></code> function.</p></li>
+</ul>
+<div class="section" id="cell-py">
+<h2>Cell.py<a class="headerlink" href="#cell-py" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.Cell">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">Cell</code><span class="sig-paren">(</span><em class="sig-param">address</em>, <em class="sig-param">sheet=None</em>, <em class="sig-param">value=None</em>, <em class="sig-param">formula=None</em>, <em class="sig-param">is_range=False</em>, <em class="sig-param">is_named_range=False</em>, <em class="sig-param">should_eval='normal'</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Cell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="cellbase-py">
+<h2>CellBase.py<a class="headerlink" href="#cellbase-py" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.CellBase">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">CellBase</code><a class="headerlink" href="#koala.CellBase" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="excelcompiler-py">
+<h2>ExcelCompiler.py<a class="headerlink" href="#excelcompiler-py" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.ExcelCompiler">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">ExcelCompiler</code><span class="sig-paren">(</span><em class="sig-param">file</em>, <em class="sig-param">ignore_sheets=[]</em>, <em class="sig-param">ignore_hidden=False</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.ExcelCompiler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class responsible for taking cells and named_range and create a graph
+that can be serialized to disk, and executed independently of excel.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="excelerror-py">
+<h2>ExcelError.py<a class="headerlink" href="#excelerror-py" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.ExcelError">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">ExcelError</code><span class="sig-paren">(</span><em class="sig-param">value=None</em>, <em class="sig-param">info=None</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.ExcelError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="excellib-py">
+<h2>excellib.py<a class="headerlink" href="#excellib-py" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="koala.value">
+<code class="sig-prename descclassname">koala.</code><code class="sig-name descname">value</code><span class="sig-paren">(</span><em class="sig-param">text</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="using-the-range">
+<h2>Using the Range<a class="headerlink" href="#using-the-range" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="koala.Range">
+<code class="sig-prename descclassname">koala.</code><code class="sig-name descname">Range</code><a class="headerlink" href="#koala.Range" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">koala.Range.RangeCore</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="using-the-reader">
+<h2>Using the reader<a class="headerlink" href="#using-the-reader" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="koala.reader">
+<code class="sig-prename descclassname">koala.</code><code class="sig-name descname">reader</code><a class="headerlink" href="#koala.reader" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#koala.reader" title="koala.reader"><code class="xref py py-class docutils literal notranslate"><span class="pre">koala.reader</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="using-the-serializer">
+<h2>Using the serializer<a class="headerlink" href="#using-the-serializer" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="koala.serializer">
+<code class="sig-prename descclassname">koala.</code><code class="sig-name descname">serializer</code><a class="headerlink" href="#koala.serializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#koala.serializer" title="koala.serializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">koala.serializer</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="using-the-spreadsheet-class">
+<h2>Using the Spreadsheet Class<a class="headerlink" href="#using-the-spreadsheet-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.Spreadsheet">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">Spreadsheet</code><span class="sig-paren">(</span><em class="sig-param">file=None</em>, <em class="sig-param">ignore_sheets=[]</em>, <em class="sig-param">ignore_hidden=False</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="koala.Spreadsheet.add_cell">
+<code class="sig-name descname">add_cell</code><span class="sig-paren">(</span><em class="sig-param">cell</em>, <em class="sig-param">value=None</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.add_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depricated, see cell_add().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.build_spreadsheet">
+<code class="sig-name descname">build_spreadsheet</code><span class="sig-paren">(</span><em class="sig-param">G</em>, <em class="sig-param">cellmap</em>, <em class="sig-param">named_ranges</em>, <em class="sig-param">pointers={}</em>, <em class="sig-param">outputs={}</em>, <em class="sig-param">inputs={}</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.build_spreadsheet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the elements created by gen_graph to the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>G</strong> – </p></li>
+<li><p><strong>cellmap</strong> – </p></li>
+<li><p><strong>named_ranges</strong> – </p></li>
+<li><p><strong>pointers</strong> – </p></li>
+<li><p><strong>outputs</strong> – </p></li>
+<li><p><strong>inputs</strong> – </p></li>
+<li><p><strong>debug</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_add">
+<code class="sig-name descname">cell_add</code><span class="sig-paren">(</span><em class="sig-param">address=None</em>, <em class="sig-param">cell=None</em>, <em class="sig-param">value=None</em>, <em class="sig-param">formula=None</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a cell to the Spreadsheet. Either the cell argument can be specified, or any combination of the other
+arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>address</strong> – the address of the cell</p></li>
+<li><p><strong>cell</strong> – a Cell object to add</p></li>
+<li><p><strong>value</strong> – (optional) a new value for the cell. In this case, the first argument cell is processed as
+an address.</p></li>
+<li><p><strong>formula</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_evaluate">
+<code class="sig-name descname">cell_evaluate</code><span class="sig-paren">(</span><em class="sig-param">address</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate the cell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> – the address of the cell</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_fix">
+<code class="sig-name descname">cell_fix</code><span class="sig-paren">(</span><em class="sig-param">address</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_fix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fix the value of a cell</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> – the address of the cell</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_free">
+<code class="sig-name descname">cell_free</code><span class="sig-paren">(</span><em class="sig-param">address=None</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free the cell (opposite of fix)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> – the address of the cell</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_reset">
+<code class="sig-name descname">cell_reset</code><span class="sig-paren">(</span><em class="sig-param">address</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the value of the cell and indicates that an update is required. Also resets all of its dependents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> – the address of the cell to be reset.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_set_formula">
+<code class="sig-name descname">cell_set_formula</code><span class="sig-paren">(</span><em class="sig-param">address</em>, <em class="sig-param">formula</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_set_formula" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the formula of a cell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>address</strong> – the address of a cell</p></li>
+<li><p><strong>formula</strong> – the new formula</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.cell_set_value">
+<code class="sig-name descname">cell_set_value</code><span class="sig-paren">(</span><em class="sig-param">address</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.cell_set_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the value of a cell</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>address</strong> – the address of a cell</p></li>
+<li><p><strong>value</strong> – the new value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.gen_graph">
+<code class="sig-name descname">gen_graph</code><span class="sig-paren">(</span><em class="sig-param">outputs=[]</em>, <em class="sig-param">inputs=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.gen_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the contents of the Spreadsheet from the read cells in the binary files.
+Specifically this function generates the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>outputs</strong> – can be used to specify the outputs. All not affected cells are removed from the graph.</p></li>
+<li><p><strong>inputs</strong> – can be used to specify the inputs. All not affected cells are removed from the graph.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="koala.Spreadsheet.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param">depricated=None</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Spreadsheet.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets all the cells in a spreadsheet and indicates that an update is required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>nothing</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="using-the-operator">
+<h2>Using the Operator<a class="headerlink" href="#using-the-operator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="koala.Operator">
+<em class="property">class </em><code class="sig-prename descclassname">koala.</code><code class="sig-name descname">Operator</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">precedence</em>, <em class="sig-param">associativity</em><span class="sig-paren">)</span><a class="headerlink" href="#koala.Operator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="using-utils">
+<h2>Using utils<a class="headerlink" href="#using-utils" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="koala.utils">
+<code class="sig-prename descclassname">koala.</code><code class="sig-name descname">utils</code><a class="headerlink" href="#koala.utils" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#koala.utils" title="koala.utils"><code class="xref py py-class docutils literal notranslate"><span class="pre">koala.utils</span></code></a></p>
+</dd></dl>
+
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="index.html">Welcome to koala2’s documentation!</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Ants, open innovation lab.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
