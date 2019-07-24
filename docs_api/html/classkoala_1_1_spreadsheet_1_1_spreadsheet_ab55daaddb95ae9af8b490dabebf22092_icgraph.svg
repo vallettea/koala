@@ -9,24 +9,24 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 24)">
 <title>koala.Spreadsheet.Spreadsheet.cell_free</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-24 428,-24 428,4 -4,4"/>
-<!-- Node52 -->
-<g id="node1" class="node"><title>Node52</title>
+<!-- Node84 -->
+<g id="node1" class="node"><title>Node84</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="230,-0.5 230,-19.5 424,-19.5 424,-0.5 230,-0.5"/>
 <text text-anchor="middle" x="327" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell_free</text>
 </a>
 </g>
 </g>
-<!-- Node53 -->
-<g id="node2" class="node"><title>Node53</title>
+<!-- Node85 -->
+<g id="node2" class="node"><title>Node85</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#aebac3e8edbd3df53d783fd229aa95cf4" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-19.5 194,-19.5 194,-0.5 0,-0.5"/>
 <text text-anchor="middle" x="97" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.free_cell</text>
 </a>
 </g>
 </g>
-<!-- Node52&#45;&gt;Node53 -->
-<g id="edge1" class="edge"><title>Node52&#45;&gt;Node53</title>
+<!-- Node84&#45;&gt;Node85 -->
+<g id="edge1" class="edge"><title>Node84&#45;&gt;Node85</title>
 <path fill="none" stroke="midnightblue" d="M219.957,-10C211.395,-10 202.773,-10 194.286,-10"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="219.968,-13.5001 229.968,-10 219.968,-6.5001 219.968,-13.5001"/>
 </g>

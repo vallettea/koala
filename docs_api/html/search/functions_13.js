@@ -1,10 +1,7 @@
 var searchData=
 [
-  ['xirr',['xirr',['../namespacekoala_1_1excellib.html#a0ec13d0eb9e9bd4b9cc9a25abca30090',1,'koala::excellib']]],
-  ['xlog',['xlog',['../namespacekoala_1_1excellib.html#af7346e1c78e8d155e009419f8fbc40cf',1,'koala::excellib']]],
-  ['xmax',['xmax',['../namespacekoala_1_1excellib.html#abb26a17a65544252cb4852ce6805d8ea',1,'koala::excellib']]],
-  ['xmin',['xmin',['../namespacekoala_1_1excellib.html#a99f6a78d4c327fc958fa45ca6287af27',1,'koala::excellib']]],
-  ['xnpv',['xnpv',['../namespacekoala_1_1excellib.html#a4b33b1607230861cabb4eebf0442154e',1,'koala::excellib']]],
-  ['xround',['xround',['../namespacekoala_1_1excellib.html#ad94445dda788583b197990d07bf79212',1,'koala::excellib']]],
-  ['xsum',['xsum',['../namespacekoala_1_1excellib.html#a41a6149eadc24da5da24a7258f03499e',1,'koala::excellib']]]
+  ['value',['value',['../classkoala_1_1_cell_1_1_cell.html#af71a877dc1e570e97d5fdaeadc03dcc8',1,'koala.Cell.Cell.value(self)'],['../classkoala_1_1_cell_1_1_cell.html#ad0360265e667f4804e8ca4102e900227',1,'koala.Cell.Cell.value(self, new_value)'],['../classkoala_1_1tokenizer_1_1f__token_stack.html#afb8f1f78bb51c5a47be99967d2c06115',1,'koala.tokenizer.f_tokenStack.value()'],['../namespacekoala_1_1excellib.html#a0da711547bea6aa31bb1ba033e58f714',1,'koala.excellib.value()']]],
+  ['values',['values',['../classkoala_1_1_range_1_1_range_core.html#a892d149aed9e699ead26e8647200d859',1,'koala.Range.RangeCore.values(self)'],['../classkoala_1_1_range_1_1_range_core.html#a6557265240f4ca4f91a448f366f66901',1,'koala.Range.RangeCore.values(self, new_values)']]],
+  ['vdb',['vdb',['../namespacekoala_1_1excellib.html#adb87ff7387784b86c96b4107b4fb58e7',1,'koala::excellib']]],
+  ['vlookup',['vlookup',['../namespacekoala_1_1excellib.html#ad4bd45c6b5237957d79752a421f628ad',1,'koala::excellib']]]
 ];

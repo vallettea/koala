@@ -9,29 +9,29 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 73.5)">
 <title>koala.utils.old_div</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-73.5 288,-73.5 288,4 -4,4"/>
-<!-- Node226 -->
-<g id="node1" class="node"><title>Node226</title>
+<!-- Node268 -->
+<g id="node1" class="node"><title>Node268</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="191,-28 191,-47 284,-47 284,-28 191,-28"/>
 <text text-anchor="middle" x="237.5" y="-35" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.old_div</text>
 </a>
 </g>
 </g>
-<!-- Node227 -->
-<g id="node2" class="node"><title>Node227</title>
+<!-- Node269 -->
+<g id="node2" class="node"><title>Node269</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_range_1_1_range_core.html#a2204b0c5b3103eb38d142613225b8179" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="3,-50 3,-69 152,-69 152,-50 3,-50"/>
 <text text-anchor="middle" x="77.5" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Range.RangeCore.divide</text>
 </a>
 </g>
 </g>
-<!-- Node226&#45;&gt;Node227 -->
-<g id="edge1" class="edge"><title>Node226&#45;&gt;Node227</title>
+<!-- Node268&#45;&gt;Node269 -->
+<g id="edge1" class="edge"><title>Node268&#45;&gt;Node269</title>
 <path fill="none" stroke="midnightblue" d="M180.879,-45.2446C169.842,-46.7815 158.135,-48.4116 146.733,-49.9992"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="181.378,-48.7091 190.8,-43.8633 180.413,-41.7759 181.378,-48.7091"/>
 </g>
-<!-- Node228 -->
-<g id="node3" class="node"><title>Node228</title>
+<!-- Node270 -->
+<g id="node3" class="node"><title>Node270</title>
 <g id="a_node3"><a xlink:href="classkoala_1_1tokenizer_1_1_excel_parser.html#a0f9cf145ddc9eb9fabd540166fe9540f" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 155,-30.5 155,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.tokenizer.ExcelParser.get</text>
@@ -39,8 +39,8 @@
 </a>
 </g>
 </g>
-<!-- Node226&#45;&gt;Node228 -->
-<g id="edge2" class="edge"><title>Node226&#45;&gt;Node228</title>
+<!-- Node268&#45;&gt;Node270 -->
+<g id="edge2" class="edge"><title>Node268&#45;&gt;Node270</title>
 <path fill="none" stroke="midnightblue" d="M180.832,-29.7488C172.482,-28.5861 163.75,-27.3703 155.058,-26.1599"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="180.413,-33.2241 190.8,-31.1367 181.378,-26.2909 180.413,-33.2241"/>
 </g>

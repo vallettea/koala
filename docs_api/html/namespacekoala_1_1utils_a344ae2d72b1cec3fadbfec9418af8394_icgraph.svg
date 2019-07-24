@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 138)">
 <title>koala.utils.numeric_error</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-138 364,-138 364,4 -4,4"/>
-<!-- Node220 -->
-<g id="node1" class="node"><title>Node220</title>
+<!-- Node262 -->
+<g id="node1" class="node"><title>Node262</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="262,-52 262,-82 360,-82 360,-52 262,-52"/>
 <text text-anchor="start" x="270" y="-70" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.numeric</text>
@@ -18,60 +18,60 @@
 </a>
 </g>
 </g>
-<!-- Node221 -->
-<g id="node2" class="node"><title>Node221</title>
+<!-- Node263 -->
+<g id="node2" class="node"><title>Node263</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1excellib.html#afc429f93f04e1a0a4f234f8ed00d2ef4" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="130.5,-114.5 130.5,-133.5 223.5,-133.5 223.5,-114.5 130.5,-114.5"/>
 <text text-anchor="middle" x="177" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.npv</text>
 </a>
 </g>
 </g>
-<!-- Node220&#45;&gt;Node221 -->
-<g id="edge1" class="edge"><title>Node220&#45;&gt;Node221</title>
+<!-- Node262&#45;&gt;Node263 -->
+<g id="edge1" class="edge"><title>Node262&#45;&gt;Node263</title>
 <path fill="none" stroke="midnightblue" d="M268.02,-86.4669C254.649,-92.5392 239.756,-99.1698 226,-105 218.573,-108.148 210.436,-111.43 203.005,-114.364"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="269.805,-89.4995 277.449,-82.1635 266.899,-83.1314 269.805,-89.4995"/>
 </g>
-<!-- Node222 -->
-<g id="node3" class="node"><title>Node222</title>
+<!-- Node264 -->
+<g id="node3" class="node"><title>Node264</title>
 <g id="a_node3"><a xlink:href="namespacekoala_1_1excellib.html#a966c762e51d5b1326d1f3f675ba34663" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="133.5,-76.5 133.5,-95.5 220.5,-95.5 220.5,-76.5 133.5,-76.5"/>
 <text text-anchor="middle" x="177" y="-83.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.irr</text>
 </a>
 </g>
 </g>
-<!-- Node220&#45;&gt;Node222 -->
-<g id="edge2" class="edge"><title>Node220&#45;&gt;Node222</title>
+<!-- Node262&#45;&gt;Node264 -->
+<g id="edge2" class="edge"><title>Node262&#45;&gt;Node264</title>
 <path fill="none" stroke="midnightblue" d="M251.96,-75.3542C241.392,-76.8754 230.547,-78.4363 220.532,-79.878"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="252.572,-78.8023 261.972,-73.9132 251.575,-71.8737 252.572,-78.8023"/>
 </g>
-<!-- Node223 -->
-<g id="node4" class="node"><title>Node223</title>
+<!-- Node265 -->
+<g id="node4" class="node"><title>Node265</title>
 <g id="a_node4"><a xlink:href="namespacekoala_1_1excellib.html#a0ec13d0eb9e9bd4b9cc9a25abca30090" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-19.5 0,-38.5 92,-38.5 92,-19.5 0,-19.5"/>
 <text text-anchor="middle" x="46" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.xirr</text>
 </a>
 </g>
 </g>
-<!-- Node220&#45;&gt;Node223 -->
-<g id="edge3" class="edge"><title>Node220&#45;&gt;Node223</title>
+<!-- Node262&#45;&gt;Node265 -->
+<g id="edge3" class="edge"><title>Node262&#45;&gt;Node265</title>
 <path fill="none" stroke="midnightblue" d="M251.809,-58.5921C203.728,-51.6451 136.431,-41.9216 92.2955,-35.5446"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="251.364,-62.0641 261.762,-60.0302 252.365,-55.1361 251.364,-62.0641"/>
 </g>
-<!-- Node224 -->
-<g id="node5" class="node"><title>Node224</title>
+<!-- Node266 -->
+<g id="node5" class="node"><title>Node266</title>
 <g id="a_node5"><a xlink:href="namespacekoala_1_1excellib.html#a4b33b1607230861cabb4eebf0442154e" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="128,-0.5 128,-19.5 226,-19.5 226,-0.5 128,-0.5"/>
 <text text-anchor="middle" x="177" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.xnpv</text>
 </a>
 </g>
 </g>
-<!-- Node220&#45;&gt;Node224 -->
-<g id="edge4" class="edge"><title>Node220&#45;&gt;Node224</title>
+<!-- Node262&#45;&gt;Node266 -->
+<g id="edge4" class="edge"><title>Node262&#45;&gt;Node266</title>
 <path fill="none" stroke="midnightblue" d="M265.51,-47.7885C243.587,-38.3215 218.108,-27.3193 200.316,-19.6365"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="264.405,-51.1235 274.973,-51.8747 267.18,-44.6971 264.405,-51.1235"/>
 </g>
-<!-- Node224&#45;&gt;Node223 -->
-<g id="edge5" class="edge"><title>Node224&#45;&gt;Node223</title>
+<!-- Node266&#45;&gt;Node265 -->
+<g id="edge5" class="edge"><title>Node266&#45;&gt;Node265</title>
 <path fill="none" stroke="midnightblue" d="M117.905,-18.5566C109.243,-19.8325 100.425,-21.1313 92.084,-22.3597"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="118.582,-21.9948 127.965,-17.0749 117.562,-15.0695 118.582,-21.9948"/>
 </g>

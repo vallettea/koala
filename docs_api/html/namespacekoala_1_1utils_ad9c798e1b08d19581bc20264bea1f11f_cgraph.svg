@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 35)">
 <title>koala.utils.get_linest_degree</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-35 405,-35 405,4 -4,4"/>
-<!-- Node73 -->
-<g id="node1" class="node"><title>Node73</title>
+<!-- Node90 -->
+<g id="node1" class="node"><title>Node90</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-30.5 106,-30.5 106,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.get_linest</text>
@@ -18,29 +18,29 @@
 </a>
 </g>
 </g>
-<!-- Node74 -->
-<g id="node2" class="node"><title>Node74</title>
+<!-- Node91 -->
+<g id="node2" class="node"><title>Node91</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1utils.html#af031634c3e0574470f15601cb3462677" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="142,-6 142,-25 264,-25 264,-6 142,-6"/>
 <text text-anchor="middle" x="203" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.index2addres</text>
 </a>
 </g>
 </g>
-<!-- Node73&#45;&gt;Node74 -->
-<g id="edge1" class="edge"><title>Node73&#45;&gt;Node74</title>
+<!-- Node90&#45;&gt;Node91 -->
+<g id="edge1" class="edge"><title>Node90&#45;&gt;Node91</title>
 <path fill="none" stroke="midnightblue" d="M106.179,-15.5C114.494,-15.5 123.212,-15.5 131.859,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="131.95,-19.0001 141.95,-15.5 131.95,-12.0001 131.95,-19.0001"/>
 </g>
-<!-- Node75 -->
-<g id="node3" class="node"><title>Node75</title>
+<!-- Node92 -->
+<g id="node3" class="node"><title>Node92</title>
 <g id="a_node3"><a xlink:href="namespacekoala_1_1utils.html#a2037076cc5a6fbf884023917a0cbfca7" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="300,-6 300,-25 401,-25 401,-6 300,-6"/>
 <text text-anchor="middle" x="350.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.num2col</text>
 </a>
 </g>
 </g>
-<!-- Node74&#45;&gt;Node75 -->
-<g id="edge2" class="edge"><title>Node74&#45;&gt;Node75</title>
+<!-- Node91&#45;&gt;Node92 -->
+<g id="edge2" class="edge"><title>Node91&#45;&gt;Node92</title>
 <path fill="none" stroke="midnightblue" d="M264.02,-15.5C272.48,-15.5 281.176,-15.5 289.632,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="289.796,-19.0001 299.796,-15.5 289.796,-12.0001 289.796,-19.0001"/>
 </g>

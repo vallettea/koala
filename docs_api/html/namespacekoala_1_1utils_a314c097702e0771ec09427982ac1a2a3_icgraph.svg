@@ -48,23 +48,23 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 576;
 var viewHeight = 116;
-var sectionId = 'dynsection-34';
+var sectionId = 'dynsection-35';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>koala.utils.safe_iterator</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-111.5 572,-111.5 572,4 -4,4"/>
-<!-- Node245 -->
-<g id="node1" class="node"><title>Node245</title>
+<!-- Node296 -->
+<g id="node1" class="node"><title>Node296</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="451,-38.5 451,-57.5 568,-57.5 568,-38.5 451,-38.5"/>
 <text text-anchor="middle" x="509.5" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.safe_iterator</text>
 </a>
 </g>
 </g>
-<!-- Node246 -->
-<g id="node2" class="node"><title>Node246</title>
+<!-- Node297 -->
+<g id="node2" class="node"><title>Node297</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1reader.html#a8cde59b502c11e2660e122513b0d339e" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="289,-77 289,-107 415,-107 415,-77 289,-77"/>
 <text text-anchor="start" x="297" y="-95" font-family="Helvetica,sans-Serif" font-size="10.00">koala.reader.read_named</text>
@@ -72,39 +72,39 @@ var sectionId = 'dynsection-34';
 </a>
 </g>
 </g>
-<!-- Node245&#45;&gt;Node246 -->
-<g id="edge1" class="edge"><title>Node245&#45;&gt;Node246</title>
+<!-- Node296&#45;&gt;Node297 -->
+<g id="edge1" class="edge"><title>Node296&#45;&gt;Node297</title>
 <path fill="none" stroke="midnightblue" d="M464.989,-60.3118C446.762,-65.4694 425.397,-71.5148 406.242,-76.9346"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="466.09,-63.6379 474.759,-57.5473 464.184,-56.9023 466.09,-63.6379"/>
 </g>
-<!-- Node247 -->
-<g id="node3" class="node"><title>Node247</title>
+<!-- Node298 -->
+<g id="node3" class="node"><title>Node298</title>
 <g id="a_node3"><a xlink:href="namespacekoala_1_1reader.html#ae778d4e8030a1008c0a89bf89da6fcd9" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="295.5,-38.5 295.5,-57.5 408.5,-57.5 408.5,-38.5 295.5,-38.5"/>
 <text text-anchor="middle" x="352" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.reader.read_rels</text>
 </a>
 </g>
 </g>
-<!-- Node245&#45;&gt;Node247 -->
-<g id="edge2" class="edge"><title>Node245&#45;&gt;Node247</title>
+<!-- Node296&#45;&gt;Node298 -->
+<g id="edge2" class="edge"><title>Node296&#45;&gt;Node298</title>
 <path fill="none" stroke="midnightblue" d="M440.493,-48C429.847,-48 418.954,-48 408.628,-48"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="440.598,-51.5001 450.598,-48 440.598,-44.5001 440.598,-51.5001"/>
 </g>
-<!-- Node250 -->
-<g id="node6" class="node"><title>Node250</title>
+<!-- Node301 -->
+<g id="node6" class="node"><title>Node301</title>
 <g id="a_node6"><a xlink:href="namespacekoala_1_1reader.html#ab5a4c4fc938a80a54bcbe8fe8aad78b4" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="289,-0.5 289,-19.5 415,-19.5 415,-0.5 289,-0.5"/>
 <text text-anchor="middle" x="352" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.reader.read_sheets</text>
 </a>
 </g>
 </g>
-<!-- Node245&#45;&gt;Node250 -->
-<g id="edge5" class="edge"><title>Node245&#45;&gt;Node250</title>
+<!-- Node296&#45;&gt;Node301 -->
+<g id="edge5" class="edge"><title>Node296&#45;&gt;Node301</title>
 <path fill="none" stroke="midnightblue" d="M459.526,-36.032C437.735,-30.7069 412.433,-24.5238 391.957,-19.5201"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="458.716,-39.437 469.261,-38.411 460.378,-32.6371 458.716,-39.437"/>
 </g>
-<!-- Node248 -->
-<g id="node4" class="node"><title>Node248</title>
+<!-- Node299 -->
+<g id="node4" class="node"><title>Node299</title>
 <g id="a_node4"><a xlink:href="namespacekoala_1_1reader.html#ae60c7e099adcc35e694f074c896612d7" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="153,-14 153,-44 253,-44 253,-14 153,-14"/>
 <text text-anchor="start" x="161" y="-32" font-family="Helvetica,sans-Serif" font-size="10.00">koala.reader.detect</text>
@@ -112,26 +112,26 @@ var sectionId = 'dynsection-34';
 </a>
 </g>
 </g>
-<!-- Node247&#45;&gt;Node248 -->
-<g id="edge3" class="edge"><title>Node247&#45;&gt;Node248</title>
+<!-- Node298&#45;&gt;Node299 -->
+<g id="edge3" class="edge"><title>Node298&#45;&gt;Node299</title>
 <path fill="none" stroke="midnightblue" d="M285.255,-39.5023C274.544,-38.118 263.612,-36.7049 253.38,-35.3825"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="285.059,-43.0061 295.426,-40.8169 285.957,-36.0638 285.059,-43.0061"/>
 </g>
-<!-- Node249 -->
-<g id="node5" class="node"><title>Node249</title>
+<!-- Node300 -->
+<g id="node5" class="node"><title>Node300</title>
 <g id="a_node5"><a xlink:href="namespacekoala_1_1reader.html#aa773ee24a28b1e66657ee4fcd95d6a62" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-19.5 0,-38.5 117,-38.5 117,-19.5 0,-19.5"/>
 <text text-anchor="middle" x="58.5" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.reader.read_cells</text>
 </a>
 </g>
 </g>
-<!-- Node248&#45;&gt;Node249 -->
-<g id="edge4" class="edge"><title>Node248&#45;&gt;Node249</title>
+<!-- Node299&#45;&gt;Node300 -->
+<g id="edge4" class="edge"><title>Node299&#45;&gt;Node300</title>
 <path fill="none" stroke="midnightblue" d="M142.866,-29C134.47,-29 125.843,-29 117.47,-29"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="142.96,-32.5001 152.96,-29 142.96,-25.5001 142.96,-32.5001"/>
 </g>
-<!-- Node250&#45;&gt;Node248 -->
-<g id="edge6" class="edge"><title>Node250&#45;&gt;Node248</title>
+<!-- Node301&#45;&gt;Node299 -->
+<g id="edge6" class="edge"><title>Node301&#45;&gt;Node299</title>
 <path fill="none" stroke="midnightblue" d="M278.557,-19.3634C269.92,-20.4798 261.263,-21.5987 253.064,-22.6584"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="279.19,-22.8108 288.659,-18.0577 278.293,-15.8685 279.19,-22.8108"/>
 </g>

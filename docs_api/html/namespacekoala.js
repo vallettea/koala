@@ -1,5 +1,6 @@
 var namespacekoala =
 [
+    [ "ast", "namespacekoala_1_1ast.html", "namespacekoala_1_1ast" ],
     [ "Cell", "namespacekoala_1_1_cell.html", "namespacekoala_1_1_cell" ],
     [ "CellBase", "namespacekoala_1_1_cell_base.html", "namespacekoala_1_1_cell_base" ],
     [ "ExcelCompiler", "namespacekoala_1_1_excel_compiler.html", "namespacekoala_1_1_excel_compiler" ],

@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 35)">
 <title>koala.Spreadsheet.Spreadsheet.find_pointer_arguments</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-35 398,-35 398,4 -4,4"/>
-<!-- Node150 -->
-<g id="node1" class="node"><title>Node150</title>
+<!-- Node217 -->
+<g id="node1" class="node"><title>Node217</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="221,-0.5 221,-30.5 394,-30.5 394,-0.5 221,-0.5"/>
 <text text-anchor="start" x="229" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.find</text>
@@ -18,8 +18,8 @@
 </a>
 </g>
 </g>
-<!-- Node151 -->
-<g id="node2" class="node"><title>Node151</title>
+<!-- Node218 -->
+<g id="node2" class="node"><title>Node218</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a988fc1ddf090bf9746135ce759907a5a" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 185,-30.5 185,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.detect</text>
@@ -27,8 +27,8 @@
 </a>
 </g>
 </g>
-<!-- Node150&#45;&gt;Node151 -->
-<g id="edge1" class="edge"><title>Node150&#45;&gt;Node151</title>
+<!-- Node217&#45;&gt;Node218 -->
+<g id="edge1" class="edge"><title>Node217&#45;&gt;Node218</title>
 <path fill="none" stroke="midnightblue" d="M210.588,-15.5C202.18,-15.5 193.683,-15.5 185.31,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="210.785,-19.0001 220.785,-15.5 210.785,-12.0001 210.785,-19.0001"/>
 </g>

@@ -22,9 +22,9 @@ var searchData=
   ['tok_5ftype_5fsubexpr',['TOK_TYPE_SUBEXPR',['../classkoala_1_1tokenizer_1_1_excel_parser_tokens.html#ae40d299ff637577bd2f3ee01210facee',1,'koala::tokenizer::ExcelParserTokens']]],
   ['tok_5ftype_5funknown',['TOK_TYPE_UNKNOWN',['../classkoala_1_1tokenizer_1_1_excel_parser_tokens.html#abd6f913ec909c16d67dd0b7070a16134',1,'koala::tokenizer::ExcelParserTokens']]],
   ['tok_5ftype_5fwspace',['TOK_TYPE_WSPACE',['../classkoala_1_1tokenizer_1_1_excel_parser_tokens.html#a1b5d98b9d0d7f9490e7e623812078fe7',1,'koala::tokenizer::ExcelParserTokens']]],
-  ['token',['token',['../classkoala_1_1tokenizer_1_1_a_s_t_node.html#a455d370651c3725546c6a2f0103e6bef',1,'koala::tokenizer::ASTNode']]],
+  ['token',['token',['../classkoala_1_1ast_1_1astnodes_1_1_a_s_t_node.html#aca253647f3fef989a6eeda9903eea2be',1,'koala.ast.astnodes.ASTNode.token()'],['../classkoala_1_1tokenizer_1_1_a_s_t_node.html#a455d370651c3725546c6a2f0103e6bef',1,'koala.tokenizer.ASTNode.token()']]],
   ['tokens',['tokens',['../classkoala_1_1tokenizer_1_1_excel_parser.html#aaad771bd216aed5e4f7911f594b373a5',1,'koala::tokenizer::ExcelParser']]],
-  ['tsubtype',['tsubtype',['../classkoala_1_1tokenizer_1_1f__token.html#addbe7910dd149569eba6fe4770e05c85',1,'koala::tokenizer::f_token']]],
-  ['ttype',['ttype',['../classkoala_1_1tokenizer_1_1f__token.html#a3597d9917e81de48c13e1ba3eac7ec2c',1,'koala::tokenizer::f_token']]],
+  ['tsubtype',['tsubtype',['../classkoala_1_1ast_1_1astnodes_1_1_range_node.html#ab0d466342af0d1fb6c4903679e51e304',1,'koala.ast.astnodes.RangeNode.tsubtype()'],['../classkoala_1_1tokenizer_1_1f__token.html#addbe7910dd149569eba6fe4770e05c85',1,'koala.tokenizer.f_token.tsubtype()']]],
+  ['ttype',['ttype',['../classkoala_1_1ast_1_1astnodes_1_1_operator_node.html#a85de518cc5cf9c35167818ae0d8c0fa8',1,'koala.ast.astnodes.OperatorNode.ttype()'],['../classkoala_1_1tokenizer_1_1f__token.html#a3597d9917e81de48c13e1ba3eac7ec2c',1,'koala.tokenizer.f_token.ttype()']]],
   ['tvalue',['tvalue',['../classkoala_1_1tokenizer_1_1f__token.html#a5bbacb320acc35b3d5f742dfd46d54cc',1,'koala::tokenizer::f_token']]]
 ];

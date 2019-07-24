@@ -48,15 +48,15 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 556;
 var viewHeight = 83;
-var sectionId = 'dynsection-7';
+var sectionId = 'dynsection-8';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>koala.Spreadsheet.Spreadsheet.cell_evaluate</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-79 552,-79 552,4 -4,4"/>
-<!-- Node25 -->
-<g id="node1" class="node"><title>Node25</title>
+<!-- Node57 -->
+<g id="node1" class="node"><title>Node57</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-44.5 0,-74.5 173,-74.5 173,-44.5 0,-44.5"/>
 <text text-anchor="start" x="8" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell</text>
@@ -64,21 +64,21 @@ var sectionId = 'dynsection-7';
 </a>
 </g>
 </g>
-<!-- Node26 -->
-<g id="node2" class="node"><title>Node26</title>
+<!-- Node58 -->
+<g id="node2" class="node"><title>Node58</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#adec88c8b31c94969a557cf572ee13c44" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="209,-50 209,-69 403,-69 403,-50 209,-50"/>
 <text text-anchor="middle" x="306" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.evaluate</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node26 -->
-<g id="edge1" class="edge"><title>Node25&#45;&gt;Node26</title>
+<!-- Node57&#45;&gt;Node58 -->
+<g id="edge1" class="edge"><title>Node57&#45;&gt;Node58</title>
 <path fill="none" stroke="midnightblue" d="M173.15,-52.8872C181.523,-52.7864 190.088,-52.7411 198.633,-52.7514"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="198.63,-56.2514 208.643,-52.7891 198.656,-49.2514 198.63,-56.2514"/>
 </g>
-<!-- Node27 -->
-<g id="node3" class="node"><title>Node27</title>
+<!-- Node59 -->
+<g id="node3" class="node"><title>Node59</title>
 <g id="a_node3"><a xlink:href="namespacekoala_1_1utils.html#a1585473b2fb474970dbc49794309a0e6" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="253,-0.5 253,-30.5 359,-30.5 359,-0.5 253,-0.5"/>
 <text text-anchor="start" x="261" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_almost</text>
@@ -86,26 +86,26 @@ var sectionId = 'dynsection-7';
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node27 -->
-<g id="edge3" class="edge"><title>Node25&#45;&gt;Node27</title>
+<!-- Node57&#45;&gt;Node59 -->
+<g id="edge3" class="edge"><title>Node57&#45;&gt;Node59</title>
 <path fill="none" stroke="midnightblue" d="M161.743,-44.4808C188.143,-39.1401 217.569,-33.1872 242.852,-28.0726"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="243.576,-31.4969 252.684,-26.0835 242.188,-24.6359 243.576,-31.4969"/>
 </g>
-<!-- Node26&#45;&gt;Node25 -->
-<g id="edge2" class="edge"><title>Node26&#45;&gt;Node25</title>
+<!-- Node58&#45;&gt;Node57 -->
+<g id="edge2" class="edge"><title>Node58&#45;&gt;Node57</title>
 <path fill="none" stroke="midnightblue" d="M208.643,-66.2109C200.238,-66.2641 191.732,-66.263 183.331,-66.2075"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="183.182,-62.706 173.15,-66.1128 183.117,-69.7057 183.182,-62.706"/>
 </g>
-<!-- Node28 -->
-<g id="node4" class="node"><title>Node28</title>
+<!-- Node60 -->
+<g id="node4" class="node"><title>Node60</title>
 <g id="a_node4"><a xlink:href="namespacekoala_1_1utils.html#af016160edea2b46cb26db3ed307c9648" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="439,-6 439,-25 548,-25 548,-6 439,-6"/>
 <text text-anchor="middle" x="493.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_number</text>
 </a>
 </g>
 </g>
-<!-- Node27&#45;&gt;Node28 -->
-<g id="edge4" class="edge"><title>Node27&#45;&gt;Node28</title>
+<!-- Node59&#45;&gt;Node60 -->
+<g id="edge4" class="edge"><title>Node59&#45;&gt;Node60</title>
 <path fill="none" stroke="midnightblue" d="M359.166,-15.5C380.725,-15.5 405.929,-15.5 428.584,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="428.791,-19.0001 438.791,-15.5 428.791,-12.0001 428.791,-19.0001"/>
 </g>

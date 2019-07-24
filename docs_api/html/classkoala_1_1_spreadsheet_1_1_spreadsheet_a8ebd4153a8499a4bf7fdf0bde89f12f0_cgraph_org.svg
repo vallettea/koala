@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 214)">
 <title>koala.Spreadsheet.Spreadsheet.get_pointer_arguments_from_ast</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-214 713,-214 713,4 -4,4"/>
-<!-- Node191 -->
-<g id="node1" class="node"><title>Node191</title>
+<!-- Node272 -->
+<g id="node1" class="node"><title>Node272</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-159 0,-189 172,-189 172,-159 0,-159"/>
 <text text-anchor="start" x="8" y="-177" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.get</text>
@@ -18,26 +18,26 @@
 </a>
 </g>
 </g>
-<!-- Node191&#45;&gt;Node191 -->
-<g id="edge13" class="edge"><title>Node191&#45;&gt;Node191</title>
+<!-- Node272&#45;&gt;Node272 -->
+<g id="edge13" class="edge"><title>Node272&#45;&gt;Node272</title>
 <path fill="none" stroke="midnightblue" d="M49.7517,-189.159C41.011,-198.557 53.0938,-207.5 86,-207.5 106.052,-207.5 118.372,-204.179 122.959,-199.458"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="126.429,-198.894 122.248,-189.159 119.445,-199.376 126.429,-198.894"/>
 </g>
-<!-- Node192 -->
-<g id="node2" class="node"><title>Node192</title>
+<!-- Node273 -->
+<g id="node2" class="node"><title>Node273</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1utils.html#af016160edea2b46cb26db3ed307c9648" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="429,-189.5 429,-208.5 538,-208.5 538,-189.5 429,-189.5"/>
 <text text-anchor="middle" x="483.5" y="-196.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_number</text>
 </a>
 </g>
 </g>
-<!-- Node191&#45;&gt;Node192 -->
-<g id="edge1" class="edge"><title>Node191&#45;&gt;Node192</title>
+<!-- Node272&#45;&gt;Node273 -->
+<g id="edge1" class="edge"><title>Node272&#45;&gt;Node273</title>
 <path fill="none" stroke="midnightblue" d="M172.229,-183.008C184.231,-184.115 196.42,-185.152 208,-186 280.119,-191.28 363.061,-194.865 418.731,-196.911"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="418.68,-200.411 428.8,-197.275 418.933,-193.416 418.68,-200.411"/>
 </g>
-<!-- Node193 -->
-<g id="node3" class="node"><title>Node193</title>
+<!-- Node274 -->
+<g id="node3" class="node"><title>Node274</title>
 <g id="a_node3"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#aa23818eb03be8a82c0969bd5338fdf2d" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="208,-128 208,-158 380,-158 380,-128 208,-128"/>
 <text text-anchor="start" x="216" y="-146" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.get</text>
@@ -45,36 +45,36 @@
 </a>
 </g>
 </g>
-<!-- Node191&#45;&gt;Node193 -->
-<g id="edge2" class="edge"><title>Node191&#45;&gt;Node193</title>
+<!-- Node272&#45;&gt;Node274 -->
+<g id="edge2" class="edge"><title>Node272&#45;&gt;Node274</title>
 <path fill="none" stroke="midnightblue" d="M172.275,-161.167C180.708,-159.898 189.305,-158.605 197.829,-157.322"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="198.421,-160.772 207.789,-155.823 197.379,-153.85 198.421,-160.772"/>
 </g>
-<!-- Node193&#45;&gt;Node192 -->
-<g id="edge11" class="edge"><title>Node193&#45;&gt;Node192</title>
+<!-- Node274&#45;&gt;Node273 -->
+<g id="edge11" class="edge"><title>Node274&#45;&gt;Node273</title>
 <path fill="none" stroke="midnightblue" d="M345.247,-158.007C375.1,-166.923 412.514,-178.098 440.737,-186.527"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="440.105,-189.991 450.688,-189.499 442.108,-183.283 440.105,-189.991"/>
 </g>
-<!-- Node193&#45;&gt;Node193 -->
-<g id="edge12" class="edge"><title>Node193&#45;&gt;Node193</title>
+<!-- Node274&#45;&gt;Node274 -->
+<g id="edge12" class="edge"><title>Node274&#45;&gt;Node274</title>
 <path fill="none" stroke="midnightblue" d="M261.237,-158.159C253.337,-167.557 264.258,-176.5 294,-176.5 312.124,-176.5 323.259,-173.179 327.405,-168.458"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="330.879,-167.922 326.763,-158.159 323.892,-168.358 330.879,-167.922"/>
 </g>
-<!-- Node194 -->
-<g id="node4" class="node"><title>Node194</title>
+<!-- Node275 -->
+<g id="node4" class="node"><title>Node275</title>
 <g id="a_node4"><a xlink:href="namespacekoala_1_1tokenizer.html#aad729e834025da12ee669f20324a9eb8" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="416,-139.5 416,-158.5 551,-158.5 551,-139.5 416,-139.5"/>
 <text text-anchor="middle" x="483.5" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.tokenizer.reverse_rpn</text>
 </a>
 </g>
 </g>
-<!-- Node193&#45;&gt;Node194 -->
-<g id="edge3" class="edge"><title>Node193&#45;&gt;Node194</title>
+<!-- Node274&#45;&gt;Node275 -->
+<g id="edge3" class="edge"><title>Node274&#45;&gt;Node275</title>
 <path fill="none" stroke="midnightblue" d="M380.246,-145.728C388.705,-145.999 397.258,-146.272 405.625,-146.54"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="405.614,-150.041 415.721,-146.863 405.838,-143.045 405.614,-150.041"/>
 </g>
-<!-- Node195 -->
-<g id="node5" class="node"><title>Node195</title>
+<!-- Node276 -->
+<g id="node5" class="node"><title>Node276</title>
 <g id="a_node5"><a xlink:href="namespacekoala_1_1utils.html#a1d3620df245d23fea05928298cabc2ac" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="436.5,-90 436.5,-120 530.5,-120 530.5,-90 436.5,-90"/>
 <text text-anchor="start" x="444.5" y="-108" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.resolve</text>
@@ -82,86 +82,86 @@
 </a>
 </g>
 </g>
-<!-- Node193&#45;&gt;Node195 -->
-<g id="edge4" class="edge"><title>Node193&#45;&gt;Node195</title>
+<!-- Node274&#45;&gt;Node276 -->
+<g id="edge4" class="edge"><title>Node274&#45;&gt;Node276</title>
 <path fill="none" stroke="midnightblue" d="M369.105,-127.981C388.19,-124.114 408.412,-120.015 426.413,-116.367"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="427.339,-119.75 436.445,-114.334 425.949,-112.89 427.339,-119.75"/>
 </g>
-<!-- Node196 -->
-<g id="node6" class="node"><title>Node196</title>
+<!-- Node277 -->
+<g id="node6" class="node"><title>Node277</title>
 <g id="a_node6"><a xlink:href="namespacekoala_1_1utils.html#a77ace10251dde2f09a457b7b469208cc" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="592.5,-190.5 592.5,-209.5 703.5,-209.5 703.5,-190.5 592.5,-190.5"/>
 <text text-anchor="middle" x="648" y="-197.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.split_range</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node196 -->
-<g id="edge5" class="edge"><title>Node195&#45;&gt;Node196</title>
+<!-- Node276&#45;&gt;Node277 -->
+<g id="edge5" class="edge"><title>Node276&#45;&gt;Node277</title>
 <path fill="none" stroke="midnightblue" d="M530.763,-118.256C537.928,-121.447 544.949,-125.324 551,-130 572.955,-146.964 564.604,-164.623 587,-181 589.646,-182.935 592.496,-184.677 595.465,-186.246"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="594.099,-189.469 604.649,-190.447 597.011,-183.104 594.099,-189.469"/>
 </g>
-<!-- Node197 -->
-<g id="node7" class="node"><title>Node197</title>
+<!-- Node278 -->
+<g id="node7" class="node"><title>Node278</title>
 <g id="a_node7"><a xlink:href="namespacekoala_1_1utils.html#a152ac1827f4fdbd036d6e67cdf3acebb" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="597.5,-152.5 597.5,-171.5 698.5,-171.5 698.5,-152.5 597.5,-152.5"/>
 <text text-anchor="middle" x="648" y="-159.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_range</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node197 -->
-<g id="edge6" class="edge"><title>Node195&#45;&gt;Node197</title>
+<!-- Node276&#45;&gt;Node278 -->
+<g id="edge6" class="edge"><title>Node276&#45;&gt;Node278</title>
 <path fill="none" stroke="midnightblue" d="M524.482,-120.048C547.864,-128.804 575.064,-138.9 587,-143 593.103,-145.096 599.584,-147.237 605.944,-149.289"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="605.174,-152.718 615.765,-152.423 607.302,-146.049 605.174,-152.718"/>
 </g>
-<!-- Node198 -->
-<g id="node8" class="node"><title>Node198</title>
+<!-- Node279 -->
+<g id="node8" class="node"><title>Node279</title>
 <g id="a_node8"><a xlink:href="namespacekoala_1_1utils.html#a5c70ac45916995934736ab28b501c8c5" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="587,-114.5 587,-133.5 709,-133.5 709,-114.5 587,-114.5"/>
 <text text-anchor="middle" x="648" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.split_address</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node198 -->
-<g id="edge7" class="edge"><title>Node195&#45;&gt;Node198</title>
+<!-- Node276&#45;&gt;Node279 -->
+<g id="edge7" class="edge"><title>Node276&#45;&gt;Node279</title>
 <path fill="none" stroke="midnightblue" d="M530.631,-110.394C544.948,-112.068 561.066,-113.952 576.641,-115.773"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="576.434,-119.273 586.772,-116.958 577.247,-112.32 576.434,-119.273"/>
 </g>
-<!-- Node199 -->
-<g id="node9" class="node"><title>Node199</title>
+<!-- Node280 -->
+<g id="node9" class="node"><title>Node280</title>
 <g id="a_node9"><a xlink:href="namespacekoala_1_1utils.html#a65476c62402a00e3d46dbc99b6a4ea88" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="597.5,-76.5 597.5,-95.5 698.5,-95.5 698.5,-76.5 597.5,-76.5"/>
 <text text-anchor="middle" x="648" y="-83.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.col2num</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node199 -->
-<g id="edge8" class="edge"><title>Node195&#45;&gt;Node199</title>
+<!-- Node276&#45;&gt;Node280 -->
+<g id="edge8" class="edge"><title>Node276&#45;&gt;Node280</title>
 <path fill="none" stroke="midnightblue" d="M530.631,-99.6062C548.207,-97.5512 568.498,-95.1787 587.165,-92.9961"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="587.815,-96.444 597.341,-91.8063 587.002,-89.4914 587.815,-96.444"/>
 </g>
-<!-- Node200 -->
-<g id="node10" class="node"><title>Node200</title>
+<!-- Node281 -->
+<g id="node10" class="node"><title>Node281</title>
 <g id="a_node10"><a xlink:href="namespacekoala_1_1utils.html#a2037076cc5a6fbf884023917a0cbfca7" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="597.5,-38.5 597.5,-57.5 698.5,-57.5 698.5,-38.5 597.5,-38.5"/>
 <text text-anchor="middle" x="648" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.num2col</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node200 -->
-<g id="edge9" class="edge"><title>Node195&#45;&gt;Node200</title>
+<!-- Node276&#45;&gt;Node281 -->
+<g id="edge9" class="edge"><title>Node276&#45;&gt;Node281</title>
 <path fill="none" stroke="midnightblue" d="M523.766,-89.9365C542.784,-82.7705 565.999,-74.2132 587,-67 593.103,-64.9036 599.584,-62.7632 605.944,-60.7107"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="607.302,-63.9511 615.765,-57.5766 605.174,-57.2824 607.302,-63.9511"/>
 </g>
-<!-- Node201 -->
-<g id="node11" class="node"><title>Node201</title>
+<!-- Node282 -->
+<g id="node11" class="node"><title>Node282</title>
 <g id="a_node11"><a xlink:href="namespacekoala_1_1utils.html#aabb45efe6343cf3795888c77a434d47d" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="603,-0.5 603,-19.5 693,-19.5 693,-0.5 603,-0.5"/>
 <text text-anchor="middle" x="648" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.flatten</text>
 </a>
 </g>
 </g>
-<!-- Node195&#45;&gt;Node201 -->
-<g id="edge10" class="edge"><title>Node195&#45;&gt;Node201</title>
+<!-- Node276&#45;&gt;Node282 -->
+<g id="edge10" class="edge"><title>Node276&#45;&gt;Node282</title>
 <path fill="none" stroke="midnightblue" d="M501.106,-89.933C520.474,-73.0456 554.055,-45.8322 587,-29 591.275,-26.8157 595.85,-24.8216 600.496,-23.0166"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="601.834,-26.2549 610.06,-19.577 599.465,-19.668 601.834,-26.2549"/>
 </g>

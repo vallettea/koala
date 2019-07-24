@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['cell2code',['cell2code',['../namespacekoala_1_1ast.html#abb76e7037309a032effde5e5078a86e2',1,'koala::ast']]],
   ['cell_5fadd',['cell_add',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#affd17089825c4b3391c4d6b9b702209c',1,'koala::Spreadsheet::Spreadsheet']]],
   ['cell_5fevaluate',['cell_evaluate',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a8e83a93df65a29d4748b427cb4d77bb2',1,'koala::Spreadsheet::Spreadsheet']]],
   ['cell_5ffix',['cell_fix',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a89ffab272ebf76d8e0e331c95234dd2a',1,'koala::Spreadsheet::Spreadsheet']]],
@@ -10,6 +11,7 @@ var searchData=
   ['cells',['cells',['../classkoala_1_1_range_1_1_range_core.html#ac19e8ad2bbd1538974240f9be227c9f0',1,'koala::Range::RangeCore']]],
   ['check_5flength',['check_length',['../namespacekoala_1_1utils.html#a1d80e85797c8f7a229a19957c55aa0a1',1,'koala::utils']]],
   ['check_5fvalue',['check_value',['../namespacekoala_1_1_range.html#aa99855dc7e7d8117eaa831a081e1a6f9',1,'koala::Range']]],
+  ['children',['children',['../classkoala_1_1ast_1_1astnodes_1_1_a_s_t_node.html#a9322df59c36ac87385501b4f0d5a25ec',1,'koala::ast::astnodes::ASTNode']]],
   ['choose',['choose',['../namespacekoala_1_1excellib.html#a15fb7955c0709210665c5bb46d40a174',1,'koala::excellib']]],
   ['clean_5fname',['clean_name',['../classkoala_1_1_cell_1_1_cell.html#a6a9fb3af4ac7878a39c83ffcea12ee38',1,'koala::Cell::Cell']]],
   ['clean_5fpointer',['clean_pointer',['../classkoala_1_1_excel_compiler_1_1_excel_compiler.html#acc0d92cedbf60c6584390c2a4d3d2fbc',1,'koala.ExcelCompiler.ExcelCompiler.clean_pointer()'],['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a13c2cbec203d01d4d8404e3954dd27d7',1,'koala.Spreadsheet.Spreadsheet.clean_pointer(self)'],['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a13c2cbec203d01d4d8404e3954dd27d7',1,'koala.Spreadsheet.Spreadsheet.clean_pointer(self)']]],
@@ -24,7 +26,7 @@ var searchData=
   ['counta',['counta',['../namespacekoala_1_1excellib.html#a4b16a369e21f5b97601caffd07d45e35',1,'koala::excellib']]],
   ['countif',['countif',['../namespacekoala_1_1excellib.html#a2093289e7e91ce2015f3bade22a03df1',1,'koala::excellib']]],
   ['countifs',['countifs',['../namespacekoala_1_1excellib.html#ab862890501984c3c1dd522f3ac0078ee',1,'koala::excellib']]],
-  ['create_5fnode',['create_node',['../namespacekoala_1_1tokenizer.html#a16d87c96a27770230fe1b3fdeea03586',1,'koala::tokenizer']]],
+  ['create_5fnode',['create_node',['../namespacekoala_1_1ast.html#a39876c353cfbf071723ede9b5a59eda4',1,'koala.ast.create_node()'],['../namespacekoala_1_1tokenizer.html#a16d87c96a27770230fe1b3fdeea03586',1,'koala.tokenizer.create_node()']]],
   ['criteria_5fparser',['criteria_parser',['../namespacekoala_1_1utils.html#a5dea8afacb1182723a22bcc85e9f8a68',1,'koala::utils']]],
   ['current',['current',['../classkoala_1_1tokenizer_1_1f__tokens.html#af8ffaf63f0c25d0e24fdbbb034d9ccbe',1,'koala::tokenizer::f_tokens']]]
 ];

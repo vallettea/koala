@@ -1,4 +1,5 @@
 <map id="koala.Spreadsheet.Spreadsheet.prune_graph" name="koala.Spreadsheet.Spreadsheet.prune_graph">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,248,47"/>
-<area shape="rect" id="node2" href="$namespacekoala_1_1utils.html#a152ac1827f4fdbd036d6e67cdf3acebb" title=" " alt="" coords="296,13,431,39"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,23,248,65"/>
+<area shape="rect" id="node2" href="$namespacekoala_1_1ast.html#abd606614d39f5230c3d493d1400c60ed" title=" " alt="" coords="296,5,467,32"/>
+<area shape="rect" id="node3" href="$namespacekoala_1_1utils.html#a152ac1827f4fdbd036d6e67cdf3acebb" title=" " alt="" coords="314,56,449,83"/>
 </map>

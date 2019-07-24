@@ -24,7 +24,7 @@ for the JavaScript code in this file
 var NAVTREE =
 [
   [ "Koala", "index.html", [
-    [ "Excel functions available:", "md__c_1__users_bradb__documents__python_branch_koala_koala_koala__readme.html", null ],
+    [ "Excel functions available:", "md_koala_koala__readme.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
@@ -52,7 +52,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "____init_____8py.html",
-"excellib_8py.html#adb87ff7387784b86c96b4107b4fb58e7"
+"classkoala_1_1tokenizer_1_1f__tokens.html#af1e84634766c1d36d7b46cbdd7228eca"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -1,8 +1,27 @@
 var searchData=
 [
-  ['length',['length',['../classkoala_1_1_range_1_1_range_core.html#a98d61a7518f67f49d4024d58f2136eee',1,'koala::Range::RangeCore']]],
-  ['linest',['linest',['../namespacekoala_1_1excellib.html#a77fc5c6b7cee59ba4549a2422aad71bc',1,'koala::excellib']]],
-  ['load',['load',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a7036ede0e93078708352f5398cd1042d',1,'koala.Spreadsheet.Spreadsheet.load()'],['../namespacekoala_1_1serializer.html#a29d1c4e7579ab514c81982a405d9c893',1,'koala.serializer.load()']]],
-  ['load_5fjson',['load_json',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#aeb14621cc4bca18b8ddb9741dd8885e1',1,'koala.Spreadsheet.Spreadsheet.load_json()'],['../namespacekoala_1_1serializer.html#a2af43b8477f95c72238130b2787a9a34',1,'koala.serializer.load_json()']]],
-  ['lookup',['lookup',['../namespacekoala_1_1excellib.html#a220dc9589a970b12c9d0e63bd0068627',1,'koala::excellib']]]
+  ['id',['id',['../classkoala_1_1_cell_1_1_cell.html#af9e855be757dcabbbc2fa61e63d34a64',1,'koala::Cell::Cell']]],
+  ['iferror',['iferror',['../namespacekoala_1_1excellib.html#acda76345b30bf156c48eca948c1ffbfd',1,'koala::excellib']]],
+  ['inc_5fcol_5faddress',['inc_col_address',['../classkoala_1_1_cell_1_1_cell.html#abb9596a2117f4095a27eab5cddc46f17',1,'koala::Cell::Cell']]],
+  ['inc_5frow_5faddress',['inc_row_address',['../classkoala_1_1_cell_1_1_cell.html#add5ffef213fb74dcbe0e00df5bacb3eb',1,'koala::Cell::Cell']]],
+  ['index',['index',['../classkoala_1_1_cell_1_1_cell.html#a30e177bbb827b412e8fc16b1b89cbc1d',1,'koala.Cell.Cell.index()'],['../namespacekoala_1_1excellib.html#a6dcf62baa7fac4da767ba2674087266b',1,'koala.excellib.index()']]],
+  ['index2addres',['index2addres',['../namespacekoala_1_1utils.html#af031634c3e0574470f15601cb3462677',1,'koala::utils']]],
+  ['int_5ffrom_5fdate',['int_from_date',['../namespacekoala_1_1utils.html#aa1e8802a8e424693b12bf2c3ca1c305f',1,'koala::utils']]],
+  ['irr',['irr',['../namespacekoala_1_1excellib.html#a966c762e51d5b1326d1f3f675ba34663',1,'koala::excellib']]],
+  ['is_5falmost_5fequal',['is_almost_equal',['../namespacekoala_1_1utils.html#a1585473b2fb474970dbc49794309a0e6',1,'koala::utils']]],
+  ['is_5fempty',['is_empty',['../classkoala_1_1_range_1_1_range_core.html#a0cd66cb82fe2bca274bff59b27593b02',1,'koala::Range::RangeCore']]],
+  ['is_5fequal',['is_equal',['../classkoala_1_1_range_1_1_range_core.html#a06ded3b0da724d99e3804d4d2744f7a8',1,'koala::Range::RangeCore']]],
+  ['is_5finferior_5for_5fequal',['is_inferior_or_equal',['../classkoala_1_1_range_1_1_range_core.html#a59561675b3aed193d0492a43de52b852',1,'koala::Range::RangeCore']]],
+  ['is_5fleap_5fyear',['is_leap_year',['../namespacekoala_1_1utils.html#aa5132ee97ef859e71f955428648f3359',1,'koala::utils']]],
+  ['is_5fnot_5fequal',['is_not_equal',['../classkoala_1_1_range_1_1_range_core.html#a8db47d4a388f2d540c3bdab4a1151014',1,'koala::Range::RangeCore']]],
+  ['is_5fnot_5fnumber_5finput',['is_not_number_input',['../namespacekoala_1_1utils.html#adeefbb82b9a8c72e5c67197400767f0b',1,'koala::utils']]],
+  ['is_5fnumber',['is_number',['../namespacekoala_1_1utils.html#af016160edea2b46cb26db3ed307c9648',1,'koala::utils']]],
+  ['is_5fpointer',['is_pointer',['../classkoala_1_1_range_1_1_range_core.html#a4e211fbfab68b302ca239f5c5697b9f1',1,'koala::Range::RangeCore']]],
+  ['is_5frange',['is_range',['../namespacekoala_1_1utils.html#a152ac1827f4fdbd036d6e67cdf3acebb',1,'koala::utils']]],
+  ['is_5fstrictly_5finferior',['is_strictly_inferior',['../classkoala_1_1_range_1_1_range_core.html#a96aef41b36bb121a05c1bbed3422dd84',1,'koala::Range::RangeCore']]],
+  ['is_5fstrictly_5fsuperior',['is_strictly_superior',['../classkoala_1_1_range_1_1_range_core.html#a5ecd2e3f06420d2fc212002ad98ef646',1,'koala::Range::RangeCore']]],
+  ['is_5fsuperior_5for_5fequal',['is_superior_or_equal',['../classkoala_1_1_range_1_1_range_core.html#a8773fb91d158e9b17e6a5df16ed8f00c',1,'koala::Range::RangeCore']]],
+  ['isblank',['isblank',['../namespacekoala_1_1excellib.html#aada95369b90747d0880f7b966e08fc52',1,'koala::excellib']]],
+  ['isna',['isna',['../namespacekoala_1_1excellib.html#acfea225b2da36b765b09769568652dee',1,'koala::excellib']]],
+  ['istext',['istext',['../namespacekoala_1_1excellib.html#a4194ea93fd699b731cb511de3aef3d1b',1,'koala::excellib']]]
 ];

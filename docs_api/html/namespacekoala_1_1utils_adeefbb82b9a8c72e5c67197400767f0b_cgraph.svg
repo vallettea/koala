@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 35)">
 <title>koala.utils.is_not_number_input</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-35 239,-35 239,4 -4,4"/>
-<!-- Node122 -->
-<g id="node1" class="node"><title>Node122</title>
+<!-- Node139 -->
+<g id="node1" class="node"><title>Node139</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-30.5 90,-30.5 90,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_not</text>
@@ -18,16 +18,16 @@
 </a>
 </g>
 </g>
-<!-- Node123 -->
-<g id="node2" class="node"><title>Node123</title>
+<!-- Node140 -->
+<g id="node2" class="node"><title>Node140</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1utils.html#af016160edea2b46cb26db3ed307c9648" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="126,-6 126,-25 235,-25 235,-6 126,-6"/>
 <text text-anchor="middle" x="180.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.is_number</text>
 </a>
 </g>
 </g>
-<!-- Node122&#45;&gt;Node123 -->
-<g id="edge1" class="edge"><title>Node122&#45;&gt;Node123</title>
+<!-- Node139&#45;&gt;Node140 -->
+<g id="edge1" class="edge"><title>Node139&#45;&gt;Node140</title>
 <path fill="none" stroke="midnightblue" d="M90.0829,-15.5C98.2711,-15.5 106.976,-15.5 115.616,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="115.695,-19.0001 125.695,-15.5 115.695,-12.0001 115.695,-19.0001"/>
 </g>

@@ -1,10 +1,11 @@
 <map id="koala.Spreadsheet.Spreadsheet.clean_pointer" name="koala.Spreadsheet.Spreadsheet.clean_pointer">
-<area shape="rect" id="node1" title=" " alt="" coords="5,86,248,127"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,115,248,157"/>
 <area shape="rect" id="node2" href="$namespacekoala_1_1utils.html#a152ac1827f4fdbd036d6e67cdf3acebb" title=" " alt="" coords="345,5,480,32"/>
 <area shape="rect" id="node3" href="$namespacekoala_1_1_range.html#a6a4a2138705cb8cc069ddf925e74d2c1" title=" " alt="" coords="334,57,491,98"/>
-<area shape="rect" id="node4" href="$namespacekoala_1_1tokenizer.html#a7f139df974dde56bd118de8edbc7356a" title=" " alt="" coords="315,123,510,149"/>
-<area shape="rect" id="node6" href="$classkoala_1_1_spreadsheet_1_1_spreadsheet.html#af4c45ee9335aadc10ba61c0db30a33b2" title=" " alt="" coords="296,198,529,239"/>
-<area shape="rect" id="node5" href="$namespacekoala_1_1tokenizer.html#a16d87c96a27770230fe1b3fdeea03586" title=" " alt="" coords="577,123,763,149"/>
-<area shape="rect" id="node7" href="$namespacekoala_1_1tokenizer.html#aad729e834025da12ee669f20324a9eb8" title=" " alt="" coords="580,189,760,216"/>
-<area shape="rect" id="node8" href="$namespacekoala_1_1utils.html#aabb45efe6343cf3795888c77a434d47d" title=" " alt="" coords="610,240,730,267"/>
+<area shape="rect" id="node4" href="$namespacekoala_1_1ast.html#a76e6cdc1c1338001a6d0c4ac4a038087" title=" " alt="" coords="333,123,493,149"/>
+<area shape="rect" id="node6" href="$namespacekoala_1_1ast.html#a36277633c59487f9b1c1b256df41e942" title=" " alt="" coords="347,173,478,200"/>
+<area shape="rect" id="node7" href="$classkoala_1_1_spreadsheet_1_1_spreadsheet.html#af4c45ee9335aadc10ba61c0db30a33b2" title=" " alt="" coords="296,249,529,290"/>
+<area shape="rect" id="node5" href="$namespacekoala_1_1ast.html#a39876c353cfbf071723ede9b5a59eda4" title=" " alt="" coords="592,123,743,149"/>
+<area shape="rect" id="node8" href="$namespacekoala_1_1tokenizer.html#aad729e834025da12ee669f20324a9eb8" title=" " alt="" coords="577,231,757,257"/>
+<area shape="rect" id="node9" href="$namespacekoala_1_1utils.html#aabb45efe6343cf3795888c77a434d47d" title=" " alt="" coords="607,281,727,308"/>
 </map>

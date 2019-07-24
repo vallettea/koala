@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 84)">
 <title>koala.Spreadsheet.Spreadsheet.cell_reset</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-84 601,-84 601,4 -4,4"/>
-<!-- Node55 -->
-<g id="node1" class="node"><title>Node55</title>
+<!-- Node87 -->
+<g id="node1" class="node"><title>Node87</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="424,-24.5 424,-54.5 597,-54.5 597,-24.5 424,-24.5"/>
 <text text-anchor="start" x="432" y="-42.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell</text>
@@ -18,13 +18,13 @@
 </a>
 </g>
 </g>
-<!-- Node55&#45;&gt;Node55 -->
-<g id="edge5" class="edge"><title>Node55&#45;&gt;Node55</title>
+<!-- Node87&#45;&gt;Node87 -->
+<g id="edge5" class="edge"><title>Node87&#45;&gt;Node87</title>
 <path fill="none" stroke="midnightblue" d="M548.17,-64.9579C543.494,-69.679 530.938,-73 510.5,-73 476.961,-73 464.646,-64.0566 473.555,-54.659"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="551.639,-64.3887 547.445,-54.659 544.656,-64.88 551.639,-64.3887"/>
 </g>
-<!-- Node56 -->
-<g id="node2" class="node"><title>Node56</title>
+<!-- Node88 -->
+<g id="node2" class="node"><title>Node88</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a2f695c5a3bc3f8812609bd2ba4ebb784" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="211.5,-47.5 211.5,-77.5 384.5,-77.5 384.5,-47.5 211.5,-47.5"/>
 <text text-anchor="start" x="219.5" y="-65.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell</text>
@@ -32,26 +32,26 @@
 </a>
 </g>
 </g>
-<!-- Node55&#45;&gt;Node56 -->
-<g id="edge1" class="edge"><title>Node55&#45;&gt;Node56</title>
+<!-- Node87&#45;&gt;Node88 -->
+<g id="edge1" class="edge"><title>Node87&#45;&gt;Node88</title>
 <path fill="none" stroke="midnightblue" d="M413.777,-49.959C404.03,-51.0241 394.172,-52.1012 384.543,-53.1533"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="414.321,-53.4205 423.882,-48.855 413.561,-46.4619 414.321,-53.4205"/>
 </g>
-<!-- Node58 -->
-<g id="node4" class="node"><title>Node58</title>
+<!-- Node90 -->
+<g id="node4" class="node"><title>Node90</title>
 <g id="a_node4"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#ac1d00a30cd87519d3ad14c293d8f77e3" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="208,-8 208,-27 388,-27 388,-8 208,-8"/>
 <text text-anchor="middle" x="298" y="-15" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.reset</text>
 </a>
 </g>
 </g>
-<!-- Node55&#45;&gt;Node58 -->
-<g id="edge3" class="edge"><title>Node55&#45;&gt;Node58</title>
+<!-- Node87&#45;&gt;Node90 -->
+<g id="edge3" class="edge"><title>Node87&#45;&gt;Node90</title>
 <path fill="none" stroke="midnightblue" d="M413.923,-29.511C405.395,-28.6197 396.782,-27.7194 388.309,-26.834"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="413.572,-32.9932 423.882,-30.5518 414.3,-26.0312 413.572,-32.9932"/>
 </g>
-<!-- Node57 -->
-<g id="node3" class="node"><title>Node57</title>
+<!-- Node89 -->
+<g id="node3" class="node"><title>Node89</title>
 <g id="a_node3"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a1330ffeda88c7bc6905a00e80203eb78" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-49.5 0,-79.5 172,-79.5 172,-49.5 0,-49.5"/>
 <text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.set</text>
@@ -59,13 +59,13 @@
 </a>
 </g>
 </g>
-<!-- Node56&#45;&gt;Node57 -->
-<g id="edge2" class="edge"><title>Node56&#45;&gt;Node57</title>
+<!-- Node88&#45;&gt;Node89 -->
+<g id="edge2" class="edge"><title>Node88&#45;&gt;Node89</title>
 <path fill="none" stroke="midnightblue" d="M201.216,-63.4122C191.506,-63.5047 181.69,-63.5982 172.104,-63.6895"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="201.316,-66.9115 211.282,-63.3164 201.249,-59.9119 201.316,-66.9115"/>
 </g>
-<!-- Node59 -->
-<g id="node5" class="node"><title>Node59</title>
+<!-- Node91 -->
+<g id="node5" class="node"><title>Node91</title>
 <g id="a_node5"><a xlink:href="classkoala_1_1tokenizer_1_1f__tokens.html#a1df5a19ba4f87270ec0f127e65de9463" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="23.5,-0.5 23.5,-30.5 148.5,-30.5 148.5,-0.5 23.5,-0.5"/>
 <text text-anchor="start" x="31.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.tokenizer.f_tokens.</text>
@@ -73,8 +73,8 @@
 </a>
 </g>
 </g>
-<!-- Node58&#45;&gt;Node59 -->
-<g id="edge4" class="edge"><title>Node58&#45;&gt;Node59</title>
+<!-- Node90&#45;&gt;Node91 -->
+<g id="edge4" class="edge"><title>Node90&#45;&gt;Node91</title>
 <path fill="none" stroke="midnightblue" d="M197.569,-16.553C180.846,-16.3938 163.934,-16.2327 148.537,-16.0861"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="197.908,-20.0563 207.941,-16.6518 197.975,-13.0566 197.908,-20.0563"/>
 </g>

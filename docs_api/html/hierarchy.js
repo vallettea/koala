@@ -9,6 +9,14 @@ var hierarchy =
       ] ]
     ] ],
     [ "object", null, [
+      [ "koala.ast.astnodes.ASTNode", "classkoala_1_1ast_1_1astnodes_1_1_a_s_t_node.html", [
+        [ "koala.ast.astnodes.FunctionNode", "classkoala_1_1ast_1_1astnodes_1_1_function_node.html", null ],
+        [ "koala.ast.astnodes.OperandNode", "classkoala_1_1ast_1_1astnodes_1_1_operand_node.html", [
+          [ "koala.ast.astnodes.RangeNode", "classkoala_1_1ast_1_1astnodes_1_1_range_node.html", null ]
+        ] ],
+        [ "koala.ast.astnodes.OperatorNode", "classkoala_1_1ast_1_1astnodes_1_1_operator_node.html", null ]
+      ] ],
+      [ "koala.ast.Operator", "classkoala_1_1ast_1_1_operator.html", null ],
       [ "koala.CellBase.CellBase", "classkoala_1_1_cell_base_1_1_cell_base.html", [
         [ "koala.Cell.Cell", "classkoala_1_1_cell_1_1_cell.html", null ]
       ] ],

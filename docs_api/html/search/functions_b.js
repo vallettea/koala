@@ -1,12 +1,13 @@
 var searchData=
 [
-  ['name',['name',['../classkoala_1_1_range_1_1_range_core.html#a0e96adc653c190ff9be43604d0ed1567',1,'koala::Range::RangeCore']]],
-  ['ncols',['ncols',['../classkoala_1_1_range_1_1_range_core.html#a3aff4dbaaaec2551ac8a0998fbf86232',1,'koala::Range::RangeCore']]],
-  ['next',['next',['../classkoala_1_1tokenizer_1_1f__tokens.html#a3f4c8df9019172e2e2a9967f3fa19e6d',1,'koala::tokenizer::f_tokens']]],
-  ['next_5fid',['next_id',['../classkoala_1_1_cell_1_1_cell.html#a9d7edc8e98471ce580cc8a47d760b487',1,'koala::Cell::Cell']]],
-  ['normalize_5fyear',['normalize_year',['../namespacekoala_1_1utils.html#a6a29ca0b64c84fe42f7d41190820477c',1,'koala::utils']]],
-  ['npv',['npv',['../namespacekoala_1_1excellib.html#afc429f93f04e1a0a4f234f8ed00d2ef4',1,'koala::excellib']]],
-  ['nrows',['nrows',['../classkoala_1_1_range_1_1_range_core.html#a9d8d088c32adb89141b9db1a6d91a6bd',1,'koala::Range::RangeCore']]],
-  ['num2col',['num2col',['../namespacekoala_1_1utils.html#a2037076cc5a6fbf884023917a0cbfca7',1,'koala::utils']]],
-  ['numeric_5ferror',['numeric_error',['../namespacekoala_1_1utils.html#a344ae2d72b1cec3fadbfec9418af8394',1,'koala::utils']]]
+  ['make_5fcells',['make_cells',['../classkoala_1_1_cell_1_1_cell.html#ab1fa079614840ca386e0970338c2d8f0',1,'koala::Cell::Cell']]],
+  ['make_5fsubgraph',['make_subgraph',['../namespacekoala_1_1ast.html#abd606614d39f5230c3d493d1400c60ed',1,'koala::ast']]],
+  ['match',['match',['../namespacekoala_1_1excellib.html#aec922e2af2f0bbae178762d2ab9b0b07',1,'koala::excellib']]],
+  ['max_5fdimension',['max_dimension',['../namespacekoala_1_1utils.html#a71673869f44a8e5ee678759d1c099ada',1,'koala::utils']]],
+  ['mid',['mid',['../namespacekoala_1_1excellib.html#a5fd245f2e542fb6f8f85f207c4f4de53',1,'koala::excellib']]],
+  ['minus',['minus',['../classkoala_1_1_range_1_1_range_core.html#a119d090dd5f2737d2f261578eaeb4622',1,'koala::Range::RangeCore']]],
+  ['mod',['mod',['../namespacekoala_1_1excellib.html#aaf6fec0b936df4e4c1a8f0e146fddafe',1,'koala::excellib']]],
+  ['month',['month',['../namespacekoala_1_1excellib.html#a66569fac1521a5ac9a579cbbb1ac3138',1,'koala::excellib']]],
+  ['movenext',['moveNext',['../classkoala_1_1tokenizer_1_1f__tokens.html#a6e37705a95fc75bad0b35a1502b94a40',1,'koala::tokenizer::f_tokens']]],
+  ['multiply',['multiply',['../classkoala_1_1_range_1_1_range_core.html#a5fe100f117b3c2ba846c0f39977788e6',1,'koala::Range::RangeCore']]]
 ];

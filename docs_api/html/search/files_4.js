@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['serializer_2epy',['serializer.py',['../serializer_8py.html',1,'']]],
-  ['spreadsheet_2epy',['Spreadsheet.py',['../_spreadsheet_8py.html',1,'']]]
+  ['range_2epy',['Range.py',['../_range_8py.html',1,'']]],
+  ['reader_2epy',['reader.py',['../reader_8py.html',1,'']]],
+  ['readme_2emd',['Readme.md',['../_readme_8md.html',1,'']]]
 ];

@@ -9,16 +9,16 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 53)">
 <title>koala.Spreadsheet.Spreadsheet.reset</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-53 393,-53 393,4 -4,4"/>
-<!-- Node216 -->
-<g id="node1" class="node"><title>Node216</title>
+<!-- Node298 -->
+<g id="node1" class="node"><title>Node298</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-6 0,-25 180,-25 180,-6 0,-6"/>
 <text text-anchor="middle" x="90" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.reset</text>
 </a>
 </g>
 </g>
-<!-- Node217 -->
-<g id="node2" class="node"><title>Node217</title>
+<!-- Node299 -->
+<g id="node2" class="node"><title>Node299</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a6a30676c4bbc56ea5d6f78f073312b6e" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="216,-0.5 216,-30.5 389,-30.5 389,-0.5 216,-0.5"/>
 <text text-anchor="start" x="224" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell</text>
@@ -26,13 +26,13 @@
 </a>
 </g>
 </g>
-<!-- Node216&#45;&gt;Node217 -->
-<g id="edge1" class="edge"><title>Node216&#45;&gt;Node217</title>
+<!-- Node298&#45;&gt;Node299 -->
+<g id="edge1" class="edge"><title>Node298&#45;&gt;Node299</title>
 <path fill="none" stroke="midnightblue" d="M180.271,-15.5C188.636,-15.5 197.138,-15.5 205.561,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="205.78,-19.0001 215.78,-15.5 205.78,-12.0001 205.78,-19.0001"/>
 </g>
-<!-- Node217&#45;&gt;Node217 -->
-<g id="edge2" class="edge"><title>Node217&#45;&gt;Node217</title>
+<!-- Node299&#45;&gt;Node299 -->
+<g id="edge2" class="edge"><title>Node299&#45;&gt;Node299</title>
 <path fill="none" stroke="midnightblue" d="M265.555,-30.659C256.646,-40.0566 268.961,-49 302.5,-49 322.938,-49 335.494,-45.679 340.17,-40.9579"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="343.639,-40.3887 339.445,-30.659 336.656,-40.88 343.639,-40.3887"/>
 </g>

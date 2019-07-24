@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 53)">
 <title>koala.Spreadsheet.Spreadsheet.cell_reset</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-53 177,-53 177,4 -4,4"/>
-<!-- Node54 -->
-<g id="node1" class="node"><title>Node54</title>
+<!-- Node86 -->
+<g id="node1" class="node"><title>Node86</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-30.5 173,-30.5 173,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.cell</text>
@@ -18,8 +18,8 @@
 </a>
 </g>
 </g>
-<!-- Node54&#45;&gt;Node54 -->
-<g id="edge1" class="edge"><title>Node54&#45;&gt;Node54</title>
+<!-- Node86&#45;&gt;Node86 -->
+<g id="edge1" class="edge"><title>Node86&#45;&gt;Node86</title>
 <path fill="none" stroke="midnightblue" d="M56.5255,-30.659C49.2975,-40.0566 59.2891,-49 86.5,-49 103.082,-49 113.269,-45.679 117.062,-40.9579"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="120.539,-40.4433 116.475,-30.659 113.55,-40.8422 120.539,-40.4433"/>
 </g>

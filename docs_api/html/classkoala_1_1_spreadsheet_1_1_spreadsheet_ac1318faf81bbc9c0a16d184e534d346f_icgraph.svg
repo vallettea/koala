@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 35)">
 <title>koala.Spreadsheet.Spreadsheet.build_spreadsheet</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-35 393,-35 393,4 -4,4"/>
-<!-- Node18 -->
-<g id="node1" class="node"><title>Node18</title>
+<!-- Node34 -->
+<g id="node1" class="node"><title>Node34</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="210,-0.5 210,-30.5 389,-30.5 389,-0.5 210,-0.5"/>
 <text text-anchor="start" x="218" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.build</text>
@@ -18,8 +18,8 @@
 </a>
 </g>
 </g>
-<!-- Node19 -->
-<g id="node2" class="node"><title>Node19</title>
+<!-- Node35 -->
+<g id="node2" class="node"><title>Node35</title>
 <g id="a_node2"><a xlink:href="classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a80d6ad19a13ccd80ca76f3f94975f7b5" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 174,-30.5 174,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.Spreadsheet.Spreadsheet.gen</text>
@@ -27,8 +27,8 @@
 </a>
 </g>
 </g>
-<!-- Node18&#45;&gt;Node19 -->
-<g id="edge1" class="edge"><title>Node18&#45;&gt;Node19</title>
+<!-- Node34&#45;&gt;Node35 -->
+<g id="edge1" class="edge"><title>Node34&#45;&gt;Node35</title>
 <path fill="none" stroke="midnightblue" d="M199.831,-15.5C191.271,-15.5 182.652,-15.5 174.203,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="199.839,-19.0001 209.839,-15.5 199.839,-12.0001 199.839,-19.0001"/>
 </g>

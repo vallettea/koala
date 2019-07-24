@@ -5,6 +5,7 @@ var searchData=
   ['find_5fassociated_5fvalue',['find_associated_value',['../classkoala_1_1_range_1_1_range_core.html#a561f0c1be0e94cd2fe9d70dfa1cbbed2',1,'koala::Range::RangeCore']]],
   ['find_5fcorresponding_5findex',['find_corresponding_index',['../namespacekoala_1_1utils.html#ad21271884394217f55fa9144173c9e1e',1,'koala::utils']]],
   ['find_5fpointer_5farguments',['find_pointer_arguments',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a6f233266d3e106c54dc37886dba18e9a',1,'koala::Spreadsheet::Spreadsheet']]],
+  ['find_5fspecial_5ffunction',['find_special_function',['../classkoala_1_1ast_1_1astnodes_1_1_a_s_t_node.html#af5d93a96498bf5dd549a35d419917334',1,'koala::ast::astnodes::ASTNode']]],
   ['fix_5fcell',['fix_cell',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a9d7718c6c87f06155aea63d7e12344f3',1,'koala::Spreadsheet::Spreadsheet']]],
   ['flatten',['flatten',['../namespacekoala_1_1utils.html#aabb45efe6343cf3795888c77a434d47d',1,'koala::utils']]],
   ['flatten_5flist',['flatten_list',['../namespacekoala_1_1utils.html#a21c9c36dbb89c2f907eb5bc3bc2f56aa',1,'koala::utils']]],

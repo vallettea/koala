@@ -9,63 +9,63 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 138)">
 <title>koala.utils.date_from_int</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-138 278,-138 278,4 -4,4"/>
-<!-- Node34 -->
-<g id="node1" class="node"><title>Node34</title>
+<!-- Node43 -->
+<g id="node1" class="node"><title>Node43</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="#bfbfbf" stroke="black" points="152,-57.5 152,-76.5 274,-76.5 274,-57.5 152,-57.5"/>
 <text text-anchor="middle" x="213" y="-64.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.utils.date_from_int</text>
 </a>
 </g>
 </g>
-<!-- Node35 -->
-<g id="node2" class="node"><title>Node35</title>
+<!-- Node44 -->
+<g id="node2" class="node"><title>Node44</title>
 <g id="a_node2"><a xlink:href="namespacekoala_1_1excellib.html#ae4d8e7957ed6e634cb78fbbfa9cc5898" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-114.5 0,-133.5 116,-133.5 116,-114.5 0,-114.5"/>
 <text text-anchor="middle" x="58" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.eomonth</text>
 </a>
 </g>
 </g>
-<!-- Node34&#45;&gt;Node35 -->
-<g id="edge1" class="edge"><title>Node34&#45;&gt;Node35</title>
+<!-- Node43&#45;&gt;Node44 -->
+<g id="edge1" class="edge"><title>Node43&#45;&gt;Node44</title>
 <path fill="none" stroke="midnightblue" d="M179.425,-80.4115C160.921,-87.899 137.272,-97.2513 116,-105 107.179,-108.213 97.5153,-111.515 88.6916,-114.447"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="180.914,-83.5843 188.859,-76.5753 178.277,-77.0999 180.914,-83.5843"/>
 </g>
-<!-- Node36 -->
-<g id="node3" class="node"><title>Node36</title>
+<!-- Node45 -->
+<g id="node3" class="node"><title>Node45</title>
 <g id="a_node3"><a xlink:href="namespacekoala_1_1excellib.html#ae09c8176bd57c233c6d55f6644c15c65" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="9,-76.5 9,-95.5 107,-95.5 107,-76.5 9,-76.5"/>
 <text text-anchor="middle" x="58" y="-83.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.year</text>
 </a>
 </g>
 </g>
-<!-- Node34&#45;&gt;Node36 -->
-<g id="edge2" class="edge"><title>Node34&#45;&gt;Node36</title>
+<!-- Node43&#45;&gt;Node45 -->
+<g id="edge2" class="edge"><title>Node43&#45;&gt;Node45</title>
 <path fill="none" stroke="midnightblue" d="M141.734,-75.7258C129.997,-77.1833 118.064,-78.6653 107.048,-80.0333"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="142.477,-79.1605 151.969,-74.4548 141.614,-72.2139 142.477,-79.1605"/>
 </g>
-<!-- Node37 -->
-<g id="node4" class="node"><title>Node37</title>
+<!-- Node46 -->
+<g id="node4" class="node"><title>Node46</title>
 <g id="a_node4"><a xlink:href="namespacekoala_1_1excellib.html#a66569fac1521a5ac9a579cbbb1ac3138" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="5,-38.5 5,-57.5 111,-57.5 111,-38.5 5,-38.5"/>
 <text text-anchor="middle" x="58" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.month</text>
 </a>
 </g>
 </g>
-<!-- Node34&#45;&gt;Node37 -->
-<g id="edge3" class="edge"><title>Node34&#45;&gt;Node37</title>
+<!-- Node43&#45;&gt;Node46 -->
+<g id="edge3" class="edge"><title>Node43&#45;&gt;Node46</title>
 <path fill="none" stroke="midnightblue" d="M141.818,-58.2846C131.589,-57.0143 121.208,-55.7251 111.413,-54.5088"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="141.614,-61.7861 151.969,-59.5452 142.477,-54.8395 141.614,-61.7861"/>
 </g>
-<!-- Node38 -->
-<g id="node5" class="node"><title>Node38</title>
+<!-- Node47 -->
+<g id="node5" class="node"><title>Node47</title>
 <g id="a_node5"><a xlink:href="namespacekoala_1_1excellib.html#a298991fcfa2174f09d7d5627a1e50b79" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="1.5,-0.5 1.5,-19.5 114.5,-19.5 114.5,-0.5 1.5,-0.5"/>
 <text text-anchor="middle" x="58" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">koala.excellib.yearfrac</text>
 </a>
 </g>
 </g>
-<!-- Node34&#45;&gt;Node38 -->
-<g id="edge4" class="edge"><title>Node34&#45;&gt;Node38</title>
+<!-- Node43&#45;&gt;Node47 -->
+<g id="edge4" class="edge"><title>Node43&#45;&gt;Node47</title>
 <path fill="none" stroke="midnightblue" d="M179.425,-53.5885C160.921,-46.101 137.272,-36.7487 116,-29 107.179,-25.7868 97.5153,-22.4845 88.6916,-19.553"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="178.277,-56.9001 188.859,-57.4247 180.914,-50.4157 178.277,-56.9001"/>
 </g>

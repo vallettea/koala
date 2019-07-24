@@ -1,12 +1,8 @@
 var searchData=
 [
-  ['make_5fcells',['make_cells',['../classkoala_1_1_cell_1_1_cell.html#ab1fa079614840ca386e0970338c2d8f0',1,'koala::Cell::Cell']]],
-  ['match',['match',['../namespacekoala_1_1excellib.html#aec922e2af2f0bbae178762d2ab9b0b07',1,'koala::excellib']]],
-  ['max_5fdimension',['max_dimension',['../namespacekoala_1_1utils.html#a71673869f44a8e5ee678759d1c099ada',1,'koala::utils']]],
-  ['mid',['mid',['../namespacekoala_1_1excellib.html#a5fd245f2e542fb6f8f85f207c4f4de53',1,'koala::excellib']]],
-  ['minus',['minus',['../classkoala_1_1_range_1_1_range_core.html#a119d090dd5f2737d2f261578eaeb4622',1,'koala::Range::RangeCore']]],
-  ['mod',['mod',['../namespacekoala_1_1excellib.html#aaf6fec0b936df4e4c1a8f0e146fddafe',1,'koala::excellib']]],
-  ['month',['month',['../namespacekoala_1_1excellib.html#a66569fac1521a5ac9a579cbbb1ac3138',1,'koala::excellib']]],
-  ['movenext',['moveNext',['../classkoala_1_1tokenizer_1_1f__tokens.html#a6e37705a95fc75bad0b35a1502b94a40',1,'koala::tokenizer::f_tokens']]],
-  ['multiply',['multiply',['../classkoala_1_1_range_1_1_range_core.html#a5fe100f117b3c2ba846c0f39977788e6',1,'koala::Range::RangeCore']]]
+  ['length',['length',['../classkoala_1_1_range_1_1_range_core.html#a98d61a7518f67f49d4024d58f2136eee',1,'koala::Range::RangeCore']]],
+  ['linest',['linest',['../namespacekoala_1_1excellib.html#a77fc5c6b7cee59ba4549a2422aad71bc',1,'koala::excellib']]],
+  ['load',['load',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a7036ede0e93078708352f5398cd1042d',1,'koala.Spreadsheet.Spreadsheet.load()'],['../namespacekoala_1_1serializer.html#a29d1c4e7579ab514c81982a405d9c893',1,'koala.serializer.load()']]],
+  ['load_5fjson',['load_json',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#aeb14621cc4bca18b8ddb9741dd8885e1',1,'koala.Spreadsheet.Spreadsheet.load_json()'],['../namespacekoala_1_1serializer.html#a2af43b8477f95c72238130b2787a9a34',1,'koala.serializer.load_json()']]],
+  ['lookup',['lookup',['../namespacekoala_1_1excellib.html#a220dc9589a970b12c9d0e63bd0068627',1,'koala::excellib']]]
 ];
