@@ -44,7 +44,7 @@ A calculation in Pycel is done in 2 steps:
 The `reset` is important because it sets each reset Cell to "I need an update" state, represented by a `None` value. Then, all Cells dependent of the input Cell will be reset.
 
 2) `evaluate(output_cell)`: starting from the output Cell, the algorithm will climb up the tree and evaluate all Cells that need to. If a Cell doesn't need evaluation, its value is sent back to the previous node, where the calculation is done.
-You can think about it as a climb up to get all non resetted values necessary for the calculation (i.e Cells not impacted by the `set_value()`), and a climb down to calculate at each node its new value, until you reach the output Cell. 
+You can think about it as a climb up to get all non resetted values necessary for the calculation (i.e. Cells not impacted by the `set_value()`), and a climb down to calculate at each node its new value, until you reach the output Cell.
 
 
 ## First steps
@@ -65,7 +65,7 @@ c = ExcelCompiler(file)
 ### Adapt Pycel structure
 The core of Koala is inspired by Pycel, which does most of the work we need.
 But, as we are going to see later on in this post, a lot of its functionalities were coded for relatively simple use cases, which is definitely not our case. We had to find a project structure more adapted to the complexity of the project
-The following structure is the fruit of our many reflexions while working on the project, and might still evolve in the future.
+The following structure is the fruit of our many reflections while working on the project, and might still evolve in the future.
 
 ```
 ast/ // holds all AST logic, that handles the graphs
@@ -86,9 +86,9 @@ Spreadsheet.py // our Spreadsheet class
 Adding Excel functions in Pycel is very easy. You just need to take a missing function, look up its signature in [Excel reference](https://support.office.com/en-us/home), write it in Python, and put it in `excellib.py`.
 In Koala, it was just as easy, since we used the same philosophy as Pycel.
 
-We added more than 20 functions to be able to calculate our sheets, but also had to modify to some extent the existant ones, so that they match with the Koala code.
+We added more than 20 functions to be able to calculate our sheets, but also had to modify to some extent the existing ones, so that they match with the Koala code.
 
-For now, there are 33 functions coded in Koala, which covers most of the usual cases. 
+For now, there are 33 functions coded in Koala, which covers most of the usual cases.
 But there is still a lot of work to do, since there are more than 400 functions in Excel.
 
 ### Reducing graph size
@@ -129,16 +129,16 @@ Basic operations on Ranges output unusual results.
 #### Range basic operations
 Figures
 
-This is because Excel chooses to operate only the Cells associated to the calling Cell, meaning the Cells that are inlined horizontally or vertically with the Cell holding the formula. If one of the Ranges is not associated to the calling Cell, it outputs a `#VALUE!` error.
+This is because Excel chooses to operate only the Cells associated to the calling Cell, meaning the Cells that are in-lined horizontally or vertically with the Cell holding the formula. If one of the Ranges is not associated to the calling Cell, it outputs a `#VALUE!` error.
 
 This makes sense if you consider Excel as a table, which it basically is, but not so much if you forget about the GUI of Excel, which we do with Koala.
 
 #### Sumproduct
 Figures
-Some functions such as [`SUMPRODUCT`](https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e) have still a differente behavior.
+Some functions such as [`SUMPRODUCT`](https://support.office.com/en-us/article/SUMPRODUCT-function-16753e75-9f68-4874-94ac-4d2145a2fd2e) have still a different behavior.
 Any Range operation inside the `SUMPRODUCT` function is a term by term operation. Then the result is just the sum of the operated Range.
 
-This works independantly of if the Ranges are associated to the calling Cell.
+This works independently of if the Ranges are associated to the calling Cell.
 
 
 We needed to have a class that would fit these special behaviors, while being adapted to the graph philosophy.
@@ -236,7 +236,7 @@ We'll see later how to be more effective with this solution.
 
 Pointer functions can be a problem at the time of reducing the graph. If we decide to use graph reduction (which we want to do), all cells not in the calculation chain will be left aside. In the previous example, `C2` is not in the graph, although it is needed for the calculation. At the time of evaluation, this situation will trigger an error of type `Cell C2 is not in the graph`.
 
-A solution to this issue is to precalculate the outputs of pointer functions.
+A solution to this issue is to pre-calculate the outputs of pointer functions.
 
 The idea is pretty simple:
 - identify all cells that have at least one pointer function in their formula
@@ -294,7 +294,7 @@ We need to introduce a new `Range` concept: the Pointer Range.
 
 As we have seen before, a `Range` holds a list of `Cell` references.
 The main problem with Pointer Ranges is that you don't know a priori the start and end of the `Range`, due to potential varying arguments.
-This means you can't create this list of `Cell` references until you actually know the complete extent of that list, which will be at evaluation. 
+This means you can't create this list of `Cell` references until you actually know the complete extent of that list, which will be at evaluation.
 
 So a Pointer Range should be a hollow Range that does not hold anything but the formulas to evaluate the start/end `Cell` references. These formulas will be used on evaluation to create the `Cell` reference list and actually build the `Range`.
 
@@ -360,7 +360,7 @@ rng.build('%s:%s' % (start, end))
 
 Now we have an up-to-date pointer Range that we can evaluate as usual.
 
-It is important to notice though that this is binded to resetting ALL pointer Ranges on `set_value()`. We need to do that because the link between the input and the pointer Range is not always direct.
+It is important to notice though that this is bound to resetting ALL pointer Ranges on `set_value()`. We need to do that because the link between the input and the pointer Range is not always direct.
 For instance, with this example:
 ```
 A2 = 2
@@ -412,7 +412,7 @@ def detect_alive(self, inputs = None, outputs = None):
 
             for child in self.G.successors_iter(cell):
                 todo.append(child)
-  
+
             done.add(cell)
 
     self.pointers_to_reset = alive

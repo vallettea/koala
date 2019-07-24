@@ -31,7 +31,7 @@ python setup.py install
 #### Graph generation
 
 The first thing you need is to convert your workbook into a graph.
-This operation may take some time depending on the size of your workbook (we've used koalo on workbooks containg more than 100 000 intricated formulas).
+This operation may take some time depending on the size of your workbook (we've used koala on workbooks containing more than 100 000 intricated formulas).
 
 ```
 from koala.ExcelCompiler import ExcelCompiler
@@ -43,13 +43,13 @@ If this step fails, ensure that your Excel file is recent and in standalone mode
 
 #### Graph Serialization
 
-As the previous convertion can be long on big graphs, it is often useful to dump the graph to a file:
+As the previous conversion can be long on big graphs, it is often useful to dump the graph to a file:
 
 ```
 sp.dump('file.gzip')
 ```
 
-which can be relaoded later with:
+which can be reloaded later with:
 
 ```
 sp = Spreadsheet.load('file.gzip')
@@ -87,7 +87,7 @@ In case you have very big files, you might want to reduce the size of the output
 
 #### Volatiles
 
-Volatiles are functions that might output a reference to Cell rather than a specific value, which impose a reevaluation everytime. Typical examples are INDEX and OFFSET.
+Volatiles are functions that might output a reference to Cell rather than a specific value, which impose a reevaluation every time. Typical examples are INDEX and OFFSET.
 
 After having created the graph, you can use `clean_pointers` to fix the value of the pointers to their initial values, which reduces the graph size and decreases the evaluation times:
 
@@ -95,12 +95,12 @@ After having created the graph, you can use `clean_pointers` to fix the value of
 sp.clean_pointers()
 ```
 
-**Warning:** this implies that Cells concerned by these functions will be fixed permanently. If you evaluate a cell whose modified parents are separated by a pointer, you may encounter errors. 
+**Warning:** this implies that Cells concerned by these functions will be fixed permanently. If you evaluate a cell whose modified parents are separated by a pointer, you may encounter errors.
 WIP: we are working on automatic detection of the required pointers.
 
 #### Outputs
 
-You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size wil be reduced.
+You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size will be reduced.
 
 ```
 sp = sp.gen_graph(inputs=['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
@@ -108,7 +108,7 @@ sp = sp.gen_graph(inputs=['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
 
 #### Pruning inputs
 
-In this case, all Cells not impacted by inputs Cells will be discarded, and your graph size wil be reduced.
+In this case, all Cells not impacted by inputs Cells will be discarded, and your graph size will be reduced.
 
 ```
 sp = sp.prune_graph()
@@ -147,7 +147,7 @@ The `string` you pass as argument needs to be written with Excel syntax.
 ** You will find more examples and sample excel files in the directory `examples`.**
 
 #### Detect alive
-To check if you have "alive pointers", i.e, pointer functions that have one of your inputs as argument, you can use:
+To check if you have "alive pointers", i.e., pointer functions that have one of your inputs as argument, you can use:
 
 ```
 sp.detect_alive(inputs = [...], outputs = [...])
