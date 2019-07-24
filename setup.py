@@ -24,8 +24,7 @@ if __name__ == '__main__':
 
         license="GNU GPL3",
         description=(
-            "A python module to extract all the content of an Excel document "
-            "and enable calculation without Excel"
+            "A python module to extract all the content of an Excel document and enable calculation without Excel"
         ),
         long_description_content_type='text/markdown',
         long_description=long_description,
