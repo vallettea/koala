@@ -175,8 +175,13 @@ class Spreadsheet(object):
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
-
+        if inputs == [] and outputs == []:
+            self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
+        else:
+            sp = Spreadsheet()
+            sp.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
+            return sp
+    
     def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
         """
         Writes the elements created by gen_graph to the object
