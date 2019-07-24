@@ -258,7 +258,11 @@ def col2num(col):
             if c == '$': continue
             tot += (ord(c)-64) * 26 ** i
 
+        if tot > 16384:
+            raise Exception("Column ordinal must be left of XFD: %s" % col)
+
         col2num_cache[col] = tot
+
         return tot
 
 num2col_cache = {}
@@ -268,7 +272,10 @@ def num2col(num):
         return num2col_cache[num]
     else:
         if num < 1:
-            raise Exception("Number must be larger than 0: %s" % num)
+            raise Exception("Column ordinal must be larger than 0: %s" % num)
+
+        elif num > 16384:
+            raise Exception("Column ordinal must be less than than 16384: %s" % num)
 
         s = ''
         q = num
