@@ -1,3 +1,5 @@
+from types import GeneratorType
+
 import unittest
 
 import koala.utils as utils
@@ -28,7 +30,7 @@ class TestUtil(unittest.TestCase):
         self.assertTrue('Column ordinal must be larger than 0: 0' in str(context.exception))
 
         with self.assertRaises(Exception) as context:
-            utils.num2col(16385)
+            utils.num2col(16385) #XFE
         self.assertTrue('Column ordinal must be less than than 16384: 16385' in str(context.exception))
 
     def test_split_address(self):
@@ -114,14 +116,61 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(('Sheet1', 'A1', 'XFE1'), utils.split_range('Sheet1!A1:XFE1')) # invalid address
 
 
-        self.assertEqual((None, None, None), utils.split_range('#REF!')) # valid address, un-splittable
+        # self.assertEqual((None, None, None), utils.split_range('#REF!')) # valid address, un-splittable
 
-    def test_max_dimension(self):
-        """
-        Testing max_dimension
-        """
+    # def test_max_dimension(self):
+    #     """
+    #     Testing max_dimension
+    #     """
+    #     # need to know how to build or mock a cellmap, leaving this for
+    #     pass
 
-        self.assertEqual(('Sheet1', 'A1', 'A2'), utils.split_range('Sheet1!A1:A2'))
+    # def test_resolve_range(self):
+    #     """
+    #     Testing resolve_range
+    #     """
+    #     # TODO: change split_range to return only valid range addresses
+    #     # TODO: I'm not certain this is correct - ('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'). I would have expected ('Sheet 1', 'A1', 'A2')
+    #
+    #     pass
+
+    def test_address2index(self):
+        """
+        Testing address2index
+        """
+        self.assertEqual((1, 1), utils.address2index('Sheet1!A1'))
+        self.assertEqual((16384, 1), utils.address2index('Sheet1!XFD1'))
+        self.assertEqual((1, 1048576), utils.address2index('Sheet1!A1048576'))
+
+        self.assertEqual((1, 0), utils.address2index('Sheet1!A0')) # not a valid address
+
+        with self.assertRaises(Exception) as context:
+            utils.address2index('Sheet1!XFE1') #16385
+        self.assertTrue('Column ordinal must be left of XFD: XFE' in str(context.exception))
+        self.assertEqual((1, 1048577), utils.address2index('Sheet1!A1048577')) # not a valid address
+
+    def test_index2addres(self):
+        """
+        Testing index2addres
+        """
+        self.assertEqual('A1', utils.index2addres(1, 1))
+        self.assertEqual('Sheet1!A1', utils.index2addres(1, 1, 'Sheet1'))
+        self.assertEqual('XFD1', utils.index2addres(16384, 1))
+        self.assertEqual('A1048576', utils.index2addres(1, 1048576))
+
+        self.assertEqual('A0', utils.index2addres(1, 0)) # not a valid address
+
+        with self.assertRaises(Exception) as context:
+            utils.index2addres(16385, 1) # XFE
+        self.assertTrue('Column ordinal must be less than than 16384: 16385' in str(context.exception))
+        self.assertEqual('A1048577', utils.index2addres(1, 1048577)) # not a valid address
+
+    # def test_get_linest_degree(self):
+    #     """
+    #     Testing get_linest_degree
+    #     """
+    #     pass
+
 
 
 if __name__ == '__main__':

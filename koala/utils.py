@@ -158,7 +158,7 @@ def resolve_range(rng, should_flatten = False, sheet=''):
     """"""
     # TODO: add pydoc
     # TODO: add logging
-    # TODO: make magic numbers global eg; start_col = "A", end_col = "XFD", start_row = 1, and end_row = 2**20
+    # TODO: make magic numbers global eg; start_col = "A", end_col = "XFD", start_row = 1, end_row = 2**20 = 1048576
 
     if ':' not in rng:
         if '!' in rng:
@@ -303,12 +303,12 @@ def num2col(num):
         return s
 
 
-def address2index(a):
+def address2index(address):
     """"""
     # TODO: add pydoc
     # TODO: add logging
 
-    sheet, column, row = split_address(a)
+    sheet, column, row = split_address(address)
     return (col2num(column),int(row))
 
 def index2addres(column, row, sheet=None):
