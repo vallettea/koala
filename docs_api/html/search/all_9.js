@@ -6,7 +6,7 @@ var searchData=
   ['inc_5frow_5faddress',['inc_row_address',['../classkoala_1_1_cell_1_1_cell.html#add5ffef213fb74dcbe0e00df5bacb3eb',1,'koala::Cell::Cell']]],
   ['ind_5ffun',['IND_FUN',['../namespacekoala_1_1excellib.html#ac7390ca692d08cef563747bf68366d50',1,'koala::excellib']]],
   ['index',['index',['../classkoala_1_1tokenizer_1_1f__tokens.html#a6ec4ebd1ba29f4c4beb9499e8bd4b529',1,'koala.tokenizer.f_tokens.index()'],['../classkoala_1_1_cell_1_1_cell.html#a30e177bbb827b412e8fc16b1b89cbc1d',1,'koala.Cell.Cell.index()'],['../namespacekoala_1_1excellib.html#a6dcf62baa7fac4da767ba2674087266b',1,'koala.excellib.index()']]],
-  ['index2addres',['index2addres',['../namespacekoala_1_1utils.html#af031634c3e0574470f15601cb3462677',1,'koala::utils']]],
+  ['index2addres',['index2addres',['../namespacekoala_1_1utils.html#a0f71e1a528bfb85e982246f961151507',1,'koala::utils']]],
   ['info',['info',['../classkoala_1_1_excel_error_1_1_excel_error.html#aedbb2a29c1b23f4ab7826b19fd3181e7',1,'koala::ExcelError::ExcelError']]],
   ['inputs',['inputs',['../classkoala_1_1_spreadsheet_1_1_spreadsheet.html#a7c2ca0de9d581f7de25d46459efda26c',1,'koala::Spreadsheet::Spreadsheet']]],
   ['int_5ffrom_5fdate',['int_from_date',['../namespacekoala_1_1utils.html#aa1e8802a8e424693b12bf2c3ca1c305f',1,'koala::utils']]],

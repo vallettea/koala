@@ -5,7 +5,7 @@ var searchData=
   ['inc_5fcol_5faddress',['inc_col_address',['../classkoala_1_1_cell_1_1_cell.html#abb9596a2117f4095a27eab5cddc46f17',1,'koala::Cell::Cell']]],
   ['inc_5frow_5faddress',['inc_row_address',['../classkoala_1_1_cell_1_1_cell.html#add5ffef213fb74dcbe0e00df5bacb3eb',1,'koala::Cell::Cell']]],
   ['index',['index',['../classkoala_1_1_cell_1_1_cell.html#a30e177bbb827b412e8fc16b1b89cbc1d',1,'koala.Cell.Cell.index()'],['../namespacekoala_1_1excellib.html#a6dcf62baa7fac4da767ba2674087266b',1,'koala.excellib.index()']]],
-  ['index2addres',['index2addres',['../namespacekoala_1_1utils.html#af031634c3e0574470f15601cb3462677',1,'koala::utils']]],
+  ['index2addres',['index2addres',['../namespacekoala_1_1utils.html#a0f71e1a528bfb85e982246f961151507',1,'koala::utils']]],
   ['int_5ffrom_5fdate',['int_from_date',['../namespacekoala_1_1utils.html#aa1e8802a8e424693b12bf2c3ca1c305f',1,'koala::utils']]],
   ['irr',['irr',['../namespacekoala_1_1excellib.html#a966c762e51d5b1326d1f3f675ba34663',1,'koala::excellib']]],
   ['is_5falmost_5fequal',['is_almost_equal',['../namespacekoala_1_1utils.html#a1585473b2fb474970dbc49794309a0e6',1,'koala::utils']]],
