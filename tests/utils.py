@@ -3,99 +3,126 @@ import unittest
 import koala.utils as utils
 
 class TestUtil(unittest.TestCase):
-    def test_col2num_A(self):
-        """
-        Test that it can turn 'A' into 1
-        """
-        data = 'A'
-        result = utils.col2num(data)
-        self.assertEqual(result, 1)
 
-    def test_num2col_1(self):
+    def test_col2num(self):
         """
-        Test that it can turn 1 into 'A'
+        Testing col2num
         """
-        data = 1
-        result = utils.num2col(data)
-        self.assertEqual(result, 'A')
+        self.assertEqual(1, utils.col2num('A'))
+        self.assertEqual(53, utils.col2num('BA'))
 
-    def test_col2num_BF(self):
-        """
-        Test that it can turn 'BA' into 53
-        """
-        data = 'BA'
-        result = utils.col2num(data)
-        self.assertEqual(result, 53)
-
-    def test_num2col_53(self):
-        """
-        Test that it can turn 53 into BA
-        """
-        data = 53
-        result = utils.num2col(data)
-        self.assertEqual(result, 'BA')
-
-    def test_num2col_0(self):
-        """
-        Test that it can turn 53 into BA
-        """
-        data = 0
         with self.assertRaises(Exception) as context:
-            utils.num2col(data)
-
-        self.assertTrue('Column ordinal must be larger than 0: 0' in str(context.exception))
-
-    def test_num2col_16385(self):
-        """
-        Test that it won't go beyond 16384 (which is XFD)
-        """
-        data = 16385
-        with self.assertRaises(Exception) as context:
-            utils.num2col(data)
-
-        self.assertTrue('Column ordinal must be less than than 16384: 16385' in str(context.exception))
-
-    def test_col2num_XFE(self):
-        """
-        Test that it returns an error when columns are beyond 'XFD'
-        """
-        data = 'XFE'
-        with self.assertRaises(Exception) as context:
-            utils.col2num(data)
-
+            utils.col2num('XFE')
         self.assertTrue('Column ordinal must be left of XFD: XFE' in str(context.exception))
 
-    def test_split_address_Sheet1A1(self):
-        """
-        Test that it can split address Sheet1!A1
-        """
-        data = 'Sheet1!A1'
-        result = utils.split_address(data)
-        self.assertEqual(result, ('Sheet1', 'A', '1'))
 
-    def test_split_address_Sheet1A0(self):
+    def test_num2col(self):
         """
-        Test that it can split address Sheet1!A1
+        Testing num2col
         """
-        data = 'Sheet1!A0'
-        result = utils.split_address(data)
-        self.assertEqual(result, ('Sheet1', 'A', '0'))
+        self.assertEqual('A', utils.num2col(1))
+        self.assertEqual('BA', utils.num2col(53))
 
-    def test_split_address_Sheet1XFE1(self):
-        """
-        Test that it can split address Sheet1!A1
-        """
-        data = 'Sheet1!XFE1'
-        result = utils.split_address(data)
-        self.assertEqual(result, ('Sheet1', 'XFE', '1'))
+        with self.assertRaises(Exception) as context:
+            utils.num2col(0)
+        self.assertTrue('Column ordinal must be larger than 0: 0' in str(context.exception))
 
-    def test_split_address_Sheet1XFE0(self):
+        with self.assertRaises(Exception) as context:
+            utils.num2col(16385)
+        self.assertTrue('Column ordinal must be less than than 16384: 16385' in str(context.exception))
+
+    def test_split_address(self):
         """
-        Test that it can split address Sheet1!A1
+        Testing split_address
+
+        TODO change utils.split_address to check that the address is valid.
         """
-        data = 'Sheet1!XFE0'
-        result = utils.split_address(data)
-        self.assertEqual(result, ('Sheet1', 'XFE', '0'))
+        self.assertEqual(('Sheet1', 'A', '1'), utils.split_address('Sheet1!A1'))
+        self.assertEqual(('Sheet1', 'A', '0'), utils.split_address('Sheet1!A0')) # not a valid address
+        self.assertEqual(('Sheet1', 'XFE', '1'), utils.split_address('Sheet1!XFE1')) # not a valid address
+        self.assertEqual(('Sheet1', 'XFE', '0'), utils.split_address('Sheet1!XFE0')) # not a valid address
+
+    def test_is_almost_equal(self):
+        """
+        Testing is_almost_equal
+        """
+        self.assertEqual(True, utils.is_almost_equal(0, 0))
+        self.assertEqual(True, utils.is_almost_equal(1.0, 1.0))
+        self.assertEqual(True, utils.is_almost_equal(0.1, 0.1))
+        self.assertEqual(True, utils.is_almost_equal(0.01, 0.01))
+        self.assertEqual(True, utils.is_almost_equal(0.001, 0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.0001, 0.0001))
+        self.assertEqual(True, utils.is_almost_equal(0.00001, 0.00001))
+        self.assertEqual(True, utils.is_almost_equal(0.000001, 0.000001))
+
+        self.assertEqual(False, utils.is_almost_equal(0, 0.1))
+        self.assertEqual(False, utils.is_almost_equal(0, 0.01))
+        self.assertEqual(False, utils.is_almost_equal(0, 0.001))
+        self.assertEqual(True, utils.is_almost_equal(0, 0.0001))
+
+        self.assertEqual(False, utils.is_almost_equal(0, 1))
+
+        self.assertEqual(True, utils.is_almost_equal(0, 0, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(1.0, 1.0, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.1, 0.1, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.01, 0.01, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.001, 0.001, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.0001, 0.0001, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.00001, 0.00001, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0.000001, 0.000001, precision=0.001))
+
+        self.assertEqual(False, utils.is_almost_equal(0, 0.1, precision=0.001))
+        self.assertEqual(False, utils.is_almost_equal(0, 0.01, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0, 0.001, precision=0.001))
+        self.assertEqual(True, utils.is_almost_equal(0, 0.0001, precision=0.001))
+
+        self.assertEqual(True, utils.is_almost_equal(None, None))
+        self.assertEqual(True, utils.is_almost_equal(None, 'None'))
+        self.assertEqual(True, utils.is_almost_equal('None', None))
+        self.assertEqual(True, utils.is_almost_equal('None', 'None'))
+        self.assertEqual(True, utils.is_almost_equal(True, True))
+        self.assertEqual(False, utils.is_almost_equal(True, False))
+        self.assertEqual(True, utils.is_almost_equal('foo', 'foo'))
+        self.assertEqual(False, utils.is_almost_equal('foo', 'bar'))
+
+    def test_is_range(self):
+        """
+        Testing is_range
+
+        TODO change utils.is_range to accept only valid ranges.
+        """
+        self.assertEqual(True, utils.is_range('A1:A2'))
+        self.assertEqual(True, utils.is_range('Sheet1!A1:A2'))
+        self.assertEqual(True, utils.is_range('Sheet1!A:B'))
+        self.assertEqual(False, utils.is_range('::param::')) #correctly borks on this
+
+        self.assertEqual(True, utils.is_range('foo:bar')) # not a valid range
+
+    def test_split_range(self):
+        """
+        Testing split_range
+        """
+        # TODO: change split_range to return only valid range addresses
+        # TODO: I'm not certain this is correct - ('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'). I would have expected ('Sheet 1', 'A1', 'A2')
+
+        self.assertEqual(('Sheet1', 'A1', 'A2'), utils.split_range('Sheet1!A1:A2'))
+        self.assertEqual(('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'))
+        self.assertEqual((None, 'A', 'A'), utils.split_range('A:A'))
+        self.assertEqual((None, '1', '2'), utils.split_range('1:2'))
+
+        self.assertEqual(('Sheet1', 'A1', 'A16385'), utils.split_range('Sheet1!A1:A16385')) # invalid address
+        self.assertEqual(('Sheet1', 'A1', 'XFE1'), utils.split_range('Sheet1!A1:XFE1')) # invalid address
+
+
+        self.assertEqual((None, None, None), utils.split_range('#REF!')) # valid address, un-splittable
+
+    def test_max_dimension(self):
+        """
+        Testing max_dimension
+        """
+
+        self.assertEqual(('Sheet1', 'A1', 'A2'), utils.split_range('Sheet1!A1:A2'))
+
 
 if __name__ == '__main__':
     unittest.main()

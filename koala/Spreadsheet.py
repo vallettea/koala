@@ -21,6 +21,9 @@ from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
+    """"""
+    # TODO: Unravel Spreadsheet/cellmap. Not researched yet but maybe make an object called cellmap and have it as an attribute of Spreadsheet
+
     def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, debug=False):
         # print("___### Initializing Excel Compiler ###___")
 

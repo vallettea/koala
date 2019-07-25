@@ -4,6 +4,7 @@ from __future__ import absolute_import, division
 
 import collections
 import numbers
+import string
 import re
 import datetime as dt
 try:
@@ -17,7 +18,7 @@ from openpyxl.compat import unicode
 
 from .ExcelError import ExcelError
 
-ASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+# TODO: We have a lot of caches that seem unmanaged. We load into them, but I'm yet to find an unload.
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excelutil.py
 
@@ -28,6 +29,10 @@ CELL_REF_RE = re.compile(r"(\$?[A-Za-z]{1,3})(\$?[1-9][0-9]{0,6})$")
 # We might need to test these util functions
 
 def is_almost_equal(a, b, precision = 0.0001):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     if is_number(a) and is_number(b):
         return abs(float(a) - float(b)) <= precision
     elif (a is None or a == 'None') and (b is None or b == 'None'):
@@ -36,6 +41,13 @@ def is_almost_equal(a, b, precision = 0.0001):
         return str(a) == str(b)
 
 def is_range(address):
+    """"""
+    # TODO: add pydoc
+    # TODO: find why utils.is_range would ever be called with an exception as an address and fix that.
+    # TODO: change utils.is_range to accept only valid ranges.
+    # TODO: handle #REF!
+    # TODO: add logging
+
     if isinstance(address, Exception):
         return address
     return address.find(':') > 0
@@ -44,27 +56,38 @@ def is_range(address):
 split_range_cache = {}
 
 def split_range(rng):
+    """"""
+    # TODO: change split_range to return only valid range addresses
+    # TODO: handle #REF!
+    # TODO: I'm not certain this is correct - ('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'). I would have expected ('Sheet 1', 'A1', 'A2')
+    # TODO: add pydoc
+    # TODO: add logging
+
     if rng in split_range_cache:
         return split_range_cache[rng]
     else:
         if rng.find('!') > 0:
-            start,end = rng.split(':')
+            start, end = rng.split(':')
             if start.find('!') > 0:
-                sh,start = start.split("!")
+                sheet, start = start.split("!")
             if end.find('!') > 0:
-                sh,end = end.split("!")
+                sheet, end = end.split("!")
         else:
-            sh = None
-            start,end = rng.split(':')
+            sheet = None
+            start, end = rng.split(':')
 
-        split_range_cache[rng] = (sh, start, end)
-        return (sh,start,end)
+        split_range_cache[rng] = (sheet, start, end)
+        return (sheet, start, end)
 
 
 split_address_cache = {}
 
 
 def split_address(address):
+    """"""
+    # TODO: handle #REF!
+    # TODO: add pydoc
+    # TODO: change utils.split_address to check that the address is valid.
 
     if address in split_address_cache:
         return split_address_cache[address]
@@ -114,7 +137,10 @@ def max_dimension(cellmap, sheet = None):
     :param cellmap: all the cells that should be used to calculate the maximum.
     :param sheet:  (optionally) a string with the sheet name.
     :return: a tupple of two integers, the first being the rows and the second being the columns.
+
     """
+    # TODO: not currently tested as I'm trying to unravel the relationship between Spreadsheet and cellmap
+    # TODO: add logging
 
     cells = list(cellmap.values())
     rows = 0
@@ -128,10 +154,12 @@ def max_dimension(cellmap, sheet = None):
 
 
 resolve_range_cache = {}
-
-
 def resolve_range(rng, should_flatten = False, sheet=''):
-    # print 'RESOLVE RANGE splitting', rng
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: make magic numbers global eg; start_col = "A", end_col = "XFD", start_row = 1, and end_row = 2**20
+
     if ':' not in rng:
         if '!' in rng:
             rng = rng.split('!')
@@ -185,30 +213,6 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         start_row = int(start_row)
         end_row = int(end_row)
 
-        # Attempt to use Numpy, not relevant for now
-
-        # num2col_vec = np.vectorize(num2col)
-        # r = np.array([range(start_row, end_row + 1),]*nb_col, dtype='a5').T
-        # c = num2col_vec(np.array([range(start_col_idx, end_col_idx + 1),]*nb_row))
-        # if len(sheet)>0:
-        #     s = np.chararray((nb_row, nb_col), itemsize=len(sheet))
-        #     s[:] = sheet
-        #     c = np.core.defchararray.add(s, c)
-        # B = np.core.defchararray.add(c, r)
-
-
-        # if start_col == end_col:
-        #     data = B.T.tolist()[0]
-        #     return data, len(data), 1
-        # elif start_row == end_row:
-        #     data = B.tolist()[0]
-        #     return data, 1, len(data)
-        # else:
-        #     if should_flatten:
-        #         return B.flatten().tolist(), 1, nb_col*nb_row
-        #     else:
-        #         return B.tolist(), nb_row, nb_col
-
         # single column
         if  start_col == end_col:
             nrows = end_row - start_row + 1
@@ -246,6 +250,10 @@ def resolve_range(rng, should_flatten = False, sheet=''):
 col2num_cache = {}
 # e.g., convert BA -> 53
 def col2num(col):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: expand single letter variable names to something more meaningful
 
     if col in col2num_cache:
         return col2num_cache[col]
@@ -268,6 +276,11 @@ def col2num(col):
 num2col_cache = {}
 # convert back
 def num2col(num):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: expand single letter variable names to something more meaningful
+
     if num in num2col_cache:
         return num2col_cache[num]
     else:
@@ -284,21 +297,34 @@ def num2col(num):
             if r == 0:
                 q = q - 1
                 r = 26
-            s = ASCII[r-1] + s
+            s = string.ascii_uppercase[r-1] + s
 
         num2col_cache[num] = s
         return s
 
 
 def address2index(a):
-    sh,c,r = split_address(a)
-    return (col2num(c),int(r))
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
 
-def index2addres(c,r,sheet=None):
-    return "%s%s%s" % (sheet + "!" if sheet else "", num2col(c), r)
+    sheet, column, row = split_address(a)
+    return (col2num(column),int(row))
+
+def index2addres(column, row, sheet=None):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
+    return "%s%s%s" % (sheet + "!" if sheet else "", num2col(column), row)
 
 def get_linest_degree(excel,cl):
-    # TODO: assumes a row or column of linest formulas & that all coefficients are needed
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: expand single letter variable names to something more meaningful
+
+    # TODO assumes a row or column of linest formulas & that all coefficients are needed
 
     sh,c,r,ci = cl.address_parts()
     # figure out where we are in the row
@@ -354,6 +380,10 @@ def get_linest_degree(excel,cl):
     return (max(degree,1),coef)
 
 def flatten(l, only_lists = False):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     instance = list if only_lists else collections.Iterable
 
     for el in l:
@@ -364,12 +394,20 @@ def flatten(l, only_lists = False):
             yield el
 
 def uniqueify(seq):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     seen = set()
     seen_add = seen.add
     return [ x for x in seq if x not in seen and not seen_add(x)]
 
 
 def is_not_number_input(input_value):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     if isinstance(input_value, list):
         return not all([is_number(i) for i in input_value])
     else:
@@ -384,6 +422,8 @@ def flatten_list(nested_list):
     >> list(flatten_list([[1, 2], 3]))
     [1, 2, 3]
     """
+    # TODO: add logging
+
     nested_list = deepcopy(nested_list)
 
     while nested_list:
@@ -396,6 +436,10 @@ def flatten_list(nested_list):
 
 
 def numeric_error(input_value, input_name):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     if isinstance(input_value, ExcelError):
         return input_value
     else:
@@ -403,6 +447,10 @@ def numeric_error(input_value, input_name):
 
 
 def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float-in-python
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     try:
         float(s)
         return True
@@ -410,6 +458,10 @@ def is_number(s): # http://stackoverflow.com/questions/354038/how-do-i-check-if-
         return False
 
 def is_leap_year(year):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     if not is_number(year):
         raise TypeError("%s must be a number" % str(year))
     if year <= 0:
@@ -419,6 +471,10 @@ def is_leap_year(year):
     return (year % 4 == 0 and year % 100 != 0 or year % 400 == 0) or year == 1900
 
 def get_max_days_in_month(month, year):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     if not is_number(year) or not is_number(month):
         raise TypeError("All inputs must be a number")
     if year <= 0 or month <= 0:
@@ -435,6 +491,11 @@ def get_max_days_in_month(month, year):
         return 31
 
 def normalize_year(y, m, d):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: expand single letter variable names to something more meaningful
+
     if m <= 0:
         y -= int(abs(m) / 12 + 1)
         m = 12 - (abs(m) % 12)
@@ -470,6 +531,12 @@ def normalize_year(y, m, d):
     return (y, m, d)
 
 def date_from_int(nb):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: make magic numbers global eg; Excel epoch
+    # TODO: expand two letter variable names to something more meaningful
+
     if not is_number(nb):
         raise TypeError("%s is not a number" % str(nb))
 
@@ -500,12 +567,21 @@ def date_from_int(nb):
     return (current_year, current_month, current_day)
 
 def int_from_date(date):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     temp = dt.date(1899, 12, 30)    # Note, not 31st Dec but 30th!
     delta = date - temp
 
     return float(delta.days) + (float(delta.seconds) / 86400)
 
 def criteria_parser(criteria):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+    # TODO: expand single letter variable names to something more meaningful
+
     if is_number(criteria):
         def check(x):
             try:
@@ -562,12 +638,20 @@ def criteria_parser(criteria):
 
 
 def find_corresponding_index(list, criteria):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     t = tuple(list)
     return _find_corresponding_index(t, criteria)
 
 
 @lru_cache(maxsize=1024)
 def _find_corresponding_index(l, criteria):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
 
     # parse criteria
     check = criteria_parser(criteria)
@@ -583,6 +667,10 @@ def _find_corresponding_index(l, criteria):
 
 
 def check_length(range1, range2):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
 
     if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
@@ -591,6 +679,10 @@ def check_length(range1, range2):
 
 
 def extract_numeric_values(*args):
+    """"""
+    # TODO: add pydoc
+    # TODO: add logging
+
     values = []
 
     for arg in args:
@@ -618,6 +710,8 @@ def old_div(a, b):
     Copied from:
     https://github.com/PythonCharmers/python-future/blob/master/src/past/utils/__init__.py
     """
+    # TODO: add logging
+
     if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
         return a // b
     else:
@@ -625,7 +719,11 @@ def old_div(a, b):
 
 
 def safe_iterator(node, tag=None):
-    """Return an iterator or an empty list"""
+    """
+    Return an iterator or an empty list
+    """
+    # TODO: add logging
+
     if node is None:
         return []
     return node.iter(tag)
