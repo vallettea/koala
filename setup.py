@@ -14,7 +14,7 @@ if __name__ == '__main__':
         version="0.0.37",
 
         author="Ants, open innovation lab",
-        author_email="contact@weareants.fr",
+        author_email="vallettea@gmail.com",
 
         packages=find_packages(),
 
