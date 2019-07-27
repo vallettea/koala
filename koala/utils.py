@@ -421,6 +421,8 @@ def flatten_list(nested_list):
     [1, 2, 3, 4, 5]
     >> list(flatten_list([[1, 2], 3]))
     [1, 2, 3]
+
+    :return: generator
     """
     # TODO: add logging
 
@@ -436,8 +438,8 @@ def flatten_list(nested_list):
 
 
 def numeric_error(input_value, input_name):
-    """"""
-    # TODO: add pydoc
+    """All this method can do is return an exception"""
+    # TODO: improve pydoc
     # TODO: add logging
 
     if isinstance(input_value, ExcelError):
@@ -464,11 +466,13 @@ def is_leap_year(year):
 
     if not is_number(year):
         raise TypeError("%s must be a number" % str(year))
-    if year <= 0:
+
+    year_int = int(year) # TODO: This is a hack. interaction between is_leap_year and is_number are broken
+    if year_int <= 0:
         raise TypeError("%s must be strictly positive" % str(year))
 
     # Watch out, 1900 is a leap according to Excel => https://support.microsoft.com/en-us/kb/214326
-    return (year % 4 == 0 and year % 100 != 0 or year % 400 == 0) or year == 1900
+    return (year_int % 4 == 0 and year_int % 100 != 0 or year_int % 400 == 0) or year_int == 1900
 
 def get_max_days_in_month(month, year):
     """"""
@@ -568,6 +572,8 @@ def date_from_int(nb):
 
 def int_from_date(date):
     """"""
+    # TODO: doesn't return an int, returns a float
+    # TODO: does not resolve 1900-01-01 to 1. it is returned as 2.0
     # TODO: add pydoc
     # TODO: add logging
 
@@ -578,6 +584,7 @@ def int_from_date(date):
 
 def criteria_parser(criteria):
     """"""
+    # TODO: this is incredibly difficult to test as it is the first step in a two step process but this isn't clear from the location of the function, the signature of the function or the doco. Appears to be an optimization which could be more clear done another way. It only ever resolves to a boolean. Needs to be fixed.
     # TODO: add pydoc
     # TODO: add logging
     # TODO: expand single letter variable names to something more meaningful
@@ -593,11 +600,13 @@ def criteria_parser(criteria):
         search = re.search('(\W*)(.*)', criteria.lower()).group
         operator = search(1)
         value = search(2)
-        value = float(value) if is_number(value) else str(value)
+        value = float(value) if is_number(value) else str(value) # TODO: WTF type am I supposed to expect of value?
 
         if operator == '<':
             def check(x):
                 if not is_number(x):
+                    return False # Excel returns False when a string is compared with a value
+                if not is_number(value):
                     return False # Excel returns False when a string is compared with a value
                 return x < value
         elif operator == '>':
@@ -636,22 +645,15 @@ def criteria_parser(criteria):
 
     return check
 
-
+# TODO: good use of an lru_cache? Surely another mechanism is better for running a keyed cache lookup...
+@lru_cache(maxsize=1024)
 def find_corresponding_index(list, criteria):
     """"""
+    # TODO: This is the second step in a two step process. Not made clear by the location of the function, signature of the function or the doco. Hard to test. Seems specific to ExcelLib
     # TODO: add pydoc
     # TODO: add logging
 
-    t = tuple(list)
-    return _find_corresponding_index(t, criteria)
-
-
-@lru_cache(maxsize=1024)
-def _find_corresponding_index(l, criteria):
-    """"""
-    # TODO: add pydoc
-    # TODO: add logging
-
+    l = tuple(list)
 
     # parse criteria
     check = criteria_parser(criteria)
@@ -668,9 +670,9 @@ def _find_corresponding_index(l, criteria):
 
 def check_length(range1, range2):
     """"""
+    # Seems specific to ExcelLib
     # TODO: add pydoc
     # TODO: add logging
-
 
     if len(range1.values) != len(range2.values):
         raise ValueError('Ranges don\'t have the same size')
@@ -680,6 +682,7 @@ def check_length(range1, range2):
 
 def extract_numeric_values(*args):
     """"""
+    # Seems specific to ExcelLib
     # TODO: add pydoc
     # TODO: add logging
 
@@ -722,6 +725,7 @@ def safe_iterator(node, tag=None):
     """
     Return an iterator or an empty list
     """
+    # Seems specific to ExcelLib, or actually, node.
     # TODO: add logging
 
     if node is None:
