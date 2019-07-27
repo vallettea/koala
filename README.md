@@ -49,7 +49,7 @@ As the previous conversion can be long on big graphs, it is often useful to dump
 sp.dump('file.gzip')
 ```
 
-which can be relaoded later with:
+which can be reloaded later with:
 
 ```
 sp = Spreadsheet.load('file.gzip')
@@ -100,7 +100,7 @@ WIP: we are working on automatic detection of the required pointers.
 
 #### Outputs
 
-You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size wil be reduced.
+You can specify the outputs you need. In this case, all Cells not concerned in the calculation of these output Cell will be discarded, and your graph size will be reduced.
 
 ```
 sp = sp.gen_graph(inputs=['Sheet1!A1'], outputs=['Sheet1!D1', Sheet1!D2])
