@@ -9,6 +9,37 @@ from koala.ExcelError import ExcelError
 
 class TestUtil(unittest.TestCase):
 
+    # def test_max_dimension(self):
+    #     """
+    #     Testing max_dimension
+    #     """
+    #     # need to know how to build or mock a cellmap, leaving this for
+    #     pass
+
+    # def test_find_corresponding_index(self):
+    #     """
+    #     Testing find_corresponding_index
+    #     """
+    #     # TODO: This got too hard to test for now, will need to come back later. Seems specific to ExcelLib
+    #     # self.assertTrue(utils.find_corresponding_index((1, 2), "<"))
+
+    # def test_check_length(self):
+    #     """
+    #     Testing check_length
+    #     """
+    #     # TODO: This got too hard to test for now, will need to come back later. Seems specific to ExcelLib
+
+    # def test_extract_numeric_values(self):
+    #     """
+    #     Testing extract_numeric_values
+    #     """
+    #     # Seems specific to ExcelLib
+
+    # def test_safe_iterator(self):
+    #     """
+    #     Testing safe_iterator
+    #     """
+
     def test_col2num(self):
         """
         Testing col2num
@@ -42,10 +73,15 @@ class TestUtil(unittest.TestCase):
 
         TODO change utils.split_address to check that the address is valid.
         """
-        self.assertEqual(('Sheet1', 'A', '1'), utils.split_address('Sheet1!A1'))
-        self.assertEqual(('Sheet1', 'A', '0'), utils.split_address('Sheet1!A0')) # not a valid address
-        self.assertEqual(('Sheet1', 'XFE', '1'), utils.split_address('Sheet1!XFE1')) # not a valid address
-        self.assertEqual(('Sheet1', 'XFE', '0'), utils.split_address('Sheet1!XFE0')) # not a valid address
+        self.assertEqual( ('Sheet1', 'A', '1'), utils.split_address('Sheet1!A1') )
+        self.assertEqual( ('Sheet1', 'A', '0'), utils.split_address('Sheet1!A0') ) # not a valid address
+        self.assertEqual( ('Sheet1', 'XFE', '1'), utils.split_address('Sheet1!XFE1') ) # not a valid address
+        self.assertEqual( ('Sheet1', 'XFE', '0'), utils.split_address('Sheet1!XFE0') ) # not a valid address
+
+        self.assertEqual( (None, 'K', '54'), utils.split_address('K54') )
+        self.assertEqual( ('Sheet1', 'K', '54'), utils.split_address('Sheet1!K54') )
+        self.assertEqual( ('Sheet1', None, '5'), utils.split_address('Sheet1!5') )
+        self.assertEqual( ('Sheet1', 'A', None), utils.split_address('Sheet1!A') )
 
     def test_is_almost_equal(self):
         """
@@ -109,6 +145,7 @@ class TestUtil(unittest.TestCase):
         """
         # TODO: change split_range to return only valid range addresses
         # TODO: I'm not certain this is correct - ('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'). I would have expected ('Sheet 1', 'A1', 'A2')
+        # TODO: #REF! is a valid address, but apparently un-splittable. Handle this.
 
         self.assertEqual(('Sheet1', 'A1', 'A2'), utils.split_range('Sheet1!A1:A2'))
         self.assertEqual(('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'))
@@ -118,24 +155,16 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(('Sheet1', 'A1', 'A16385'), utils.split_range('Sheet1!A1:A16385')) # invalid address
         self.assertEqual(('Sheet1', 'A1', 'XFE1'), utils.split_range('Sheet1!A1:XFE1')) # invalid address
 
-
         # self.assertEqual((None, None, None), utils.split_range('#REF!')) # valid address, un-splittable
 
-    # def test_max_dimension(self):
-    #     """
-    #     Testing max_dimension
-    #     """
-    #     # need to know how to build or mock a cellmap, leaving this for
-    #     pass
-
-    # def test_resolve_range(self):
-    #     """
-    #     Testing resolve_range
-    #     """
-    #     # TODO: change split_range to return only valid range addresses
-    #     # TODO: I'm not certain this is correct - ('"Sheet 1"', 'A1', 'A2'), utils.split_range('"Sheet 1"!A1:A2'). I would have expected ('Sheet 1', 'A1', 'A2')
-    #
-    #     pass
+    def test_resolve_range(self):
+        self.assertEqual( (['Sheet1!A1', 'Sheet1!A2', 'Sheet1!A3'], 3, 1), utils.resolve_range('Sheet1!A1:A3'))
+        self.assertEqual( (['Sheet1!A1', 'Sheet1!B1', 'Sheet1!C1'], 1, 3), utils.resolve_range('Sheet1!A1:C1'))
+        self.assertEqual( ([['Sheet1!A1', 'Sheet1!B1'], ['Sheet1!A2', 'Sheet1!B2']], 2, 2), utils.resolve_range('Sheet1!A1:B2'))
+        self.assertEqual( (2**20, 1), utils.resolve_range('Sheet1!A:A')[1::])
+        self.assertEqual( (2**20, 2), utils.resolve_range('Sheet1!A:B')[1::])
+        self.assertEqual( (1, 2**14), utils.resolve_range('Sheet1!1:1')[1::])
+        self.assertEqual( (2, 2**14), utils.resolve_range('Sheet1!1:2')[1::])
 
     def test_address2index(self):
         """
@@ -310,35 +339,96 @@ class TestUtil(unittest.TestCase):
         self.assertEqual( 365 * 2 + 1 + 1, utils.int_from_date( dt.date(1902, 1, 1) ) )
         self.assertEqual( 365 * 5 + 2 + 1, utils.int_from_date( dt.date(1905, 1, 1) ) )
 
-    # def test_criteria_parser(self):
-    #     """
-    #     Testing criteria_parser
-    #     """
-    #     # TODO: This got too hard to test for now, will need to come back later. Seems specific to ExcelLib
-    #     # check = utils.criteria_parser(2400)
-    #     # valid = [index for index, item in enumerate(l) if check(item)]
-    #     # self.assertFalse(valid[0])
-    #     #
-    #     # self.assertTrue(utils.criteria_parser('<'))
+    def test_criteria_parser_parser_numeric(self):
+        """
+        Testing criteria_parser parser_numeric
+        """
+        self.assertTrue( utils.criteria_parser(3)(3) )
+        self.assertTrue( utils.criteria_parser(4)('4') )
+        self.assertTrue( utils.criteria_parser('4')(4) )
+        self.assertTrue( utils.criteria_parser(4.0)('4') )
+        self.assertTrue( utils.criteria_parser('4')(4.0) )
 
-    # def test_find_corresponding_index(self):
-    #     """
-    #     Testing find_corresponding_index
-    #     """
-    #     # TODO: This got too hard to test for now, will need to come back later. Seems specific to ExcelLib
-    #     # self.assertTrue(utils.find_corresponding_index((1, 2), "<"))
+        self.assertFalse( utils.criteria_parser(2)(4) )
+        self.assertFalse( utils.criteria_parser(4)(2) )
+        self.assertFalse( utils.criteria_parser(4)('A') )
 
-    # def test_check_length(self):
-    #     """
-    #     Testing check_length
-    #     """
-    #     # TODO: This got too hard to test for now, will need to come back later. Seems specific to ExcelLib
+    def test_criteria_parser_parser_not_equal_numeric(self):
+        """
+        Testing criteria_parser parser_not_equal_numeric
+        """
+        self.assertTrue( utils.criteria_parser('<>3')(2) )
+        self.assertFalse( utils.criteria_parser('<>3')(3) )
+        self.assertTrue( utils.criteria_parser('<>3')(4) )
 
-    # def test_extract_numeric_values(self):
-    #     """
-    #     Testing extract_numeric_values
-    #     """
-    #     # Seems specific to ExcelLib
+    def test_criteria_parser_parser_equal_numeric(self):
+        """
+        Testing criteria_parser parser_equal_numeric
+        """
+        self.assertTrue( utils.criteria_parser('=3')(3) )
+        self.assertTrue( utils.criteria_parser('=3.3')(3.3) )
+        self.assertTrue( utils.criteria_parser('=3.0')(3) )
+        self.assertTrue( utils.criteria_parser('=3')(3.0) )
+
+        self.assertFalse( utils.criteria_parser('=3')(2) )
+        self.assertFalse( utils.criteria_parser('=3')(4) )
+
+    def test_criteria_parser_parser_smaller_than_numeric(self):
+        """
+        Testing criteria_parser parser_smaller_than_numeric
+        """
+        self.assertTrue( utils.criteria_parser('<3')(2) )
+        self.assertFalse( utils.criteria_parser('<3')(3) )
+        self.assertFalse( utils.criteria_parser('<3')(4) )
+
+    def test_criteria_parser_parser_larger_than_numeric(self):
+        """
+        Testing criteria_parser parser_larger_than_numeric
+        """
+        self.assertFalse( utils.criteria_parser('>3')(2) )
+        self.assertTrue( utils.criteria_parser('>3')(4) )
+
+        self.assertFalse( utils.criteria_parser('>3')(3) )
+
+    def test_criteria_parser_parser_smaller_than_equal_numeric(self):
+        """
+        Testing criteria_parser parser_smaller_than_equal_numeric
+        """
+        self.assertTrue( utils.criteria_parser('<=3')(2) )
+        self.assertTrue( utils.criteria_parser('<=3')(3) )
+        self.assertFalse( utils.criteria_parser('<=3')(4) )
+
+    def test_criteria_parser_parser_larger_than_equal_numeric(self):
+        """
+        Testing criteria_parser parser_larger_than_equal_numeric
+        """
+        self.assertFalse( utils.criteria_parser('>=3')(2) )
+        self.assertTrue( utils.criteria_parser('>=3')(3) )
+        self.assertTrue( utils.criteria_parser('>=3')(4) )
+
+    def test_criteria_parser_parser_strings(self):
+        """
+        Testing criteria_parser parser_strings
+        """
+        self.assertTrue( utils.criteria_parser('A')('A') )
+        self.assertTrue( utils.criteria_parser('A')('a') )
+        self.assertTrue( utils.criteria_parser('a')('A') )
+        self.assertTrue( utils.criteria_parser('a')('a') )
+
+        self.assertFalse( utils.criteria_parser('A')('B') )
+        self.assertFalse( utils.criteria_parser('A')(1) )
+
+    def test_criteria_parser_parser_strings_equality(self):
+        """
+        Testing criteria_parser parser_strings_equality
+        """
+        self.assertTrue(utils.criteria_parser('=A')('A') )
+        self.assertTrue(utils.criteria_parser('=A')('a') )
+        self.assertTrue(utils.criteria_parser('=a')('A') )
+        self.assertTrue(utils.criteria_parser('=a')('a') )
+        self.assertFalse(utils.criteria_parser('=A')('B') )
+        self.assertFalse(utils.criteria_parser('=A')(1) )
+
 
     def test_old_div(self):
         """
@@ -349,13 +439,6 @@ class TestUtil(unittest.TestCase):
         self.assertEqual( 3, utils.old_div( float(6), float(2) ) )
         self.assertEqual( 3, utils.old_div( int(6), float(2) ) )
         self.assertEqual( 3, utils.old_div( float(6), int(2) ) )
-
-    def test_safe_iterator(self):
-        """
-        Testing safe_iterator
-        """
-
-
 
 if __name__ == '__main__':
     unittest.main()
