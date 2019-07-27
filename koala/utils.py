@@ -63,7 +63,6 @@ def split_range(rng):
 
 split_address_cache = {}
 
-
 def split_address(address):
 
     if address in split_address_cache:
@@ -72,7 +71,7 @@ def split_address(address):
     else:
         sheet = None
         if address.find('!') > 0:
-            sheet, addr = address.split('!')
+            sheet,addr = address.split('!')
         else:
             addr = address
 
@@ -81,7 +80,7 @@ def split_address(address):
 
         # regular <col><row> format
         if re.match('^[A-Z\$]+[\d\$]+$', addr):
-            col,row = [_f for _f in re.split('([A-Z\$]+)', addr) if _f]
+            col,row = [_f for _f in re.split('([A-Z\$]+)',addr) if _f]
         # R<row>C<col> format
         elif re.match('^R\d+C\d+$', addr):
             row,col = addr.split('C')
@@ -103,7 +102,7 @@ def split_address(address):
             raise Exception('Invalid address format ' + addr)
 
         split_address_cache[address] = (sheet, col, row)
-        return sheet, col, row
+        return (sheet,col,row)
 
 
 def max_dimension(cellmap, sheet = None):
@@ -258,10 +257,9 @@ def col2num(col):
             if c == '$': continue
             tot += (ord(c)-64) * 26 ** i
 
+        col2num_cache[col] = tot
         if tot > 16384:
             raise Exception("Column ordinal must be left of XFD: %s" % col)
-
-        col2num_cache[col] = tot
 
         return tot
 
@@ -273,7 +271,6 @@ def num2col(num):
     else:
         if num < 1:
             raise Exception("Column ordinal must be larger than 0: %s" % num)
-
         elif num > 16384:
             raise Exception("Column ordinal must be less than than 16384: %s" % num)
 

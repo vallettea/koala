@@ -62,7 +62,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
     if expression.startswith('='):
         expression = expression[1:]
 
-    p = ExcelParser(tokenize_range=tokenize_range)
+    p = ExcelParser(tokenize_range = tokenize_range);
     p.parse(expression)
 
     # insert tokens for '(' and ')', to make things clearer below
@@ -370,7 +370,7 @@ def cell2code(cell, named_ranges):
 
         e = shunting_yard(cell.formula, named_ranges, ref=ref, tokenize_range = False)
 
-        ast, root = build_ast(e, debug = debug)
+        ast,root = build_ast(e, debug = debug)
         code = root.emit(ast, context=sheet)
 
         # print 'CODE', code, ref
@@ -451,7 +451,7 @@ def graph_from_seeds(seeds, cell_source):
     # when called from ExcelCompiler instance, construct cellmap and graph from seeds
     else: # ~ cell_source is a ExcelCompiler
         cellmap = dict([(x.address(),x) for x in seeds])
-        cells = cell_source.cells
+        cells = cell_source.cellmap
         # directed graph
         G = networkx.DiGraph()
         # match the info in cellmap
@@ -528,7 +528,7 @@ def graph_from_seeds(seeds, cell_source):
 
                 if 'OFFSET' in reference or 'INDEX' in reference:
                     start_end = prepare_pointer(reference, names, ref_cell = c1)
-                    rng = cell_source.range(start_end)
+                    rng = cell_source.Range(start_end)
 
                     if dep_name in names: # dep is a pointer range
                         address = dep_name
@@ -569,9 +569,9 @@ def graph_from_seeds(seeds, cell_source):
                                 cell_new = Cell(addr, sheet_new, value="", should_eval='False') # create new cell object
                                 cellmap[addr] = cell_new # add it to the cellmap
                                 G.add_node(cell_new) # add it to the graph
-                                cell_source.cells[addr] = cell_new # add it to the cell_source, used in this function
+                                cell_source.cellmap[addr] = cell_new # add it to the cell_source, used in this function
 
-                    rng = cell_source.range(reference)
+                    rng = cell_source.Range(reference)
 
                 if address in cellmap:
                     virtual_cell = cellmap[address]
