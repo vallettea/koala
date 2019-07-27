@@ -24,7 +24,7 @@ from openpyxl.compat import unicode
 
 class Spreadsheet(object):
     def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
-        super(Spreadsheet,self).__init__()
+        super().__init__()
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
