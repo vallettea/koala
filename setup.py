@@ -11,10 +11,10 @@ if __name__ == '__main__':
     setup(
         name="koala2",
 
-        version="0.0.37",
+        version="0.0.36",
 
         author="Ants, open innovation lab",
-        author_email="contact@weareants.fr",
+        author_email="vallettea@gmail.com",
 
         packages=find_packages(),
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         url="https://github.com/vallettea/koala",
 
         description=(
-            "A Python module to extract all the content of an Excel document and enable calculation without Excel."
+            "A python module to extract all the content of an Excel document and enable calculation without Excel"
         ),
         long_description_content_type='text/markdown',
         long_description=long_description,
@@ -57,6 +57,7 @@ if __name__ == '__main__':
             'scenario analysis',
             'modelling',
             'model'],
+
 
         install_requires=[
             'networkx >= 2.1',
