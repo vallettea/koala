@@ -451,7 +451,7 @@ def graph_from_seeds(seeds, cell_source):
     # when called from ExcelCompiler instance, construct cellmap and graph from seeds
     else: # ~ cell_source is a ExcelCompiler
         cellmap = dict([(x.address(),x) for x in seeds])
-        cells = cell_source.cells
+        cells = cell_source.cellmap
         # directed graph
         G = networkx.DiGraph()
         # match the info in cellmap
@@ -569,7 +569,7 @@ def graph_from_seeds(seeds, cell_source):
                                 cell_new = Cell(addr, sheet_new, value="", should_eval='False') # create new cell object
                                 cellmap[addr] = cell_new # add it to the cellmap
                                 G.add_node(cell_new) # add it to the graph
-                                cell_source.cells[addr] = cell_new # add it to the cell_source, used in this function
+                                cell_source.cellmap[addr] = cell_new # add it to the cell_source, used in this function
 
                     rng = cell_source.range(reference)
 

@@ -11,7 +11,7 @@ if __name__ == '__main__':
     setup(
         name="koala2",
 
-        version="0.0.36",
+        version="0.0.37",
 
         author="Ants, open innovation lab",
         author_email="vallettea@gmail.com",
@@ -29,7 +29,6 @@ if __name__ == '__main__':
 
         url="https://github.com/vallettea/koala",
 
-        license="GNU GPL3",
         description=(
             "A python module to extract all the content of an Excel document and enable calculation without Excel"
         ),
@@ -59,14 +58,13 @@ if __name__ == '__main__':
             'modelling',
             'model'],
 
-
         install_requires=[
-            'networkx >= 2.1',
-            'openpyxl >= 2.5.3',
-            'numpy >= 1.14.2',
-            'Cython >= 0.28.2',
-            'lxml >= 4.1.1',
-            'six >= 1.11.0',
+            'networkx==2.1',
+            'openpyxl==2.5.3',
+            'numpy>=1.15.0',
+            'Cython==0.28.2',
+            'lxml==4.1.1',
+            'six==1.11.0',
             'scipy>=1.0.0',
             'python-dateutil==2.8.0',
             'backports.functools_lru_cache==1.5'

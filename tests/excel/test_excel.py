@@ -42,12 +42,12 @@ class Test_NamedRanges(unittest.TestCase):
         self.graph = c.gen_graph()
         sys.setrecursionlimit(10000)
 
-    def test_before_set_value(self):
+    def test_before_cell_set_value(self):
         self.assertTrue(self.graph.evaluate('INPUT') == 1 and self.graph.evaluate('Sheet1!A1') == 1 and self.graph.evaluate('RESULT') == 187)
 
     @unittest.skip('This test fails.')
-    def test_after_set_value(self):
-        self.graph.set_value('INPUT', 2025)
+    def test_after_cell_set_value(self):
+        self.graph.cell_set_value('INPUT', 2025)
         self.assertTrue(self.graph.evaluate('INPUT') == 2025 and self.graph.evaluate('Sheet1!A1') == 2025 and self.graph.evaluate('RESULT') == 2211)
 
 
@@ -59,28 +59,28 @@ class Test_EmptyCellInRange(unittest.TestCase):
         self.graph = c.gen_graph()
         sys.setrecursionlimit(10000)
 
-    def test_set_value(self):
+    def test_cell_set_value(self):
         excel = self.graph
 
         self.assertEqual(excel.evaluate('Data_vert!A2'), 1)
-        excel.set_value('Data_vert!A2', 1)
+        excel.cell_set_value('Data_vert!A2', 1)
         self.assertEqual(excel.evaluate('Data_vert!B2'), "A")
-        excel.set_value('Data_vert!B2', "A")
+        excel.cell_set_value('Data_vert!B2', "A")
 
         self.assertEqual(excel.evaluate('DataJump_vert!A3'), 1)
-        excel.set_value('DataJump_vert!A3', 1)
+        excel.cell_set_value('DataJump_vert!A3', 1)
         self.assertEqual(excel.evaluate('DataJump_vert!B3'), "A")
-        excel.set_value('DataJump_vert!B3', "A")
+        excel.cell_set_value('DataJump_vert!B3', "A")
 
         self.assertEqual(excel.evaluate('Data_hor!B1'), 1)
-        excel.set_value('Data_hor!B1', 1)
+        excel.cell_set_value('Data_hor!B1', 1)
         self.assertEqual(excel.evaluate('Data_hor!B2'), "A")
-        excel.set_value('Data_hor!B2', "A")
+        excel.cell_set_value('Data_hor!B2', "A")
 
         self.assertEqual(excel.evaluate('DataJump_hor!C1'), 1)
-        excel.set_value('DataJump_hor!C1', 1)
+        excel.cell_set_value('DataJump_hor!C1', 1)
         self.assertEqual(excel.evaluate('DataJump_hor!C2'), "A")
-        excel.set_value('DataJump_hor!C2', "A")
+        excel.cell_set_value('DataJump_hor!C2', "A")
 
     def test_sumifs(self):
         excel = self.graph
@@ -119,19 +119,19 @@ class Test_DumpDict(unittest.TestCase):
         self.graph = c.gen_graph()
         sys.setrecursionlimit(10000)
 
-    def test_no_set_value(self):
+    def test_no_cell_set_value(self):
         graph = self.graph
         self.assertTrue(graph.evaluate('INPUT') == 1)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
         self.assertTrue(graph.evaluate('RESULT') == 187)
 
-    def test_set_value(self):
+    def test_cell_set_value(self):
         # Clone object
         data = self.graph.asdict()
         graph = Spreadsheet.from_dict(data)
 
         # Set value and check result in clone.
-        graph.set_value('INPUT', 2025)
+        graph.cell_set_value('INPUT', 2025)
         self.assertTrue(graph.evaluate('INPUT') == 2025)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
         # self.assertTrue(graph.evaluate('RESULT') == 2211)
@@ -151,19 +151,19 @@ class Test_Dump(unittest.TestCase):
         self.graph = c.gen_graph()
         sys.setrecursionlimit(10000)
 
-    def test_no_set_value(self):
+    def test_no_cell_set_value(self):
         graph = self.graph
         self.assertTrue(graph.evaluate('INPUT') == 1)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
         self.assertTrue(graph.evaluate('RESULT') == 187)
 
-    def test_set_value(self):
+    def test_cell_set_value(self):
         # Clone object
         self.graph.dump("dump.txt.gz")
         graph = Spreadsheet.load("dump.txt.gz")
 
         # Set value and check result in clone.
-        graph.set_value('INPUT', 2025)
+        graph.cell_set_value('INPUT', 2025)
         self.assertTrue(graph.evaluate('INPUT') == 2025)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
         # self.assertTrue(graph.evaluate('RESULT') == 2211)
@@ -183,19 +183,19 @@ class Test_DumpJson(unittest.TestCase):
         self.graph = c.gen_graph()
         sys.setrecursionlimit(10000)
 
-    def test_no_set_value(self):
+    def test_no_cell_set_value(self):
         graph = self.graph
         self.assertTrue(graph.evaluate('INPUT') == 1)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 1)
         self.assertTrue(graph.evaluate('RESULT') == 187)
 
-    def test_set_value(self):
+    def test_cell_set_value(self):
         # Clone object
         self.graph.dump_json("dump.txt.gz")
         graph = Spreadsheet.load_json("dump.txt.gz")
 
         # Set value and check result in clone.
-        graph.set_value('INPUT', 2025)
+        graph.cell_set_value('INPUT', 2025)
         self.assertTrue(graph.evaluate('INPUT') == 2025)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
         # self.assertTrue(graph.evaluate('RESULT') == 2211)
@@ -207,5 +207,5 @@ class Test_DumpJson(unittest.TestCase):
         self.assertTrue(graph.evaluate('RESULT') == 187)
 
         # Set value and check result in clone.
-        graph.set_value('Sheet1!A1', 2025)
+        graph.cell_set_value('Sheet1!A1', 2025)
         self.assertTrue(graph.evaluate('Sheet1!A1') == 2025)
