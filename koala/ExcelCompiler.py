@@ -11,6 +11,8 @@ class ExcelCompiler(object):
        that can be serialized to disk, and executed independently of excel.
     """
 
+    sp = None
+
     def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
         # print("___### Initializing Excel Compiler ###___")
         warnings.warn(
