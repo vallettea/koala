@@ -19,7 +19,7 @@ class ExcelCompiler(object):
             "The ExcelCompiler class will disappear in a future version. Please use Spreadsheet instead.",
             PendingDeprecationWarning
         )
-        self.sp = Spreadsheet.from_file_name(os.path.abspath(file), ignore_sheets=ignore_sheets, ignore_hidden=ignore_hidden, debug=debug)
+        self.sp = Spreadsheet.from_file_name(os.path.abspath(file), ignore_sheets=ignore_sheets, ignore_hidden=ignore_hidden, debug=debug, excel_compiler=True)
 
     def clean_pointer(self):
         warnings.warn(

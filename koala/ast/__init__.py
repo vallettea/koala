@@ -12,6 +12,7 @@ from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_rang
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
+from koala.ExcelCompiler import ExcelCompiler
 from .astnodes import *
 
 
@@ -440,12 +441,22 @@ def graph_from_seeds(seeds, cell_source):
     The graph is updated when the cell_source is an instance of Spreadsheet
     """
 
-    cellmap = dict([(x.address(),x) for x in seeds])
-    cells = cell_source.cellmap
-    # directed graph
-    G = networkx.DiGraph()
-    # match the info in cellmap
-    for c in cellmap.values(): G.add_node(c)
+     # when called from ExcelCompiler instance, construct cellmap and graph from seeds
+    if cell_source.excel_compiler:# ~ cell_source is a ExcelCompiler
+        cellmap = dict([(x.address(),x) for x in seeds])
+        cells = cell_source.cellmap
+        # directed graph
+        G = networkx.DiGraph()
+        # match the info in cellmap
+        for c in cellmap.values(): G.add_node(c)
+    # when called from Spreadsheet instance, use the Spreadsheet cellmap and graph
+    else: # ~ cell_source is a Spreadsheet
+        cellmap = cell_source.cellmap
+        cells = cellmap
+        G = cell_source.G
+        for c in seeds:
+            G.add_node(c)
+            cellmap[c.address()] = c
 
     # cells to analyze: only formulas
     todo = [s for s in seeds if s.formula]
