@@ -3,7 +3,7 @@ from __future__ import absolute_import, print_function
 
 from koala.Range import RangeFactory, get_cell_address, parse_cell_address
 
-from koala.ast import *
+import koala.ast as ast
 from koala.reader import read_archive, read_named_ranges, read_cells
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
@@ -11,7 +11,7 @@ from openpyxl.formula.translate import Translator
 from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
-from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
+# from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
 from koala.Cell import Cell
 
 import warnings
@@ -23,7 +23,8 @@ from openpyxl.compat import unicode
 
 
 class Spreadsheet(object):
-    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
+    def __init__(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False, excel_compiler = False):
+        self.excel_compiler = excel_compiler
         self.G = G
         self.cellmap = cellmap
         self.named_ranges = named_ranges
@@ -65,7 +66,7 @@ class Spreadsheet(object):
                 cell.needs_update = True
 
     @classmethod
-    def from_file_name(cls, file, ignore_sheets = [], ignore_hidden = False, debug = False):
+    def from_file_name(cls, file, ignore_sheets = [], ignore_hidden = False, debug = False, excel_compiler = False):
         file_name = os.path.abspath(file)
         # Decompose subfiles structure in zip file
         archive = read_archive(file_name)
@@ -75,7 +76,7 @@ class Spreadsheet(object):
         named_ranges = read_named_ranges(archive)
         debug = debug
 
-        return cls(networkx.DiGraph(), cellmap=cells, named_ranges=named_ranges, pointers = set(), debug = debug)
+        return cls(networkx.DiGraph(), cellmap=cells, named_ranges=named_ranges, pointers = set(), debug = debug, excel_compiler = excel_compiler)
 
     @classmethod
     def build_spreadsheet(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
@@ -87,7 +88,7 @@ class Spreadsheet(object):
         :param ignore_hidden:
         :param debug:
         """
-        new_spreadsheet = Spreadsheet.from_file_name(file, ignore_sheets = ignore_sheets, ignore_hidden = ignore_hidden, debug = debug)
+        new_spreadsheet = Spreadsheet.from_file_name(file, ignore_sheets = ignore_sheets, ignore_hidden = ignore_hidden, debug = debug, excel_compiler = False)
         new_spreadsheet.gen_graph()
         return new_spreadsheet
 
@@ -167,7 +168,7 @@ class Spreadsheet(object):
         else:
             cell.formula = formula
 
-        cellmap, G = graph_from_seeds(seeds, self)
+        cellmap, G = ast.graph_from_seeds(seeds, self)
 
         self.cellmap = cellmap
         self.G = G
@@ -192,7 +193,7 @@ class Spreadsheet(object):
             if child == None:
                 print("Not found ", input_address)
                 continue
-            g = make_subgraph(G, child, "descending")
+            g = ast.make_subgraph(G, child, "descending")
             dependencies = dependencies.union(g.nodes())
 
         # print "%s cells depending on inputs" % str(len(dependencies))
@@ -322,13 +323,13 @@ class Spreadsheet(object):
                 parsed = parse_cell_address(address)
             else:
                 parsed = ""
-            e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-            ast,root = build_ast(e)
-            code = root.emit(ast)
+            e = ast.shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+            new_ast, root = ast.build_ast(e)
+            code = root.emit(new_ast)
 
             cell = {"formula": formula, "address": address, "sheet": sheet}
 
-            replacements = self.eval_pointers_from_ast(ast, root, cell)
+            replacements = self.eval_pointers_from_ast(new_ast, root, cell)
 
             new_formula = formula
             if type(replacements) == list:
@@ -353,18 +354,18 @@ class Spreadsheet(object):
 
         return new_cells, new_named_ranges
 
-    def print_value_ast(self, ast,node,indent):
+    def print_value_ast(self, this_ast, node, indent):
         print("%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype)))
-        for c in node.children(ast):
-            self.print_value_ast(ast, c, indent+1)
+        for c in node.children(this_ast):
+            self.print_value_ast(this_ast, c, indent+1)
 
-    def eval_pointers_from_ast(self, ast, node, cell):
+    def eval_pointers_from_ast(self, this_ast, node, cell):
         results = []
         context = cell["sheet"]
 
         if (node.token.tvalue == "INDEX" or node.token.tvalue == "OFFSET"):
-            pointer_string = reverse_rpn(node, ast)
-            expression = node.emit(ast, context=context)
+            pointer_string = reverse_rpn(node, this_ast)
+            expression = node.emit(this_ast, context=context)
 
             if expression.startswith("self.eval_ref"):
                 expression_type = "value"
@@ -381,8 +382,8 @@ class Spreadsheet(object):
 
             return {"formula":pointer_string, "value": pointer_value, "expression_type": expression_type}
         else:
-            for c in node.children(ast):
-                results.append(self.eval_pointers_from_ast(ast, c, cell))
+            for c in node.children(this_ast):
+                results.append(self.eval_pointers_from_ast(this_ast, c, cell))
         return list(flatten(results, only_lists = True))
 
 
@@ -415,7 +416,7 @@ class Spreadsheet(object):
 
 
     def find_pointer_arguments(self, outputs = None):
-
+        global ast
         # 1) gather all occurence of pointer
         all_pointers = set()
 
@@ -458,10 +459,10 @@ class Spreadsheet(object):
                 else:
                     parsed = ""
                 e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-                ast,root = build_ast(e)
-                code = root.emit(ast)
+                new_ast, root = build_ast(e)
+                code = root.emit(new_ast)
 
-                for a in list(flatten(self.get_pointer_arguments_from_ast(ast, root, sheet))):
+                for a in list(flatten(self.get_pointer_arguments_from_ast(new_ast, root, sheet))):
                     pointer_arguments.add(a)
 
                 done.add(formula)
@@ -469,12 +470,12 @@ class Spreadsheet(object):
         return pointer_arguments
 
 
-    def get_arguments_from_ast(self, ast, node, sheet):
+    def get_arguments_from_ast(self, this_ast, node, sheet):
         arguments = []
 
-        for c in node.children(ast):
+        for c in node.children(this_ast):
             if c.tvalue == ":":
-                arg_range =  reverse_rpn(c, ast)
+                arg_range =  reverse_rpn(c, this_ast)
                 for elem in resolve_range(arg_range, False, sheet)[0]:
                     arguments += [elem]
             if c.ttype == "operand":
@@ -484,15 +485,15 @@ class Spreadsheet(object):
                     else:
                         arguments += [c.tvalue]
             else:
-                arguments += [self.get_arguments_from_ast(ast, c, sheet)]
+                arguments += [self.get_arguments_from_ast(this_ast, c, sheet)]
 
         return arguments
 
-    def get_pointer_arguments_from_ast(self, ast, node, sheet):
+    def get_pointer_arguments_from_ast(self, this_ast, node, sheet):
         arguments = []
 
         if node.token.tvalue in self.pointer_to_remove:
-            for c in node.children(ast)[1:]:
+            for c in node.children(this_ast)[1:]:
                 if c.ttype == "operand":
                     if not is_number(c.tvalue):
                         if sheet is not None and "!" not in c.tvalue and c.tvalue not in self.named_ranges:
@@ -500,10 +501,10 @@ class Spreadsheet(object):
                         else:
                             arguments += [c.tvalue]
                 else:
-                        arguments += [self.get_arguments_from_ast(ast, c, sheet)]
+                        arguments += [self.get_arguments_from_ast(this_ast, c, sheet)]
         else:
-            for c in node.children(ast):
-                arguments += [self.get_pointer_arguments_from_ast(ast, c, sheet)]
+            for c in node.children(this_ast):
+                arguments += [self.get_pointer_arguments_from_ast(this_ast, c, sheet)]
 
         return arguments
 
@@ -1007,7 +1008,7 @@ class Spreadsheet(object):
         # print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
-        cellmap, G = graph_from_seeds(seeds, self)
+        cellmap, G = ast.graph_from_seeds(seeds, self)
 
         if len(inputs) != 0: # otherwise, we'll set inputs to cellmap inside Spreadsheet
             inputs = list(set(inputs))
@@ -1051,4 +1052,4 @@ class Spreadsheet(object):
         # undirected = networkx.Graph(G)
         # print "Number of connected components %s", str(number_connected_components(undirected))
 
-        return Spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
+        return Spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug, excel_compiler = False)
