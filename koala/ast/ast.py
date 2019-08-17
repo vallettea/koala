@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 # cython: profile=True
 
+import sys
 import collections
 import six
 
@@ -14,7 +15,11 @@ from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_rang
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
-from koala import ExcelCompiler
+
+if sys.version_info < (3, 5):
+    from koala.ExcelCompiler import ExcelCompiler
+else:
+    from koala import ExcelCompiler
 
 
 
