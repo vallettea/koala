@@ -8,12 +8,13 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from openpyxl.compat import unicode
 
-import koala.ast.astnodes as astnodes
+# from koala.ast.ast import
+from koala.ast.astnodes import RangeNode, OperatorNode, ASTNode, OperandNode, FunctionNode
 from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range, is_range, split_address
 from koala.Cell import Cell
 from koala.Range import parse_cell_address
 from koala.tokenizer import ExcelParser, f_token
-from koala.ExcelCompiler import ExcelCompiler
+from koala import ExcelCompiler
 
 
 
@@ -22,15 +23,15 @@ def create_node(t, ref = None, debug = False):
     if t.ttype == "operand":
         if t.tsubtype in ["range", "named_range", "pointer"] :
             # print 'Creating Node', t.tvalue, t.tsubtype
-            return astnodes.RangeNode(t, ref, debug = debug)
+            return RangeNode(t, ref, debug = debug)
         else:
-            return astnodes.OperandNode(t)
+            return OperandNode(t)
     elif t.ttype == "function":
-        return astnodes.FunctionNode(t, ref, debug = debug)
+        return FunctionNode(t, ref, debug = debug)
     elif t.ttype.startswith("operator"):
-        return astnodes.OperatorNode(t, ref, debug = debug)
+        return OperatorNode(t, ref, debug = debug)
     else:
-        return astnodes.ASTNode(t, debug = debug)
+        return ASTNode(t, debug = debug)
 
 
 class Operator(object):
@@ -280,7 +281,7 @@ def build_ast(expression, debug = False):
     for n in expression:
         # Since the graph does not maintain the order of adding nodes/edges
         # add an extra attribute 'pos' so we can always sort to the correct order
-        if isinstance(n,astnodes.OperatorNode):
+        if isinstance(n, OperatorNode):
             if n.ttype == "operator-infix":
                 arg2 = stack.pop()
                 arg1 = stack.pop()
@@ -298,7 +299,7 @@ def build_ast(expression, debug = False):
                 G.add_node(arg1,pos = 1)
                 G.add_edge(arg1, n)
 
-        elif isinstance(n,astnodes.FunctionNode):
+        elif isinstance(n, FunctionNode):
             args = []
             for _ in range(n.num_args):
                 try:
@@ -481,7 +482,7 @@ def graph_from_seeds(seeds, cell_source):
                 cell_source.pointers.add(c1.address())
 
         # get all the cells/ranges this formula refers to
-        deps = [x for x in ast.nodes() if isinstance(x,astnodes.RangeNode)]
+        deps = [x for x in ast.nodes() if isinstance(x, RangeNode)]
         # remove dupes
         deps = uniqueify(deps)
 

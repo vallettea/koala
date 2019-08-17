@@ -3,7 +3,7 @@ from __future__ import absolute_import, print_function
 
 from koala.Range import RangeFactory, get_cell_address, parse_cell_address
 
-import koala.ast as ast
+from koala.ast import *
 from koala.reader import read_archive, read_named_ranges, read_cells
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
@@ -124,7 +124,7 @@ class Spreadsheet(object):
         if addr in self.cellmap:
             raise Exception('Cell %s already in cellmap' % addr)
 
-        cellmap, G = ast.graph_from_seeds([cell], self)
+        cellmap, G = graph_from_seeds([cell], self)
 
         self.cellmap = cellmap
         self.G = G
@@ -167,7 +167,7 @@ class Spreadsheet(object):
         else:
             cell.formula = formula
 
-        cellmap, G = ast.graph_from_seeds(seeds, self)
+        cellmap, G = graph_from_seeds(seeds, self)
 
         self.cellmap = cellmap
         self.G = G
@@ -193,7 +193,7 @@ class Spreadsheet(object):
             if child == None:
                 print("Not found ", input_address)
                 continue
-            g = ast.make_subgraph(G, child, "descending")
+            g = make_subgraph(G, child, "descending")
             dependencies = dependencies.union(g.nodes())
 
         # print "%s cells depending on inputs" % str(len(dependencies))
@@ -324,8 +324,8 @@ class Spreadsheet(object):
                 parsed = parse_cell_address(address)
             else:
                 parsed = ""
-            e = ast.shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-            new_ast, root = ast.build_ast(e)
+            e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+            new_ast, root = build_ast(e)
             code = root.emit(new_ast)
 
             cell = {"formula": formula, "address": address, "sheet": sheet}
@@ -459,8 +459,8 @@ class Spreadsheet(object):
                     parsed = parse_cell_address(address)
                 else:
                     parsed = ""
-                e = ast.shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-                new_ast, root = ast.build_ast(e)
+                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+                new_ast, root = build_ast(e)
                 code = root.emit(new_ast)
 
                 for a in list(flatten(self.get_pointer_arguments_from_ast(new_ast, root, sheet))):
@@ -1009,7 +1009,7 @@ class Spreadsheet(object):
         # print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
-        cellmap, G =ast.graph_from_seeds(seeds, self)
+        cellmap, G = graph_from_seeds(seeds, self)
 
         if len(inputs) != 0: # otherwise, we'll set inputs to cellmap inside Spreadsheet
             inputs = list(set(inputs))

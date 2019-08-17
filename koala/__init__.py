@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from openpyxl import *
-from .ast import *
+import ast
 from .Cell import *
 from .ExcelCompiler import *
 from .ExcelError import *
