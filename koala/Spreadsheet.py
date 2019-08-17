@@ -11,7 +11,6 @@ from openpyxl.formula.translate import Translator
 from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
-# from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
 from koala.Cell import Cell
 
 import warnings
@@ -125,7 +124,7 @@ class Spreadsheet(object):
         if addr in self.cellmap:
             raise Exception('Cell %s already in cellmap' % addr)
 
-        cellmap, G = graph_from_seeds([cell], self)
+        cellmap, G = ast.graph_from_seeds([cell], self)
 
         self.cellmap = cellmap
         self.G = G
@@ -182,6 +181,7 @@ class Spreadsheet(object):
 
 
     def prune_graph(self, *args):
+        global ast
         print('___### Pruning Graph ###___')
 
         G = self.G
@@ -282,6 +282,7 @@ class Spreadsheet(object):
         return Spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
     def clean_pointer(self):
+        global ast
         print('___### Cleaning Pointers ###___')
 
         new_named_ranges = self.named_ranges.copy()
@@ -458,8 +459,8 @@ class Spreadsheet(object):
                     parsed = parse_cell_address(address)
                 else:
                     parsed = ""
-                e = shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
-                new_ast, root = build_ast(e)
+                e = ast.shunting_yard(formula, self.named_ranges, ref=parsed, tokenize_range = True)
+                new_ast, root = ast.build_ast(e)
                 code = root.emit(new_ast)
 
                 for a in list(flatten(self.get_pointer_arguments_from_ast(new_ast, root, sheet))):
@@ -1008,7 +1009,7 @@ class Spreadsheet(object):
         # print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
-        cellmap, G = ast.graph_from_seeds(seeds, self)
+        cellmap, G =ast.graph_from_seeds(seeds, self)
 
         if len(inputs) != 0: # otherwise, we'll set inputs to cellmap inside Spreadsheet
             inputs = list(set(inputs))
