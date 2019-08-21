@@ -38,80 +38,76 @@ from functools import reduce
 # Note: some functions (if, pi, atan2, and, or, array, ...) are already taken care of
 # in the FunctionNode code, so adding them here will have no effect.
 FUNCTION_MAP = {
-    "ln":"xlog",
-    "min":"xmin",
-    "min":"xmin",
-    "max":"xmax",
-    "sum":"xsum",
     "gammaln":"lgamma",
-    "round": "xround"
+    "ln":"xlog",
+    "max":"xmax",
+    "min":"xmin",
+    "round": "xround",
+    "sum":"xsum",
 }
 
 IND_FUN = [
-    "SUM",
-    "MIN",
-    "IF",
-    "TAN",
-    "ATAN2",
-    "PI",
-    "ARRAY",
-    "ARRAYROW",
-    "AND",
-    "OR",
-    "ALL",
-    "VALUE",
-    "LOG",
-    "MAX",
-    "SUMPRODUCT",
-    "IRR",
-    "MIN",
-    "SUM",
-    "CHOOSE",
-    "SUMIF",
+    "ALL",  # see astnodes.py
+    "AND",  # see astnodes.py
+    "ARRAY",  # see astnodes.py
+    "ARRAYROW",  # see astnodes.py
+    "ATAN2",  # see astnodes.py
     "AVERAGE",
-    "RIGHT",
-    "INDEX",
-    "LOOKUP",
-    "LINEST",
-    "NPV",
-    "MATCH",
-    "MOD",
+    "CHOOSE",
+    "COLUMNS",
+    "CONCAT",
+    "CONCATENATE",
     "COUNT",
     "COUNTA",
     "COUNTIF",
     "COUNTIFS",
-    "MATCH",
-    "LOOKUP",
-    "INDEX",
-    "AVERAGE",
-    "SUMIFS",
-    "ROUND",
-    "ROWS",
-    "COLUMNS",
-    "MID",
     "DATE",
-    "YEARFRAC",
-    "ISNA",
-    "ISBLANK",
-    "ISTEXT",
-    "OFFSET",
-    "SUMPRODUCT",
-    "IFERROR",
-    "XIRR",
-    "VLOOKUP",
-    "VDB",
-    "SLN",
-    "XNPV",
-    "PMT",
-    "ROUNDUP",
-    "POWER",
-    "SQRT",
-    "TODAY",
-    "YEAR",
-    "MONTH",
     "EOMONTH",
-    "RANDBETWEEN",
+    "IF",  # see astnodes.py
+    "IFERROR",
+    "INDEX",  # see astnodes.py
+    "IRR",
+    "ISBLANK",
+    "ISNA",
+    "ISTEXT",
+    "LINEST",
+    "LOG",
+    "LOOKUP",
+    "MATCH",
+    "MAX",
+    "MID",
+    "MIN",
+    "MOD",
+    "MONTH",
+    "NPV",
+    "OFFSET",  # see astnodes.py
+    "OR",  # see astnodes.py
+    "PI",  # see astnodes.py
+    "PMT",
+    "POWER",
     "RAND",
+    "RANDBETWEEN",
+    "RIGHT",
+    "ROUND",
+    "ROUNDUP",
+    "ROWS",
+    "SLN",
+    "SQRT",
+    "SUM",
+    "SUM",
+    "SUMIF",
+    "SUMIFS",
+    "SUMPRODUCT",
+    "TAN",
+    "TODAY",
+    "VALUE",
+    "VDB",
+    "VLOOKUP",
+    "XLOG",
+    "XIRR",
+    "XNPV",
+    "YEAR",
+    "YEARFRAC",
 ]
 
 CELL_CHARACTER_LIMIT = 32767
@@ -122,57 +118,11 @@ EXCEL_EPOCH = datetime.datetime.strptime("1900-01-01", '%Y-%m-%d').date()
 # TODO: needs unit testing
 
 
-def value(text):
-    # make the distinction for naca numbers
-    if text.find('.') > 0:
-        return float(text)
-    elif text.endswith('%'):
-        text = text.replace('%', '')
-        return float(text) / 100
-    else:
-        return int(text)
-
-
-def xlog(a):
-    if isinstance(a,(list,tuple,np.ndarray)):
-        return [log(x) for x in flatten(a)]
-    else:
-        #print a
-        return log(a)
-
-
-def xmax(*args): # Excel reference: https://support.office.com/en-us/article/MAX-function-e0012414-9ac8-4b34-9a47-73e662c08098
+def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
     # ignore non numeric cells and boolean cells
     values = extract_numeric_values(*args)
 
-    # however, if no non numeric cells, return zero (is what excel does)
-    if len(values) < 1:
-        return 0
-    else:
-        return max(values)
-
-
-def xmin(*args): # Excel reference: https://support.office.com/en-us/article/MIN-function-61635d12-920f-4ce2-a70f-96f202dcc152
-    # ignore non numeric cells and boolean cells
-    values = extract_numeric_values(*args)
-
-    # however, if no non numeric cells, return zero (is what excel does)
-    if len(values) < 1:
-        return 0
-    else:
-        return min(values)
-
-
-def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM-function-043e1c7d-7726-4e80-8f32-07b23e057f89
-    # ignore non numeric cells and boolean cells
-
-    values = extract_numeric_values(*args)
-
-    # however, if no non numeric cells, return zero (is what excel does)
-    if len(values) < 1:
-        return 0
-    else:
-        return sum(values)
+    return sum(values) / len(values)
 
 
 def choose(index_num, *values): # Excel reference: https://support.office.com/en-us/article/CHOOSE-function-fc5c184f-cb62-4ec7-a46e-38653b98f5bc
@@ -185,6 +135,141 @@ def choose(index_num, *values): # Excel reference: https://support.office.com/en
         return ExcelError('#VALUE!', '%s must not be larger than the number of values: %s' % (str(index_num), len(values)))
     else:
         return values[index - 1]
+
+
+def columns(array):
+    """
+    Function to find the number of columns in an array.
+    Excel reference: https://support.office.com/en-us/article/columns-function-4e8e7b4e-e603-43e8-b177-956088fa48ca
+
+    :param array: the array of which the columns should be counted.
+    :return: the number of columns.
+    """
+
+    return rows(array)
+
+
+# https://support.office.com/en-us/article/concat-function-9b1a9a3f-94ff-41af-9736-694cbd6b4ca2
+def concat(*args):
+    return concatenate(*tuple(flatten(args)))
+
+
+# https://support.office.com/en-us/article/CONCATENATE-function-8F8AE884-2CA8-4F7A-B093-75D702BEA31D
+# Important: In Excel 2016, Excel Mobile, and Excel Online, this function has
+# been replaced with the CONCAT function. Although the CONCATENATE function is
+# still available for backward compatibility, you should consider using CONCAT
+# from now on. This is because CONCATENATE may not be available in future
+# versions of Excel.
+#
+# BE AWARE; there are functional differences between CONACTENATE AND CONCAT
+#
+def concatenate(*args):
+    if tuple(flatten(args)) != args:
+        return ExcelError('#VALUE', 'Could not process arguments %s' % (args))
+
+    cat_string = ''.join(str(a) for a in args)
+
+    if len(cat_string) > CELL_CHARACTER_LIMIT:
+        return ExcelError('#VALUE', 'Too long. concatentaed string should be no longer than %s but is %s' % (CELL_CHARACTER_LIMIT, len(cat_String)))
+
+    return cat_string
+
+
+def count(*args): # Excel reference: https://support.office.com/en-us/article/COUNT-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
+    l = list(args)
+
+    total = 0
+
+    for arg in l:
+        if isinstance(arg, Range):
+            total += len([x for x in arg.values if is_number(x) and type(x) is not bool]) # count inside a list
+        elif is_number(arg): # int() is used for text representation of numbers
+            total += 1
+
+    return total
+
+
+def counta(range):
+    if isinstance(range, ExcelError) or range in ErrorCodes:
+        if range.value == '#NULL':
+            return 0
+        else:
+            return range # return the Excel Error
+            # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
+    else:
+        return len([x for x in range.values if x != None])
+
+
+def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
+
+    # WARNING:
+    # - wildcards not supported
+    # - support of strings with >, <, <=, =>, <> not provided
+
+    valid = find_corresponding_index(range.values, criteria)
+
+    return len(valid)
+
+
+def countifs(*args): # Excel reference: https://support.office.com/en-us/article/COUNTIFS-function-dda3dc6e-f74e-4aee-88bc-aa8c2a866842
+
+    arg_list = list(args)
+    l = len(arg_list)
+
+    if l % 2 != 0:
+        return ExcelError('#VALUE!', 'excellib.countifs() must have a pair number of arguments, here %d' % l)
+
+
+    if l >= 2:
+        indexes = find_corresponding_index(args[0].values, args[1]) # find indexes that match first layer of countif
+
+        remaining_ranges = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 0] # get only ranges
+        remaining_criteria = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 1] # get only criteria
+
+        # verif that all Ranges are associated COULDNT MAKE THIS WORK CORRECTLY BECAUSE OF RECURSION
+        # association_type = None
+
+        # temp = [args[0]] + remaining_ranges
+
+        # for index, range in enumerate(temp): # THIS IS SHIT, but works ok
+        #     if type(range) == Range and index < len(temp) - 1:
+        #         asso_type = range.is_associated(temp[index + 1])
+
+        #         print 'asso', asso_type
+        #         if association_type is None:
+        #             association_type = asso_type
+        #         elif associated_type != asso_type:
+        #             association_type = None
+        #             break
+
+        # print 'ASSO', association_type
+
+        # if association_type is None:
+        #     return ValueError('All items must be Ranges and associated')
+
+        filtered_remaining_ranges = []
+
+        for range in remaining_ranges: # filter items in remaining_ranges that match valid indexes from first countif layer
+            filtered_remaining_cells = []
+            filtered_remaining_range = []
+
+            for index, item in enumerate(range.values):
+                if index in indexes:
+                    filtered_remaining_cells.append(range.addresses[index]) # reconstructing cells from indexes
+                    filtered_remaining_range.append(item) # reconstructing values from indexes
+
+            # WARNING HERE
+            filtered_remaining_ranges.append(Range(filtered_remaining_cells, filtered_remaining_range))
+
+        new_tuple = ()
+
+        for index, range in enumerate(filtered_remaining_ranges): # rebuild the tuple that will be the argument of next layer
+            new_tuple += (range, remaining_criteria[index])
+
+        return min(countifs(*new_tuple), len(indexes)) # only consider the minimum number across all layer responses
+
+    else:
+        return float('inf')
 
 
 def sumif(range, criteria, sum_range = None): # Excel reference: https://support.office.com/en-us/article/SUMIF-function-169b8c99-c05c-4483-a712-1697a653039b
@@ -247,13 +332,6 @@ def sumifs(*args):
     res = sum(sum_select)
 
     return res
-
-
-def average(*args): # Excel reference: https://support.office.com/en-us/article/AVERAGE-function-047bac88-d466-426c-a32b-8f33eb960cf6
-    # ignore non numeric cells and boolean cells
-    values = extract_numeric_values(*args)
-
-    return sum(values) / len(values)
 
 
 def right(text,n):
@@ -433,18 +511,6 @@ def rows(array):
     return rows
 
 
-def columns(array):
-    """
-    Function to find the number of columns in an array.
-    Excel reference: https://support.office.com/en-us/article/columns-function-4e8e7b4e-e603-43e8-b177-956088fa48ca
-
-    :param array: the array of which the columns should be counted.
-    :return: the number of columns.
-    """
-
-    return rows(array)
-
-
 def match(lookup_value, lookup_range, match_type=1): # Excel reference: https://support.office.com/en-us/article/MATCH-function-e8dffd45-c762-47d6-bf89-533f4a37673a
 
     if not isinstance(lookup_range, Range):
@@ -566,104 +632,6 @@ def month(serial_number): # Excel reference: https://support.office.com/en-us/ar
     return m1
 
 
-def count(*args): # Excel reference: https://support.office.com/en-us/article/COUNT-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
-    l = list(args)
-
-    total = 0
-
-    for arg in l:
-        if isinstance(arg, Range):
-            total += len([x for x in arg.values if is_number(x) and type(x) is not bool]) # count inside a list
-        elif is_number(arg): # int() is used for text representation of numbers
-            total += 1
-
-    return total
-
-
-def counta(range):
-    if isinstance(range, ExcelError) or range in ErrorCodes:
-        if range.value == '#NULL':
-            return 0
-        else:
-            return range # return the Excel Error
-            # raise Exception('ExcelError other than #NULL passed to excellib.counta()')
-    else:
-        return len([x for x in range.values if x != None])
-
-
-def countif(range, criteria): # Excel reference: https://support.office.com/en-us/article/COUNTIF-function-e0de10c6-f885-4e71-abb4-1f464816df34
-
-    # WARNING:
-    # - wildcards not supported
-    # - support of strings with >, <, <=, =>, <> not provided
-
-    valid = find_corresponding_index(range.values, criteria)
-
-    return len(valid)
-
-
-def countifs(*args): # Excel reference: https://support.office.com/en-us/article/COUNTIFS-function-dda3dc6e-f74e-4aee-88bc-aa8c2a866842
-
-    arg_list = list(args)
-    l = len(arg_list)
-
-    if l % 2 != 0:
-        return ExcelError('#VALUE!', 'excellib.countifs() must have a pair number of arguments, here %d' % l)
-
-
-    if l >= 2:
-        indexes = find_corresponding_index(args[0].values, args[1]) # find indexes that match first layer of countif
-
-        remaining_ranges = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 0] # get only ranges
-        remaining_criteria = [elem for i, elem in enumerate(arg_list[2:]) if i % 2 == 1] # get only criteria
-
-        # verif that all Ranges are associated COULDNT MAKE THIS WORK CORRECTLY BECAUSE OF RECURSION
-        # association_type = None
-
-        # temp = [args[0]] + remaining_ranges
-
-        # for index, range in enumerate(temp): # THIS IS SHIT, but works ok
-        #     if type(range) == Range and index < len(temp) - 1:
-        #         asso_type = range.is_associated(temp[index + 1])
-
-        #         print 'asso', asso_type
-        #         if association_type is None:
-        #             association_type = asso_type
-        #         elif associated_type != asso_type:
-        #             association_type = None
-        #             break
-
-        # print 'ASSO', association_type
-
-        # if association_type is None:
-        #     return ValueError('All items must be Ranges and associated')
-
-        filtered_remaining_ranges = []
-
-        for range in remaining_ranges: # filter items in remaining_ranges that match valid indexes from first countif layer
-            filtered_remaining_cells = []
-            filtered_remaining_range = []
-
-            for index, item in enumerate(range.values):
-                if index in indexes:
-                    filtered_remaining_cells.append(range.addresses[index]) # reconstructing cells from indexes
-                    filtered_remaining_range.append(item) # reconstructing values from indexes
-
-            # WARNING HERE
-            filtered_remaining_ranges.append(Range(filtered_remaining_cells, filtered_remaining_range))
-
-        new_tuple = ()
-
-        for index, range in enumerate(filtered_remaining_ranges): # rebuild the tuple that will be the argument of next layer
-            new_tuple += (range, remaining_criteria[index])
-
-        return min(countifs(*new_tuple), len(indexes)) # only consider the minimum number across all layer responses
-
-    else:
-        return float('inf')
-
-
-
 def xround(number, num_digits = 0): # Excel reference: https://support.office.com/en-us/article/ROUND-function-c018c5d8-40fb-4053-90b1-b3e7f61a213c
 
     if not is_number(number):
@@ -749,45 +717,6 @@ def date(year, month, day): # Excel reference: https://support.office.com/en-us/
     else:
         return result
 
-
-def yearfrac(start_date, end_date, basis=0):
-    """
-    Function to calculate the fraction of the year between two dates
-
-    Excel reference: https://support.office.com/en-us/article/YEARFRAC-function-3844141e-c76d-4143-82b6-208454ddc6a8
-
-    :param values: the payments of which at least one has to be negative.
-    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
-    :param guess: an initial guess which is required by Excel but isn't used by this function.
-    :return: a float being the IRR.
-    """
-
-    def actual_nb_days_ISDA(start, end): # needed to separate days_in_leap_year from days_not_leap_year
-        y1, m1, d1 = start
-        y2, m2, d2 = end
-
-        days_in_leap_year = 0
-        days_not_in_leap_year = 0
-
-        year_range = list(range(y1, y2 + 1))
-
-        for y in year_range:
-
-            if y == y1 and y == y2:
-                nb_days = date(y2, m2, d2) - date(y1, m1, d1)
-            elif y == y1:
-                nb_days = date(y1 + 1, 1, 1) - date(y1, m1, d1)
-            elif y == y2:
-                nb_days = date(y2, m2, d2) - date(y2, 1, 1)
-            else:
-                nb_days = 366 if is_leap_year(y) else 365
-
-            if is_leap_year(y):
-                days_in_leap_year += nb_days
-            else:
-                days_not_in_leap_year += nb_days
-
-        return (days_not_in_leap_year, days_in_leap_year)
 
     def actual_nb_days_AFB_alter(start, end):  # http://svn.finmath.net/finmath%20lib/trunk/src/main/java/net/finmath/time/daycount/DayCountConvention_ACT_ACT_YEARFRAC.java
         y1, m1, d1 = start
@@ -1252,32 +1181,6 @@ def today():
     return days_since_epoch.days + 2
 
 
-# https://support.office.com/en-us/article/concat-function-9b1a9a3f-94ff-41af-9736-694cbd6b4ca2
-def concat(*args):
-    return concatenate(*tuple(flatten(args)))
-
-
-# https://support.office.com/en-us/article/CONCATENATE-function-8F8AE884-2CA8-4F7A-B093-75D702BEA31D
-# Important: In Excel 2016, Excel Mobile, and Excel Online, this function has
-# been replaced with the CONCAT function. Although the CONCATENATE function is
-# still available for backward compatibility, you should consider using CONCAT
-# from now on. This is because CONCATENATE may not be available in future
-# versions of Excel.
-#
-# BE AWARE; there are functional differences between CONACTENATE AND CONCAT
-#
-def concatenate(*args):
-    if tuple(flatten(args)) != args:
-        return ExcelError('#VALUE', 'Could not process arguments %s' % (args))
-
-    cat_string = ''.join(str(a) for a in args)
-
-    if len(cat_string) > CELL_CHARACTER_LIMIT:
-        return ExcelError('#VALUE', 'Too long. concatentaed string should be no longer than %s but is %s' % (CELL_CHARACTER_LIMIT, len(cat_String)))
-
-    return cat_string
-
-
 # https://support.office.com/en-us/article/randbetween-function-4cc7f0d1-87dc-4eb7-987f-a469ab381685
 def randbetween(bottom, top):
     # instantiating a new random class so repeated calls don't share state
@@ -1290,6 +1193,99 @@ def rand():
     # instantiating a new random class so repeated calls don't share state
     r = random.Random()
     return r.random()
+
+
+def value(text):
+    # make the distinction for naca numbers
+    if text.find('.') > 0:
+        return float(text)
+    elif text.endswith('%'):
+        text = text.replace('%', '')
+        return float(text) / 100
+    else:
+        return int(text)
+
+
+def xlog(a):
+    if isinstance(a,(list,tuple,np.ndarray)):
+        return [log(x) for x in flatten(a)]
+    else:
+        #print a
+        return log(a)
+
+
+def xmax(*args): # Excel reference: https://support.office.com/en-us/article/MAX-function-e0012414-9ac8-4b34-9a47-73e662c08098
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
+
+    # however, if no non numeric cells, return zero (is what excel does)
+    if len(values) < 1:
+        return 0
+    else:
+        return max(values)
+
+
+def xmin(*args): # Excel reference: https://support.office.com/en-us/article/MIN-function-61635d12-920f-4ce2-a70f-96f202dcc152
+    # ignore non numeric cells and boolean cells
+    values = extract_numeric_values(*args)
+
+    # however, if no non numeric cells, return zero (is what excel does)
+    if len(values) < 1:
+        return 0
+    else:
+        return min(values)
+
+
+def xsum(*args): # Excel reference: https://support.office.com/en-us/article/SUM-function-043e1c7d-7726-4e80-8f32-07b23e057f89
+    # ignore non numeric cells and boolean cells
+
+    values = extract_numeric_values(*args)
+
+    # however, if no non numeric cells, return zero (is what excel does)
+    if len(values) < 1:
+        return 0
+    else:
+        return sum(values)
+
+
+def yearfrac(start_date, end_date, basis=0):
+    """
+    Function to calculate the fraction of the year between two dates
+
+    Excel reference: https://support.office.com/en-us/article/YEARFRAC-function-3844141e-c76d-4143-82b6-208454ddc6a8
+
+    :param values: the payments of which at least one has to be negative.
+    :param dates: the dates as excel dates (e.g. 43571 for 16/04/2019).
+    :param guess: an initial guess which is required by Excel but isn't used by this function.
+    :return: a float being the IRR.
+    """
+
+    def actual_nb_days_ISDA(start, end): # needed to separate days_in_leap_year from days_not_leap_year
+        y1, m1, d1 = start
+        y2, m2, d2 = end
+
+        days_in_leap_year = 0
+        days_not_in_leap_year = 0
+
+        year_range = list(range(y1, y2 + 1))
+
+        for y in year_range:
+
+            if y == y1 and y == y2:
+                nb_days = date(y2, m2, d2) - date(y1, m1, d1)
+            elif y == y1:
+                nb_days = date(y1 + 1, 1, 1) - date(y1, m1, d1)
+            elif y == y2:
+                nb_days = date(y2, m2, d2) - date(y2, 1, 1)
+            else:
+                nb_days = 366 if is_leap_year(y) else 365
+
+            if is_leap_year(y):
+                days_in_leap_year += nb_days
+            else:
+                days_not_in_leap_year += nb_days
+
+        return (days_not_in_leap_year, days_in_leap_year)
 
 
 
