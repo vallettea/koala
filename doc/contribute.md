@@ -8,7 +8,7 @@ A bug found is a bug solved. If you find any issues with Koala, please report th
 
 ## Add new Excel functions
 
-According to the [latest documentation](https://support.office.com/en-us/article/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188), there are 476 Excel functions (all functions are listed in `doc/functions.xlsx`). As of this moment, not all of the functions are completed yet. We depend on people like you to help us to define them all. If you encounter one of these unmapped functions, the process below will clarify how to add them.
+According to the [latest documentation](https://support.office.com/en-us/article/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188), there are 476 Excel functions (all functions are listed in `doc/functions.xlsx`). As of this moment, not all of the functions are completed yet (only 62 are so far). We depend on people like you to help us to define them all. If you encounter one of these unmapped functions, the process below will clarify how to add them.
 
 All the Excel functions are mapped in `koala/excellib.py`. If a function doesn't work, it means that it isn't defined in this file. To add a new function, follow the following steps:
 1. Add the name in the list `IND_FUN` (order alphabetically) in `koala/excellib.py`.
