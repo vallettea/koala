@@ -15,8 +15,9 @@ All the Excel functions are mapped in `koala/excellib.py`. If a function doesn't
 2. Define a new function in the remainder of the file (also order alphabetically). The function name must be equal to the excel function name but lowercase. The arguments also have to be the same as the argument names in Excel. Exceptions are when the function takes many unnamed arguments (e.g. `SUM`). An example for the function `EOMONTH` can be found [here](https://github.com/vallettea/koala/blob/62296bdc9e5f42dde6ff72dc436339c07b963b30/koala/excellib.py#L527).
 3. Write the code in the function body and return the value that the function should return. Useful helper functions can be found and/or added in `koala/utils.py`. Please also pay attention to handling the inputs. Return the right `ExcelError` in case of faulty inputs.
 4. Document the behaviour of this function with doctstrings.
-4. Add tests to `tests/excel/test_functions.py ` (again in alphabetic order). If multiple arguments are defined, each of them should be tested appropriately. An example for `EOMONTH` can be found [here](https://github.com/vallettea/koala/blob/62296bdc9e5f42dde6ff72dc436339c07b963b30/tests/excel/test_functions.py#L871).
-5. If new imports are used, add them to `requirements.txt` and `setup.py`.
+5. Add the function name to `koala/functions.json`.
+6. Add tests to `tests/excel/test_functions.py ` (again in alphabetic order). If multiple arguments are defined, each of them should be tested appropriately. An example for `EOMONTH` can be found [here](https://github.com/vallettea/koala/blob/62296bdc9e5f42dde6ff72dc436339c07b963b30/tests/excel/test_functions.py#L871).
+7. If new imports are used, add them to `requirements.txt` and `setup.py`.
 
 A full pull request than can be used as an example can be found [here](https://github.com/vallettea/koala/pull/175/files).
 
