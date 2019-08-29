@@ -297,8 +297,11 @@ class FunctionNode(ASTNode):
     def emit(self,ast,context=None, pointer = False):
         fun = self.tvalue.lower()
 
-        # Get the arguments
-        args = self.children(ast)
+        # Try to get the arguments
+        try:
+            args = self.children(ast)
+        except:
+            args = ''
 
         if fun == "atan2":
             # swap arguments
