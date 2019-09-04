@@ -1,6 +1,8 @@
 from __future__ import print_function
 # cython: profile=True
 
+from networkx import NetworkXError
+
 from openpyxl.compat import unicode
 
 from koala.excellib import FUNCTION_MAP, IND_FUN
@@ -41,8 +43,11 @@ class ASTNode(object):
         return getattr(self.token,name)
 
     def children(self, ast):
-        args = ast.predecessors(self)
-        args = sorted(args,key=lambda x: ast.node[x]['pos'])
+        try:
+            args = ast.predecessors(self)
+            args = sorted(args, key=lambda x: ast.node[x]['pos'])
+        except NetworkXError:
+            args = ''
         return args
 
     def parent(self, ast):
@@ -298,17 +303,11 @@ class FunctionNode(ASTNode):
         fun = self.tvalue.lower()
 
         # Try to get the arguments
-        try:
-            args = self.children(ast)
-        except:
-            args = ''
+        args = self.children(ast)
 
         if fun == "atan2":
             # swap arguments
             return "atan2(%s,%s)" % (args[1].emit(ast,context=context),args[0].emit(ast,context=context))
-        elif fun == "pi":
-            # constant, no parens
-            return "pi"
         elif fun == "if":
             # inline the if
 
@@ -364,5 +363,5 @@ class FunctionNode(ASTNode):
                 return 'self.eval_ref(offset(%s), ref = %s)' % (",".join([n.emit(ast,context=context) for n in args]), self.ref)
         else:
             # map to the correct name
-            f = self.funmap.get(fun,fun)
+            f = self.funmap.get(fun, fun)
             return f + "(" + ",".join([n.emit(ast,context=context) for n in args]) + ")"
