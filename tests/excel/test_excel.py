@@ -35,20 +35,24 @@ class Test_SharedFormula(unittest.TestCase):
 
 
 class Test_NamedRanges(unittest.TestCase):
-
+    
 
     def setUp(self):
-        c = ExcelCompiler("./tests/files/NamedRanges.xlsx", ignore_sheets = ['IHS'])
-        self.graph = c.gen_graph()
+        self.sp = Spreadsheet("./tests/files/NamedRanges.xlsx", ignore_sheets = ['IHS'])
         sys.setrecursionlimit(10000)
 
     def test_before_set_value(self):
-        self.assertTrue(self.graph.evaluate('INPUT') == 1 and self.graph.evaluate('Sheet1!A1') == 1 and self.graph.evaluate('RESULT') == 187)
+        self.assertTrue(self.sp.cell_evaluate('INPUT') == 1 and self.sp.cell_evaluate('Sheet1!A1') == 1 and self.sp.cell_evaluate('RESULT') == 187)
 
-    @unittest.skip('This test fails.')
     def test_after_set_value(self):
-        self.graph.set_value('INPUT', 2025)
-        self.assertTrue(self.graph.evaluate('INPUT') == 2025 and self.graph.evaluate('Sheet1!A1') == 2025 and self.graph.evaluate('RESULT') == 2211)
+        # test if changing a input (named cell) leads to change in result (named cell with formula)
+        self.sp.cell_set_value('INPUT', 2025)
+        self.assertTrue(self.sp.cell_evaluate('INPUT') == 2025 and self.sp.cell_evaluate('Sheet1!A1') == 2025 and self.sp.cell_evaluate('RESULT') == 2211)
+        
+        # want to test multiple values as sometimes it gets stuck after one
+        self.sp.cell_set_value('INPUT', 26)
+        self.assertTrue(self.sp.cell_evaluate('INPUT') == 26 and self.sp.cell_evaluate('Sheet1!A1') == 26 and self.sp.cell_evaluate('RESULT') == 212)
+   
 
 
 class Test_EmptyCellInRange(unittest.TestCase):
