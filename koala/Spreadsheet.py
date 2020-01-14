@@ -692,6 +692,12 @@ class Spreadsheet(object):
         """
         self.reset_buffer = set()
 
+        try: # if cell is named range get real address
+            address = self.named_ranges[address]
+            
+        except:
+            pass
+        
         try:
             address = address.replace('$', '')
             address = address.replace("'", '')
