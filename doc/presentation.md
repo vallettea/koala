@@ -5,7 +5,7 @@ The objective was to be **able to process many Excel files of high complexity, i
 
 ## Origins
 
-This project was born from the need of one of our clients, a French gas company. One department is entitled to anticipate the evolution of the global gas market, and identify the appropriate investments.
+This project was born from the need of one of our clients, a french gas company, [Engie](http://www.engie.com/) and particularly it Center of Expertise in Modelling and Economics Studies. This department is entitled to anticipate the evolution of the global gaz market, and indentify the appropriate investments.
 The process they use is based upon 14k gas fields business plans (in activity or in project), which are able to give the estimated rentability of a field over the next 100 years or so.
 
 Each business plan (i.e. each field) is represented as an Excel table holding about 50k+ cells and 250k+ relations between these cells.
