@@ -25,7 +25,6 @@
 #========================================================================
 
 import re
-import six
 import collections
 
 
@@ -497,9 +496,9 @@ class ExcelParser(ExcelParserTokens):
                   ):
                     pass
                 elif (not(
-                     ((six.next(tokens).ttype == self.TOK_TYPE_FUNCTION) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
-                     ((six.next(tokens).ttype == self.TOK_TYPE_SUBEXPR) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
-                     (six.next(tokens).ttype == self.TOK_TYPE_OPERAND)
+                     ((next(tokens).ttype == self.TOK_TYPE_FUNCTION) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
+                     ((next(tokens).ttype == self.TOK_TYPE_SUBEXPR) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
+                     (next(tokens).ttype == self.TOK_TYPE_OPERAND)
                      )
                    ):
                     pass

@@ -1,7 +1,6 @@
 # cython: profile=True
 
 import collections
-import six
 
 import networkx
 from networkx.classes.digraph import DiGraph
@@ -137,7 +136,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                         if depth == 0:
                             new_tokens.pop() # these 2 lines are needed to remove INDEX()
                             new_tokens.pop()
-                            expr = six.next(rev).tvalue + expr
+                            expr = next(rev).tvalue + expr
                             break
 
                     expr += token.tvalue

@@ -1,11 +1,9 @@
 # cython: profile=True
 
 import collections.abc
-import numbers
 import re
 import datetime as dt
 from functools import lru_cache
-from six import string_types
 from copy import deepcopy
 
 from .ExcelError import ExcelError
@@ -337,7 +335,7 @@ def flatten(l, only_lists = False):
     instance = list if only_lists else collections.abc.Iterable
 
     for el in l:
-        if isinstance(el, instance) and not isinstance(el, string_types):
+        if isinstance(el, instance) and not isinstance(el, str):
             for sub in flatten(el, only_lists = only_lists):
                 yield sub
         else:
