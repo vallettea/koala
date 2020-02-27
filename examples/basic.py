@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from koala.ExcelCompiler import ExcelCompiler
 from koala.Spreadsheet import Spreadsheet
 

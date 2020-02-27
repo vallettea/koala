@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 # cython: profile=True
 
 #========================================================================
@@ -29,8 +27,6 @@ from __future__ import division, print_function
 import re
 import six
 import collections
-
-from koala.utils import old_div
 
 
 #========================================================================
@@ -433,7 +429,7 @@ class ExcelParser(ExcelParserTokens):
             # standard postfix operators
             if ("%".find(currentChar()) != -1):
                 if (len(token) > 0):
-                    tokens.add(old_div(float(token), 100), self.TOK_TYPE_OPERAND)
+                    tokens.add(float(token) // 100, self.TOK_TYPE_OPERAND)
                     token = ""
                 else:
                     tokens.add('*', self.TOK_TYPE_OP_IN)

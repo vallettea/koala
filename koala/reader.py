@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from io import BytesIO
 import re
 import os

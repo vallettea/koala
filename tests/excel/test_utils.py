@@ -1,6 +1,6 @@
-from __future__ import absolute_import
+import pyximport
 
-import pyximport; pyximport.install()
+pyximport.install()
 
 import unittest
 

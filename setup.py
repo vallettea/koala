@@ -63,14 +63,13 @@ if __name__ == '__main__':
 
 
         install_requires=[
-            'networkx >= 2.1',
-            'openpyxl >= 2.5.3',
+            'networkx >= 2.4',
+            'openpyxl >= 3.0.3',
             'numpy >= 1.14.2',
-            'Cython >= 0.28.2',
-            'lxml >= 4.1.1',
-            'six >= 1.11.0',
+            'Cython >= 0.29.15',
+            'lxml >= 4.5.1',
+            'six >= 1.14.0',
             'scipy>=1.0.0',
-            'python-dateutil==2.8.0',
-            'backports.functools_lru_cache==1.5'
+            'python-dateutil==2.8.0'
         ]
     )

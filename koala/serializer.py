@@ -1,13 +1,9 @@
-from __future__ import absolute_import, print_function
-
 import json
 import gzip
 import networkx
 
 from networkx.classes.digraph import DiGraph
-from networkx.readwrite import json_graph
 from networkx.drawing.nx_pydot import write_dot
-from openpyxl.compat import unicode
 
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
@@ -51,10 +47,10 @@ def dump(self, fname):
     for cell in simple_cells:
         parse_cell_info(cell)
         value = cell.value
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             outfile.write(cell.value.encode('utf-8') + b"\n")
         else:
-            outfile.write((str(cell.value) + u"\n").encode('utf-8'))
+            outfile.write((str(cell.value) + "\n").encode('utf-8'))
         outfile.write(b"====" + b"\n")
 
     outfile.write(b"-----" + b"\n")
@@ -205,41 +201,15 @@ def dump_json(self, fname):
 
 def load_json(fname):
 
-    def _decode_list(data):
-        rv = []
-        for item in data:
-            if isinstance(item, unicode) and unicode != str:
-                item = item.encode('utf-8')
-            elif isinstance(item, list) and unicode != str:
-                item = _decode_list(item)
-            elif isinstance(item, dict):
-                item = _decode_dict(item)
-            rv.append(item)
-        return rv
-
-    def _decode_dict(data):
-        rv = {}
-        for key, value in data.items():
-            if isinstance(key, unicode) and unicode != str:
-                key = key.encode('utf-8')
-            if isinstance(value, unicode) and unicode != str:
-                value = value.encode('utf-8')
-            elif isinstance(value, list):
-                value = _decode_list(value)
-            elif isinstance(value, dict):
-                value = _decode_dict(value)
-            rv[key] = value
-        return rv
-
     with gzip.GzipFile(fname, 'r') as infile:
-        data = json.loads(infile.read().decode('utf-8'), object_hook=_decode_dict)
+        data = json.loads(infile.read().decode('utf-8'))
 
     return data
 
 
 ########### based on dot #################
-def export_to_dot(self,fname):
-    write_dot(self.G,fname)
+def export_to_dot(self, fname):
+    write_dot(self.G, fname)
 
 
 ########### plotting #################

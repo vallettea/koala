@@ -1,12 +1,8 @@
 # cython: profile=True
 
-from __future__ import absolute_import, division
-
 from koala.CellBase import CellBase
 from koala.Range import RangeCore
 from koala.utils import *
-
-from openpyxl.compat import unicode
 
 
 class Cell(CellBase):
@@ -62,11 +58,7 @@ class Cell(CellBase):
             self.__row = None
             self.__col_idx = None
 
-        # `unicode` != `str` in Python2. See `from openpyxl.compat import unicode`
-        if type(formula) == str and str != unicode:
-            self.__formula = unicode(formula, 'utf-8') if formula else None
-        else:
-            self.__formula = formula if formula else None
+        self.__formula = formula if formula else None
 
         self.__value = value
         self.python_expression = None

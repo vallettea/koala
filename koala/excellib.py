@@ -6,10 +6,9 @@ Python equivalents of various excel functions
 
 # source: https://github.com/dgorissen/pycel/blob/master/src/pycel/excellib.py
 
-from __future__ import absolute_import, division
-
 import itertools
 import numpy as np
+import numpy_financial as npf
 import scipy.optimize
 import datetime
 import random
@@ -17,8 +16,6 @@ from math import log, ceil
 from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from calendar import monthrange
 from dateutil.relativedelta import relativedelta
-
-from openpyxl.compat import unicode
 
 from koala.utils import *
 from koala.Range import RangeCore as Range
@@ -427,7 +424,7 @@ def irr(values, guess = None):
         raise ValueError('guess value for excellib.irr() is %s and not 0' % guess)
     else:
         try:
-            return np.irr(values)
+            return npf.irr(values)
         except Exception as e:
             return ExcelError('#NUM!', e)
 
@@ -729,7 +726,7 @@ def randbetween(bottom, top):
 
 def right(text,n):
     #TODO: hack to deal with naca section numbers
-    if isinstance(text, unicode) or isinstance(text,str):
+    if isinstance(text, str):
         return text[-n:]
     else:
         # TODO: get rid of the decimal

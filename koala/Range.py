@@ -1,11 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 from koala.CellBase import CellBase
 from koala.ExcelError import ErrorCodes, ExcelError
 from koala.utils import *
-
-from openpyxl.compat import unicode
-
 
 # WARNING: Range should never be imported directly. Import Range from excelutils instead.
 
@@ -58,7 +53,7 @@ def check_value(a):
         return ExcelError(a)
 
     try:  # This is to avoid None or Exception returned by Range operations
-        if isinstance(a, (unicode, str)):
+        if isinstance(a, str):
             return a
         elif float(a):
             return a
@@ -570,7 +565,7 @@ class RangeCore(dict):
     @staticmethod
     def divide(a, b):
         try:
-            return old_div(float(check_value(a)), float(check_value(b)))
+            return float(check_value(a)) // float(check_value(b))
         except Exception as e:
             return ExcelError('#DIV/0!', e)
 
@@ -584,9 +579,9 @@ class RangeCore(dict):
     @staticmethod
     def is_equal(a, b):
         try:
-            if not isinstance(a, (str, unicode)):
+            if not isinstance(a, str):
                 a = check_value(a)
-            if not isinstance(b, (str, unicode)):
+            if not isinstance(b, str):
                 b = check_value(b)
 
             return is_almost_equal(a, b, precision=0.00001)
@@ -596,9 +591,9 @@ class RangeCore(dict):
     @staticmethod
     def is_not_equal(a, b):
         try:
-            if not isinstance(a, (str, unicode)):
+            if not isinstance(a, str):
                 a = check_value(a)
-            if not isinstance(a, (str, unicode)):
+            if not isinstance(a, str):
                 b = check_value(b)
 
             return a != b

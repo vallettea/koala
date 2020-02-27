@@ -1,19 +1,12 @@
 # cython: profile=True
 
-from __future__ import absolute_import, division
-
-import collections
+import collections.abc
 import numbers
 import re
 import datetime as dt
-try:
-    from functools import lru_cache
-except ImportError:  # fix for Python 2.7
-    from backports.functools_lru_cache import lru_cache
+from functools import lru_cache
 from six import string_types
 from copy import deepcopy
-
-from openpyxl.compat import unicode
 
 from .ExcelError import ExcelError
 
@@ -149,12 +142,6 @@ def resolve_range(rng, should_flatten = False, sheet=''):
         sheet += "!"
     else:
         pass
-
-    # `unicode` != `str` in Python2. See `from openpyxl.compat import unicode`
-    if type(sheet) == str and str != unicode:
-        sheet = unicode(sheet, 'utf-8')
-    if type(rng) == str and str != unicode:
-        rng = unicode(rng, 'utf-8')
 
     key = rng+str(should_flatten)+sheet
 
@@ -347,7 +334,7 @@ def get_linest_degree(excel,cl):
     return (max(degree,1),coef)
 
 def flatten(l, only_lists = False):
-    instance = list if only_lists else collections.Iterable
+    instance = list if only_lists else collections.abc.Iterable
 
     for el in l:
         if isinstance(el, instance) and not isinstance(el, string_types):
@@ -587,7 +574,7 @@ def extract_numeric_values(*args):
     values = []
 
     for arg in args:
-        if isinstance(arg, collections.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str and type(arg) != unicode: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
+        if isinstance(arg, collections.abc.Iterable) and type(arg) != list and type(arg) != tuple and type(arg) != str: # does not work fo other Iterable than RangeCore, but can t import RangeCore here for circular reference issues
             values.extend([x for x in arg.values if is_number(x) and type(x) is not bool])
             # for x in arg.values:
             #     if is_number(x) and type(x) is not bool: # excludes booleans from nested ranges
@@ -601,21 +588,6 @@ def extract_numeric_values(*args):
             values.append(arg)
 
     return values
-
-
-def old_div(a, b):
-    """
-    Equivalent to ``a / b`` on Python 2 without ``from __future__ import
-    division``.
-
-    Copied from:
-    https://github.com/PythonCharmers/python-future/blob/master/src/past/utils/__init__.py
-    """
-    if isinstance(a, numbers.Integral) and isinstance(b, numbers.Integral):
-        return a // b
-    else:
-        return a / b
-
 
 def safe_iterator(node, tag=None):
     """Return an iterator or an empty list"""
