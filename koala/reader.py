@@ -106,6 +106,8 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
 
     cells = {}
 
+    sheets = []
+
     functions = set()
 
     cts = dict(read_content_types(archive))
@@ -124,6 +126,9 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
         function_map = {}
 
         if sheet_name in ignore_sheets: continue
+
+        if sheet_name not in sheets:
+            sheets.append(sheet_name)
 
         root = fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 
@@ -223,7 +228,7 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     #     if f not in existing:
     #         print('== Missing function: %s' % f)
 
-    return cells
+    return cells, sheets
 
 
 def read_rels(archive):

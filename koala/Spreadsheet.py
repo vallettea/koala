@@ -52,7 +52,7 @@ class Spreadsheet(object):
             else:                       # assume file path
                 archive = read_archive(os.path.abspath(file))
             # Parse cells
-            self.cells = read_cells(archive, ignore_sheets, ignore_hidden)
+            self.cells, self.sheets = read_cells(archive, ignore_sheets, ignore_hidden)
             # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
             self.named_ranges = read_named_ranges(archive)
             self.range = RangeFactory(self.cells)
