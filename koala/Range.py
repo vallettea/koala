@@ -565,7 +565,7 @@ class RangeCore(dict):
     @staticmethod
     def divide(a, b):
         try:
-            return float(check_value(a)) // float(check_value(b))
+            return float(check_value(a)) / float(check_value(b))
         except Exception as e:
             return ExcelError('#DIV/0!', e)
 
