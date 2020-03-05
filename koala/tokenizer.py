@@ -428,7 +428,7 @@ class ExcelParser(ExcelParserTokens):
             # standard postfix operators
             if ("%".find(currentChar()) != -1):
                 if (len(token) > 0):
-                    tokens.add(float(token) // 100, self.TOK_TYPE_OPERAND)
+                    tokens.add(float(token) / 100, self.TOK_TYPE_OPERAND)
                     token = ""
                 else:
                     tokens.add('*', self.TOK_TYPE_OP_IN)
