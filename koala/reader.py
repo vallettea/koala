@@ -99,7 +99,7 @@ def read_named_ranges(archive):
 
     return dict
 
-def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
+def read_cells(archive, ignore_sheets = [], ignore_hidden = False, include_only_sheets=None):
     global debug
 
     # print('___### Reading Cells from XLSX ###___')
@@ -120,15 +120,20 @@ def read_cells(archive, ignore_sheets = [], ignore_hidden = False):
     else:
         shared_strings = []
 
+    ignore_sheets = frozenset(ignore_sheets)
+
+    if include_only_sheets is not None:
+        include_only_sheets = frozenset(include_only_sheets)
+
     for sheet in detect_worksheets(archive):
         sheet_name = sheet['title']
 
         function_map = {}
 
-        if sheet_name in ignore_sheets: continue
+        if sheet_name in ignore_sheets or (include_only_sheets is not None and sheet_name not in include_only_sheets):
+            continue
 
-        if sheet_name not in sheets:
-            sheets.append(sheet_name)
+        sheets.append(sheet_name)
 
         root = fromstring(archive.read(sheet['path'])) # it is necessary to use cElementTree from xml module, otherwise root.findall doesn't work as it should
 

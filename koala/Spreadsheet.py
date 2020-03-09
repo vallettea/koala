@@ -17,7 +17,7 @@ import networkx
 from networkx.readwrite import json_graph
 
 class Spreadsheet(object):
-    def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, debug=False):
+    def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, include_only_sheets=None, debug=False):
         # print("___### Initializing Excel Compiler ###___")
 
         if file is None:
@@ -52,7 +52,7 @@ class Spreadsheet(object):
             else:                       # assume file path
                 archive = read_archive(os.path.abspath(file))
             # Parse cells
-            self.cells, self.sheets = read_cells(archive, ignore_sheets, ignore_hidden)
+            self.cells, self.sheets = read_cells(archive, ignore_sheets, ignore_hidden, include_only_sheets)
             # Parse named_range { name (ExampleName) -> address (Sheet!A1:A10)}
             self.named_ranges = read_named_ranges(archive)
             self.range = RangeFactory(self.cells)
