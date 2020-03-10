@@ -37,6 +37,7 @@ This operation may take some time depending on the size of your workbook (we've 
 
 ```
 from koala.ExcelCompiler import ExcelCompiler
+from koala.Spreadsheet import Spreadsheet
 
 sp = Spreadsheet("examples/basic.xlsx")
 ```
