@@ -70,6 +70,6 @@ if __name__ == '__main__':
             'Cython >= 0.29.15',
             'lxml >= 4.5.0',
             'scipy>=1.0.0',
-            'python-dateutil==2.8.0'
+            'python-dateutil>=2.8.0'
         ]
     )
