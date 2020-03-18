@@ -697,7 +697,7 @@ class Spreadsheet(object):
             cell = self.cellmap[address]
 
             # when you set a value on cell, its should_eval flag is set to 'never' so its formula is not used until set free again => sp.activate_formula()
-            self.fix_cell(address)
+            self.cell_fix(address)
 
             # case where the address refers to a range
             if cell.is_range:

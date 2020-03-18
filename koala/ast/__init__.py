@@ -450,7 +450,8 @@ def graph_from_seeds(seeds, cell_source):
         # directed graph
         G = networkx.DiGraph()
         # match the info in cellmap
-        for c in cellmap.values(): G.add_node(c)
+        for c in cellmap.values():
+            G.add_node(c)
 
     # cells to analyze: only formulas
     todo = [s for s in seeds if s.formula]
