@@ -12,7 +12,7 @@ class Test_SharedFormula(unittest.TestCase):
     def setUp(self):
         file_name = os.path.abspath("./tests/files/SharedFormula.xlsx")
         archive = read_archive(file_name)
-        self.cells = read_cells(archive)
+        self.cells, _ = read_cells(archive)
 
     @unittest.skip('This test fails.')
     def test_nb_formulas(self):
