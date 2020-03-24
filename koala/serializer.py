@@ -1,5 +1,6 @@
 import json
 import gzip
+import logging
 import networkx
 
 from networkx.classes.digraph import DiGraph
@@ -187,7 +188,7 @@ def load(fname):
     G.add_nodes_from(nodes)
     G.add_edges_from(edges)
 
-    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+    logging.debug("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, named_ranges, pointers, outputs, inputs)
 

@@ -1,3 +1,4 @@
+import logging
 from koala.CellBase import CellBase
 from koala.ExcelError import ErrorCodes, ExcelError
 from koala.utils import *
@@ -117,7 +118,6 @@ class RangeCore(dict):
                 cells, nrows, ncols = resolve_range(
                     reference, should_flatten=True)
             except Exception as e:
-                print('Pb with ref', reference, e)
                 return ValueError('Range ERROR')  # Will still be considered as a Range object, since we are inside __init__...
 
         origin = parse_cell_address(cells[0]) if len(cells) > 0 else None  # origin of Range
@@ -165,7 +165,7 @@ class RangeCore(dict):
         elif not self.is_pointer:  # when building pointers, name shouldn't be updated, but in that case reference is not a dict
             self.__name = reference
         else:
-            print('Pb with Name', reference, name)
+            logging.debug('Pb with Name', reference, name)
         self.__origin = origin
         self.__addresses = cells
         self.__order = order

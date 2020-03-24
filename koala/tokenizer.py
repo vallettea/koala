@@ -26,6 +26,7 @@
 
 import re
 import collections
+import logging
 
 
 #========================================================================
@@ -695,7 +696,7 @@ def shunting_yard(expression):
         else:
             tokens.append(t)
 
-    print("tokens: ", "|".join([x.tvalue for x in tokens]))
+    logging.debug("tokens: ", "|".join([x.tvalue for x in tokens]))
 
     #http://office.microsoft.com/en-us/excel-help/calculation-operators-and-precedence-HP010078886.aspx
     operators = {}
@@ -723,12 +724,12 @@ def shunting_yard(expression):
     arg_count = []
 
     def po():
-        print("output: ", "|".join([x.tvalue for x in output]))
+        logging.debug("output: ", "|".join([x.tvalue for x in output]))
     def so():
-        print("stack:", "|".join([x.tvalue for x in stack]))
+        logging.debug("stack:", "|".join([x.tvalue for x in stack]))
 
     for t in tokens:
-        print(t, t.type)
+        logging.debug(t, t.type)
         if t.ttype == "operand":
 
             output.append(create_node(t))
@@ -798,7 +799,7 @@ def shunting_yard(expression):
                 w = were_values.pop()
                 if w: a += 1
                 f.num_args = a
-                print(f, "has ",a," args")
+                logging.debug(f, "has ",a," args")
                 output.append(f)
 
     while stack:
@@ -808,5 +809,5 @@ def shunting_yard(expression):
         output.append(create_node(stack.pop()))
 
     #print "Stack is: ", "|".join(stack)
-    print("Output is: ", "|".join([x.tvalue for x in output]))
+    logging.debug("Output is: ", "|".join([x.tvalue for x in output]))
     return output

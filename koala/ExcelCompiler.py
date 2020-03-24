@@ -10,8 +10,6 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
-        # print("___### Initializing Excel Compiler ###___")
-
         warnings.warn(
             "The ExcelCompiler class will disappear in a future version. Please use Spreadsheet instead.",
             PendingDeprecationWarning

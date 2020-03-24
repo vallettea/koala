@@ -1,4 +1,5 @@
 # cython: profile=True
+import logging
 
 from networkx import NetworkXError
 
@@ -16,7 +17,7 @@ def to_str(my_string):
         try:
             return str(my_string)
         except Exception:
-            print('Couldnt parse as string', type(my_string))
+            logging.warning('Couldnt parse as string', type(my_string))
             return my_string
     # elif isinstance(my_string, (int, float, tuple, Ra):
     #     return str(my_string)
@@ -200,7 +201,7 @@ class RangeNode(OperandNode):
     def emit(self,ast,context=None, pointer = False):
         if isinstance(self.tvalue, ExcelError):
             if self.debug:
-                print('WARNING: Excel Error Code found', self.tvalue)
+                logging.debug('WARNING: Excel Error Code found', self.tvalue)
             return self.tvalue
 
         is_a_range = False
@@ -224,7 +225,7 @@ class RangeNode(OperandNode):
                         sh,col,row = split_address(rng)
                     except:
                         if self.debug:
-                            print('WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % to_str(rng))
+                            logging.warning('WARNING: Unknown address: %s is not a cell/range reference, nor a named range' % to_str(rng))
                         sh = None
 
                 if sh:

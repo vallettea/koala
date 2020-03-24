@@ -12,14 +12,13 @@ from koala.tokenizer import reverse_rpn
 from koala.utils import *
 
 import warnings
+import logging
 import os.path
 import networkx
 from networkx.readwrite import json_graph
 
 class Spreadsheet(object):
     def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, include_only_sheets=None, debug=False):
-        # print("___### Initializing Excel Compiler ###___")
-
         if file is None:
             # create empty version of this object
             self.cells = None  # precursor for cellmap: dict that link addresses (str) to Cell objects.
@@ -79,8 +78,6 @@ class Spreadsheet(object):
         :param outputs: can be used to specify the outputs. All not affected cells are removed from the graph.
         :param inputs: can be used to specify the inputs. All not affected cells are removed from the graph.
         """
-        # print('___### Generating Graph ###___')
-
         if len(outputs) == 0:
             preseeds = set(list(flatten(self.cells.keys())) + list(self.named_ranges.keys())) # to have unicity
         else:
@@ -124,7 +121,6 @@ class Spreadsheet(object):
                     seeds.append(self.cells[o])
 
         seeds = set(seeds)
-        # print("Seeds %s cells" % len(seeds))
         outputs = set(preseeds) if len(outputs) > 0 else [] # seeds and outputs are the same when you don't specify outputs
 
         cellmap, G = graph_from_seeds(seeds, self)
@@ -164,12 +160,6 @@ class Spreadsheet(object):
                             G.add_node(self.cells[i]) # edges are not needed here since the input here is not in the calculation chain
 
             inputs = set(inputs)
-
-
-        # print("Graph construction done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
-
-        # undirected = networkx.Graph(G)
-        # print "Number of connected components %s", str(number_connected_components(undirected))
 
         if inputs == [] and outputs == []:
             self.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
@@ -273,7 +263,7 @@ class Spreadsheet(object):
         self.cellmap = cellmap
         self.G = G
 
-        print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+        logging.debug("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     def set_formula(self, addr, formula):
         # previously set_formula was used. Capture this behaviour.
@@ -321,11 +311,11 @@ class Spreadsheet(object):
         self.evaluate(address)
         self.cellmap[address].should_eval = should_eval
 
-        print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+        logging.debug("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
 
     def prune_graph(self, *args):
-        print('___### Pruning Graph ###___')
+        logging.debug('___### Pruning Graph ###___')
 
         G = self.G
 
@@ -334,7 +324,6 @@ class Spreadsheet(object):
         for input_address in self.inputs:
             child = self.cellmap[input_address]
             if child == None:
-                print("Not found ", input_address)
                 continue
             g = make_subgraph(G, child, "descending")
             dependencies = dependencies.union(g.nodes())
@@ -389,7 +378,6 @@ class Spreadsheet(object):
                     subgraph.add_edge(const_node, current)
 
 
-        print("Graph pruning done, %s nodes, %s edges, %s cellmap entries" % (len(subgraph.nodes()),len(subgraph.edges()),len(new_cellmap)))
         undirected = networkx.Graph(subgraph)
         # print "Number of connected components %s", str(number_connected_components(undirected))
         # print map(lambda x: x.address(), subgraph.nodes())
@@ -426,7 +414,7 @@ class Spreadsheet(object):
         return spreadsheet.build_spreadsheet(subgraph, new_cellmap, self.named_ranges, self.pointers, self.outputs, self.inputs, debug = self.debug)
 
     def clean_pointer(self):
-        print('___### Cleaning Pointers ###___')
+        logging.debug('___### Cleaning Pointers ###___')
 
         new_named_ranges = self.named_ranges.copy()
         new_cells = self.cellmap.copy()
@@ -480,7 +468,7 @@ class Spreadsheet(object):
                 for repl in replacements:
                     if type(repl["value"]) == ExcelError:
                         if self.debug:
-                            print('WARNING: Excel error found => replacing with #N/A')
+                            logging.debug('WARNING: Excel error found => replacing with #N/A')
                         repl["value"] = "#N/A"
 
                     if repl["expression_type"] == "value":
@@ -499,7 +487,7 @@ class Spreadsheet(object):
         return new_cells, new_named_ranges
 
     def print_value_ast(self, ast,node,indent):
-        print("%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype)))
+        logging.debug("%s %s %s %s" % (" "*indent, str(node.token.tvalue), str(node.token.ttype), str(node.token.tsubtype)))
         for c in node.children(ast):
             self.print_value_ast(ast, c, indent+1)
 
@@ -521,7 +509,7 @@ class Spreadsheet(object):
 
             except Exception as e:
                 if self.debug:
-                    print('EXCEPTION raised in eval_pointers: EXPR', expression, cell["address"])
+                    logging.debug('EXCEPTION raised in eval_pointers: EXPR', expression, cell["address"])
                 raise Exception("Problem evalling: %s for %s, %s" % (e, cell["address"], expression))
 
             return {"formula":pointer_string, "value": pointer_value, "expression_type": expression_type}
@@ -850,7 +838,7 @@ class Spreadsheet(object):
 
     def print_value_tree(self,addr,indent):
         cell = self.cellmap[addr]
-        print("%s %s = %s" % (" "*indent,addr,cell.value))
+        logging.debug("%s %s = %s" % (" "*indent,addr,cell.value))
         for c in self.G.predecessors_iter(cell):
             self.print_value_tree(c.address(), indent+1)
 
@@ -888,7 +876,7 @@ class Spreadsheet(object):
                 cell1 = self.cellmap[addr1]
             else:
                 if self.debug:
-                    print('WARNING in eval_ref: address %s not found in cellmap, returning #NULL' % addr1)
+                    logging.warning('WARNING in eval_ref: address %s not found in cellmap, returning #NULL' % addr1)
                 return ExcelError('#NULL', 'Cell %s is empty' % addr1)
             if addr2 == None:
                 if cell1.is_range:
@@ -972,7 +960,7 @@ class Spreadsheet(object):
             cell = self.cellmap[address]
         except:
             if self.debug:
-                print('WARNING: Empty cell at ' + address)
+                logging.warning('WARNING: Empty cell at ' + address)
             return ExcelError('#NULL', 'Cell %s is empty' % address)
 
         # no formula, fixed value
