@@ -43,7 +43,7 @@ def dump(self, fname):
             is_named_range,
             is_pointer,
             should_eval
-        ]) + u"\n").encode('utf-8'))
+        ]) + "\n").encode('utf-8'))
 
     for cell in simple_cells:
         parse_cell_info(cell)
@@ -60,9 +60,9 @@ def dump(self, fname):
         parse_cell_info(cell)
 
         if cell.range.is_pointer:
-            outfile.write((json.dumps(cell.range.reference) + u"\n").encode('utf-8'))
+            outfile.write((json.dumps(cell.range.reference) + "\n").encode('utf-8'))
         else:
-            outfile.write((cell.range.name + u"\n").encode('utf-8'))
+            outfile.write((cell.range.name + "\n").encode('utf-8'))
 
         outfile.write(b"====" + b"\n")
         outfile.write(b"====" + b"\n")
@@ -70,15 +70,15 @@ def dump(self, fname):
     # writing the edges
     outfile.write(b"edges" + b"\n")
     for source, target in self.G.edges():
-        outfile.write((source.address() + SEP + target.address() + u"\n").encode('utf-8'))
+        outfile.write((source.address() + SEP + target.address() + "\n").encode('utf-8'))
 
     # writing the rest
     if self.outputs is not None:
         outfile.write(b"outputs" + b"\n")
-        outfile.write((SEP.join(self.outputs) + u"\n").encode('utf-8'))
+        outfile.write((SEP.join(self.outputs) + "\n").encode('utf-8'))
     if self.inputs is not None:
         outfile.write(b"inputs" + b"\n")
-        outfile.write((SEP.join(self.inputs) + u"\n").encode('utf-8'))
+        outfile.write((SEP.join(self.inputs) + "\n").encode('utf-8'))
     outfile.write(b"named_ranges" + b"\n")
     for k in self.named_ranges:
         outfile.write((k + SEP + self.named_ranges[k] + u"\n").encode('utf-8'))
