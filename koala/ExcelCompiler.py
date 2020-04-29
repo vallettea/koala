@@ -1,15 +1,5 @@
-from __future__ import print_function
 # cython: profile=True
 
-import os.path
-
-import networkx
-
-from koala.reader import read_archive, read_named_ranges, read_cells
-from koala.utils import *
-from koala.ast import graph_from_seeds, shunting_yard, build_ast, prepare_pointer
-from koala.Cell import Cell
-from koala.Range import RangeFactory
 from koala.Spreadsheet import Spreadsheet
 import warnings
 
@@ -20,8 +10,6 @@ class ExcelCompiler(object):
     """
 
     def __init__(self, file, ignore_sheets = [], ignore_hidden = False, debug = False):
-        # print("___### Initializing Excel Compiler ###___")
-
         warnings.warn(
             "The ExcelCompiler class will disappear in a future version. Please use Spreadsheet instead.",
             PendingDeprecationWarning

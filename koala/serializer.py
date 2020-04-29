@@ -1,13 +1,10 @@
-from __future__ import absolute_import, print_function
-
 import json
 import gzip
+import logging
 import networkx
 
 from networkx.classes.digraph import DiGraph
-from networkx.readwrite import json_graph
 from networkx.drawing.nx_pydot import write_dot
-from openpyxl.compat import unicode
 
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
@@ -46,15 +43,15 @@ def dump(self, fname):
             is_named_range,
             is_pointer,
             should_eval
-        ]) + u"\n").encode('utf-8'))
+        ]) + "\n").encode('utf-8'))
 
     for cell in simple_cells:
         parse_cell_info(cell)
         value = cell.value
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             outfile.write(cell.value.encode('utf-8') + b"\n")
         else:
-            outfile.write((str(cell.value) + u"\n").encode('utf-8'))
+            outfile.write((str(cell.value) + "\n").encode('utf-8'))
         outfile.write(b"====" + b"\n")
 
     outfile.write(b"-----" + b"\n")
@@ -63,9 +60,9 @@ def dump(self, fname):
         parse_cell_info(cell)
 
         if cell.range.is_pointer:
-            outfile.write((json.dumps(cell.range.reference) + u"\n").encode('utf-8'))
+            outfile.write((json.dumps(cell.range.reference) + "\n").encode('utf-8'))
         else:
-            outfile.write((cell.range.name + u"\n").encode('utf-8'))
+            outfile.write((cell.range.name + "\n").encode('utf-8'))
 
         outfile.write(b"====" + b"\n")
         outfile.write(b"====" + b"\n")
@@ -73,15 +70,15 @@ def dump(self, fname):
     # writing the edges
     outfile.write(b"edges" + b"\n")
     for source, target in self.G.edges():
-        outfile.write((source.address() + SEP + target.address() + u"\n").encode('utf-8'))
+        outfile.write((source.address() + SEP + target.address() + "\n").encode('utf-8'))
 
     # writing the rest
     if self.outputs is not None:
         outfile.write(b"outputs" + b"\n")
-        outfile.write((SEP.join(self.outputs) + u"\n").encode('utf-8'))
+        outfile.write((SEP.join(self.outputs) + "\n").encode('utf-8'))
     if self.inputs is not None:
         outfile.write(b"inputs" + b"\n")
-        outfile.write((SEP.join(self.inputs) + u"\n").encode('utf-8'))
+        outfile.write((SEP.join(self.inputs) + "\n").encode('utf-8'))
     outfile.write(b"named_ranges" + b"\n")
     for k in self.named_ranges:
         outfile.write((k + SEP + self.named_ranges[k] + u"\n").encode('utf-8'))
@@ -191,7 +188,7 @@ def load(fname):
     G.add_nodes_from(nodes)
     G.add_edges_from(edges)
 
-    print("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
+    logging.debug("Graph loading done, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
     return (G, cellmap, named_ranges, pointers, outputs, inputs)
 
@@ -205,41 +202,15 @@ def dump_json(self, fname):
 
 def load_json(fname):
 
-    def _decode_list(data):
-        rv = []
-        for item in data:
-            if isinstance(item, unicode) and unicode != str:
-                item = item.encode('utf-8')
-            elif isinstance(item, list) and unicode != str:
-                item = _decode_list(item)
-            elif isinstance(item, dict):
-                item = _decode_dict(item)
-            rv.append(item)
-        return rv
-
-    def _decode_dict(data):
-        rv = {}
-        for key, value in data.items():
-            if isinstance(key, unicode) and unicode != str:
-                key = key.encode('utf-8')
-            if isinstance(value, unicode) and unicode != str:
-                value = value.encode('utf-8')
-            elif isinstance(value, list):
-                value = _decode_list(value)
-            elif isinstance(value, dict):
-                value = _decode_dict(value)
-            rv[key] = value
-        return rv
-
     with gzip.GzipFile(fname, 'r') as infile:
-        data = json.loads(infile.read().decode('utf-8'), object_hook=_decode_dict)
+        data = json.loads(infile.read().decode('utf-8'))
 
     return data
 
 
 ########### based on dot #################
-def export_to_dot(self,fname):
-    write_dot(self.G,fname)
+def export_to_dot(self, fname):
+    write_dot(self.G, fname)
 
 
 ########### plotting #################

@@ -1,12 +1,9 @@
-from __future__ import absolute_import
 # cython: profile=True
 
 import collections
-import six
 
 import networkx
 from networkx.classes.digraph import DiGraph
-from openpyxl.compat import unicode
 
 from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range
 from koala.Cell import Cell
@@ -118,7 +115,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
         for index, token in enumerate(tokens):
             new_tokens.append(token)
 
-            if type(token.tvalue) == str or type(token.tvalue) == unicode:
+            if type(token.tvalue) == str:
 
                 if token.tvalue.startswith(':'): # example -> :OFFSET( or simply :A10
                     depth = 0
@@ -139,7 +136,7 @@ def shunting_yard(expression, named_ranges, ref = None, tokenize_range = False):
                         if depth == 0:
                             new_tokens.pop() # these 2 lines are needed to remove INDEX()
                             new_tokens.pop()
-                            expr = six.next(rev).tvalue + expr
+                            expr = next(rev).tvalue + expr
                             break
 
                     expr += token.tvalue
@@ -377,13 +374,11 @@ def cell2code(cell, named_ranges):
 
     else:
         ast = None
-        if isinstance(cell.value, unicode):
-            code = u'u"' + cell.value.replace(u'"', u'\\"') + u'"'
-        elif isinstance(cell.value, str):
-            raise RuntimeError("Got unexpected non-unicode str")
+        if isinstance(cell.value, str):
+            code = '"' + cell.value.replace('"', r'\"') + '"'
         else:
             code = str(cell.value)
-    return code,ast
+    return code, ast
 
 
 def prepare_pointer(code, names, ref_cell = None):
@@ -455,7 +450,8 @@ def graph_from_seeds(seeds, cell_source):
         # directed graph
         G = networkx.DiGraph()
         # match the info in cellmap
-        for c in cellmap.values(): G.add_node(c)
+        for c in cellmap.values():
+            G.add_node(c)
 
     # cells to analyze: only formulas
     todo = [s for s in seeds if s.formula]

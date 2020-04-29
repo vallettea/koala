@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 # cython: profile=True
 
 #========================================================================
@@ -27,10 +25,8 @@ from __future__ import division, print_function
 #========================================================================
 
 import re
-import six
 import collections
-
-from koala.utils import old_div
+import logging
 
 
 #========================================================================
@@ -433,7 +429,7 @@ class ExcelParser(ExcelParserTokens):
             # standard postfix operators
             if ("%".find(currentChar()) != -1):
                 if (len(token) > 0):
-                    tokens.add(old_div(float(token), 100), self.TOK_TYPE_OPERAND)
+                    tokens.add(float(token) / 100, self.TOK_TYPE_OPERAND)
                     token = ""
                 else:
                     tokens.add('*', self.TOK_TYPE_OP_IN)
@@ -501,9 +497,9 @@ class ExcelParser(ExcelParserTokens):
                   ):
                     pass
                 elif (not(
-                     ((six.next(tokens).ttype == self.TOK_TYPE_FUNCTION) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
-                     ((six.next(tokens).ttype == self.TOK_TYPE_SUBEXPR) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
-                     (six.next(tokens).ttype == self.TOK_TYPE_OPERAND)
+                     ((next(tokens).ttype == self.TOK_TYPE_FUNCTION) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
+                     ((next(tokens).ttype == self.TOK_TYPE_SUBEXPR) and (tokens.next().tsubtype == self.TOK_SUBTYPE_START)) or
+                     (next(tokens).ttype == self.TOK_TYPE_OPERAND)
                      )
                    ):
                     pass
@@ -700,7 +696,7 @@ def shunting_yard(expression):
         else:
             tokens.append(t)
 
-    print("tokens: ", "|".join([x.tvalue for x in tokens]))
+    logging.debug("tokens: ", "|".join([x.tvalue for x in tokens]))
 
     #http://office.microsoft.com/en-us/excel-help/calculation-operators-and-precedence-HP010078886.aspx
     operators = {}
@@ -728,12 +724,12 @@ def shunting_yard(expression):
     arg_count = []
 
     def po():
-        print("output: ", "|".join([x.tvalue for x in output]))
+        logging.debug("output: ", "|".join([x.tvalue for x in output]))
     def so():
-        print("stack:", "|".join([x.tvalue for x in stack]))
+        logging.debug("stack:", "|".join([x.tvalue for x in stack]))
 
     for t in tokens:
-        print(t, t.type)
+        logging.debug(t, t.type)
         if t.ttype == "operand":
 
             output.append(create_node(t))
@@ -803,7 +799,7 @@ def shunting_yard(expression):
                 w = were_values.pop()
                 if w: a += 1
                 f.num_args = a
-                print(f, "has ",a," args")
+                logging.debug(f, "has ",a," args")
                 output.append(f)
 
     while stack:
@@ -813,5 +809,5 @@ def shunting_yard(expression):
         output.append(create_node(stack.pop()))
 
     #print "Stack is: ", "|".join(stack)
-    print("Output is: ", "|".join([x.tvalue for x in output]))
+    logging.debug("Output is: ", "|".join([x.tvalue for x in output]))
     return output

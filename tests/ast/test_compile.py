@@ -46,7 +46,7 @@ class Test_cell2code(unittest.TestCase):
 
         code, ast = cell2code(cell, named_ranges=[])
 
-        assert code == u'u"hello world"'
+        assert code == u'"hello world"'
 
         RangeCore
         assert eval(code) == u"hello world"
@@ -57,7 +57,7 @@ class Test_cell2code(unittest.TestCase):
 
         code, ast = cell2code(cell, named_ranges=[])
 
-        assert code == u'u"hello world ☺"'
+        assert code == u'"hello world ☺"'
 
         RangeCore
         assert eval(code) == u"hello world ☺"
@@ -68,7 +68,7 @@ class Test_cell2code(unittest.TestCase):
 
         code, ast = cell2code(cell, named_ranges=[])
 
-        assert code == u'u"hello \\"world\'"'
+        assert code == u'"hello \\"world\'"'
 
         RangeCore
         assert eval(code) == u"hello \"world'"
