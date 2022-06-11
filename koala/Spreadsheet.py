@@ -7,7 +7,10 @@ from koala.ast import *
 from koala.reader import read_archive, read_named_ranges, read_cells
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
+
 from openpyxl.formula.translate import Translator
+from openpyxl import Workbook
+
 from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
@@ -17,8 +20,8 @@ import os.path
 import networkx
 from networkx.readwrite import json_graph
 
-from openpyxl.compat import unicode
-
+#from openpyxl.compat import unicode
+unicode = str
 
 class Spreadsheet(object):
     def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, debug=False):
@@ -181,7 +184,7 @@ class Spreadsheet(object):
             sp = Spreadsheet()
             sp.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
             return sp
-    
+
     def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
         """
         Writes the elements created by gen_graph to the object
@@ -662,6 +665,69 @@ class Spreadsheet(object):
 
     def dump(self, fname):
         dump(self, fname)
+
+
+    def to_xlsx(self, fname=None):
+        '''
+        chaz's thing
+        '''
+        if fname is None:
+            raise Exception('No file name specified, please provide one')
+
+        #todo
+        #deal with ranges....
+        #test ad-hoc worksheets w/random values
+
+        '''
+            isolate sheets, cells, and formulae into a dict: {thisSheet: (thisCell,thisFormula) }
+        '''
+        z={}
+        for c in list(self.cellmap.values()):
+            thisSheet = c.address().split('!')[0]
+            thisCell = c.address().split('!')[1]
+            thisFormula = c.formula
+            thisValue = c.value
+            if thisFormula is None:
+                thisFormula = thisValue
+            #print(thisSheet, thisCell, thisFormula)
+
+            if thisSheet not in z:
+                z[thisSheet]=[(thisCell, thisFormula)]
+            else:
+                z[thisSheet].append((thisCell,thisFormula))
+
+        '''
+            create workbook with openpyxl
+        '''
+        wb=Workbook()
+
+        '''
+            create sheets
+        '''
+        for sheetName in z.keys():
+            wb.create_sheet(sheetName)
+
+        '''
+            get rid of wb autocreated sheet
+        '''
+        for sheet in wb.sheetnames:
+            if sheet not in z.keys():
+                rm_sheet = wb[sheet];
+                wb.remove_sheet(rm_sheet)
+        #wb.save("JustOneSheet.xlsx")
+
+        '''
+            add formulae to cells by sheet
+        '''
+        for sheetName, values in z.items():
+            for cells in values:
+                thisCell=cells[0]
+                thisFormula=cells[1]
+                wb[sheetName][thisCell]=thisFormula
+                print(sheetName, thisCell, thisFormula)
+
+        wb.save(fname + ".xlsx")
+
 
     @staticmethod
     def load(fname):
