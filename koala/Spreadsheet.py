@@ -20,6 +20,7 @@ import os.path
 import networkx
 from networkx.readwrite import json_graph
 
+import ToExcel
 #from openpyxl.compat import unicode
 unicode = str
 
@@ -667,66 +668,69 @@ class Spreadsheet(object):
         dump(self, fname)
 
 
-    def to_xlsx(self, fname=None):
-        '''
-        chaz's thing
-        '''
-        if fname is None:
-            raise Exception('No file name specified, please provide one')
+    def to_excel(self, fname = None):
+        ToExcel.to_excel(self, fname)
 
-        #todo
-        #deal with ranges....
-        #test ad-hoc worksheets w/random values
-
-        '''
-            isolate sheets, cells, and formulae into a dict: {thisSheet: (thisCell,thisFormula) }
-        '''
-        z={}
-        for c in list(self.cellmap.values()):
-            thisSheet = c.address().split('!')[0]
-            thisCell = c.address().split('!')[1]
-            thisFormula = c.formula
-            thisValue = c.value
-            if thisFormula is None:
-                thisFormula = thisValue
-            #print(thisSheet, thisCell, thisFormula)
-
-            if thisSheet not in z:
-                z[thisSheet]=[(thisCell, thisFormula)]
-            else:
-                z[thisSheet].append((thisCell,thisFormula))
-
-        '''
-            create workbook with openpyxl
-        '''
-        wb=Workbook()
-
-        '''
-            create sheets
-        '''
-        for sheetName in z.keys():
-            wb.create_sheet(sheetName)
-
-        '''
-            get rid of wb autocreated sheet
-        '''
-        for sheet in wb.sheetnames:
-            if sheet not in z.keys():
-                rm_sheet = wb[sheet];
-                wb.remove_sheet(rm_sheet)
-        #wb.save("JustOneSheet.xlsx")
-
-        '''
-            add formulae to cells by sheet
-        '''
-        for sheetName, values in z.items():
-            for cells in values:
-                thisCell=cells[0]
-                thisFormula=cells[1]
-                wb[sheetName][thisCell]=thisFormula
-                print(sheetName, thisCell, thisFormula)
-
-        wb.save(fname + ".xlsx")
+    # def to_xlsx(self, fname=None):
+    #     '''
+    #     chaz's thing
+    #     '''
+    #     if fname is None:
+    #         raise Exception('No file name specified, please provide one')
+    #
+    #     #todo
+    #     #deal with ranges....
+    #     #test ad-hoc worksheets w/random values
+    #
+    #     '''
+    #         isolate sheets, cells, and formulae into a dict: {thisSheet: [(thisCell_1,thisFormula_1),(thisCell_2,thisFormula_2),...] }
+    #     '''
+    #     z={}
+    #     for c in list(self.cellmap.values()):
+    #         thisSheet = c.address().split('!')[0]
+    #         thisCell = c.address().split('!')[1]
+    #         thisFormula = c.formula
+    #         thisValue = c.value
+    #         if thisFormula is None:
+    #             thisFormula = thisValue
+    #         #print(thisSheet, thisCell, thisFormula)
+    #
+    #         if thisSheet not in z:
+    #             z[thisSheet]=[(thisCell, thisFormula)]
+    #         else:
+    #             z[thisSheet].append((thisCell,thisFormula))
+    #
+    #     '''
+    #         create workbook with openpyxl
+    #     '''
+    #     wb=Workbook()
+    #
+    #     '''
+    #         create sheets
+    #     '''
+    #     for sheetName in z.keys():
+    #         wb.create_sheet(sheetName)
+    #
+    #     '''
+    #         get rid of wb autocreated sheet
+    #     '''
+    #     for sheet in wb.sheetnames:
+    #         if sheet not in z.keys():
+    #             rm_sheet = wb[sheet];
+    #             wb.remove_sheet(rm_sheet)
+    #     #wb.save("JustOneSheet.xlsx")
+    #
+    #     '''
+    #         add formulae to cells by sheet
+    #     '''
+    #     for sheetName, values in z.items():
+    #         for cells in values:
+    #             thisCell=cells[0]
+    #             thisFormula=cells[1]
+    #             wb[sheetName][thisCell]=thisFormula
+    #             print(sheetName, thisCell, thisFormula)
+    #
+    #     wb.save(fname + ".xlsx")
 
 
     @staticmethod
