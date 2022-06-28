@@ -15,3 +15,4 @@ eval*
 .pytest_cache
 .tox
 docs_api
+.venv
