@@ -21,7 +21,7 @@ def to_excel(spreadsheet, fname=None):
         {thisSheet: [(thisCell, thisFormula), (thisCell_1, thisFormula_1),...]}
     do not include range names as keys
     '''
-    
+
     theDict={}
 
     #print(spreadsheet.addr_to_name)
@@ -38,7 +38,7 @@ def to_excel(spreadsheet, fname=None):
         actual name ranges (as opposed to named cells (single-cell ranges)) should be excluded
         from theDict
         '''
-        if not and(c.address() in val for val in spreadsheet.addr_to_range.values()):
+        if not any(c.address() in val for val in spreadsheet.addr_to_range.values()):
             #print(c.address(), c.formula, c. value)
 
             thisCell = None
