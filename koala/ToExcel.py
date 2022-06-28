@@ -21,7 +21,7 @@ def to_excel(spreadsheet, fname=None):
         {thisSheet: [(thisCell, thisFormula), (thisCell_1, thisFormula_1),...]}
     do not include range names as keys
     '''
-
+    
     theDict={}
 
     #print(spreadsheet.addr_to_name)
