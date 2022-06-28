@@ -13,7 +13,8 @@ except ImportError:  # fix for Python 2.7
 from six import string_types
 from copy import deepcopy
 
-from openpyxl.compat import unicode
+#from openpyxl.compat import unicode
+unicode = str
 
 from .ExcelError import ExcelError
 
