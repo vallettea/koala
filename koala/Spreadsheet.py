@@ -20,7 +20,8 @@ import os.path
 import networkx
 from networkx.readwrite import json_graph
 
-import ToExcel
+import koala.ToExcel
+
 #from openpyxl.compat import unicode
 unicode = str
 
