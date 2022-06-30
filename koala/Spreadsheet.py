@@ -7,7 +7,10 @@ from koala.ast import *
 from koala.reader import read_archive, read_named_ranges, read_cells
 # This import equivalent functions defined in Excel.
 from koala.excellib import *
+
 from openpyxl.formula.translate import Translator
+from openpyxl import Workbook
+
 from koala.serializer import *
 from koala.tokenizer import reverse_rpn
 from koala.utils import *
@@ -17,8 +20,10 @@ import os.path
 import networkx
 from networkx.readwrite import json_graph
 
-from openpyxl.compat import unicode
+import koala.ToExcel
 
+#from openpyxl.compat import unicode
+unicode = str
 
 class Spreadsheet(object):
     def __init__(self, file=None, ignore_sheets=[], ignore_hidden=False, debug=False):
@@ -181,7 +186,7 @@ class Spreadsheet(object):
             sp = Spreadsheet()
             sp.build_spreadsheet(G, cellmap, self.named_ranges, pointers = self.pointers, outputs = outputs, inputs = inputs, debug = self.debug)
             return sp
-    
+
     def build_spreadsheet(self, G, cellmap, named_ranges, pointers = set(), outputs = set(), inputs = set(), debug = False):
         """
         Writes the elements created by gen_graph to the object
@@ -274,8 +279,16 @@ class Spreadsheet(object):
 
         cellmap, G = graph_from_seeds([cell], self)
 
-        self.cellmap = cellmap
-        self.G = G
+        '''
+        update this spreadsheet object
+        '''
+        self.build_spreadsheet(G, cellmap, self.named_range, debug=self.debug)
+
+        '''
+        superceded by above
+        '''
+        # self.cellmap = cellmap
+        # self.G = G
 
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
@@ -662,6 +675,10 @@ class Spreadsheet(object):
 
     def dump(self, fname):
         dump(self, fname)
+
+
+    def to_excel(self, fname = None):
+        koala.ToExcel.to_excel(self, fname)
 
     @staticmethod
     def load(fname):

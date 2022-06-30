@@ -7,8 +7,8 @@ import networkx
 from networkx.classes.digraph import DiGraph
 from networkx.readwrite import json_graph
 from networkx.drawing.nx_pydot import write_dot
-from openpyxl.compat import unicode
-
+#from openpyxl.compat import unicode
+unicode = str
 from koala.Cell import Cell
 from koala.Range import RangeCore, RangeFactory
 
@@ -120,12 +120,12 @@ def load(fname):
     inputs = None
     named_ranges = {}
     infile = gzip.GzipFile(fname, 'rb')
-        
+
     for line in infile.read().splitlines():
 
         line= line.decode("utf-8")
 
-        if line == "====":            
+        if line == "====":
             mode = "node0"
             continue
         if line == "-----":
@@ -133,7 +133,7 @@ def load(fname):
             Range = RangeFactory(cellmap_temp)
             mode = "node0"
             continue
-        elif line == "edges":   
+        elif line == "edges":
             cellmap = {n.address(): n for n in nodes}
             mode = "edges"
             continue
@@ -148,15 +148,15 @@ def load(fname):
             continue
 
         if mode == "node0":
-            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)            
+            [address, formula, python_expression, is_range, is_named_range, is_pointer, should_eval] = line.split(SEP)
             formula = clean_bool(formula)
             python_expression = clean_bool(python_expression)
             is_range = to_bool(is_range)
             is_named_range = to_bool(is_named_range)
             is_pointer = to_bool(is_pointer)
-            should_eval = should_eval            
+            should_eval = should_eval
             mode = "node1"
-        elif mode == "node1":            
+        elif mode == "node1":
             if is_range:
                 reference = json.loads(line) if is_pointer else line # in order to be able to parse dicts
                 vv = Range(reference)

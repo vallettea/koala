@@ -6,8 +6,8 @@ from koala.CellBase import CellBase
 from koala.Range import RangeCore
 from koala.utils import *
 
-from openpyxl.compat import unicode
-
+#from openpyxl.compat import unicode
+unicode = str
 
 class Cell(CellBase):
     ctr = 0

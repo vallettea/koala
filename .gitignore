@@ -15,3 +15,12 @@ eval*
 .pytest_cache
 .tox
 docs_api
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

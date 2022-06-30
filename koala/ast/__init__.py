@@ -6,7 +6,9 @@ import six
 
 import networkx
 from networkx.classes.digraph import DiGraph
-from openpyxl.compat import unicode
+
+#from openpyxl.compat import unicode
+unicode = str
 
 from koala.utils import uniqueify, flatten, max_dimension, col2num, resolve_range
 from koala.Cell import Cell

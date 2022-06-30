@@ -18,7 +18,8 @@ from decimal import Decimal, ROUND_UP, ROUND_HALF_UP
 from calendar import monthrange
 from dateutil.relativedelta import relativedelta
 
-from openpyxl.compat import unicode
+#from openpyxl.compat import unicode
+unicode = str
 
 from koala.utils import *
 from koala.Range import RangeCore as Range
