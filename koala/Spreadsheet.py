@@ -279,8 +279,16 @@ class Spreadsheet(object):
 
         cellmap, G = graph_from_seeds([cell], self)
 
-        self.cellmap = cellmap
-        self.G = G
+        '''
+        update this spreadsheet object
+        '''
+        self.build_spreadsheet(G, cellmap, self.named_range, debug=self.debug)
+
+        '''
+        superceded by above
+        '''
+        # self.cellmap = cellmap
+        # self.G = G
 
         print("Graph construction updated, %s nodes, %s edges, %s cellmap entries" % (len(G.nodes()),len(G.edges()),len(cellmap)))
 
@@ -670,7 +678,7 @@ class Spreadsheet(object):
 
 
     def to_excel(self, fname = None):
-        ToExcel.to_excel(self, fname)
+        koala.ToExcel.to_excel(self, fname)
 
     @staticmethod
     def load(fname):
