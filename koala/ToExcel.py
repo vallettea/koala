@@ -3,7 +3,7 @@ import openpyxl
 def to_excel(spreadsheet, fname=None):
     '''chaz's thing'''
 
-    if name is None:
+    if fname is None:
         raise Exception('No filename specified. Please provide one.')
     else:
         fname=fname.split('.')[0]
@@ -33,7 +33,6 @@ def to_excel(spreadsheet, fname=None):
 
     for c in list(spreadsheet.cellmap.values()):
         print(c.address(), c.formula, c.value)
-
         '''
         actual name ranges (as opposed to named cells (single-cell ranges)) should be excluded
         from theDict
@@ -43,10 +42,14 @@ def to_excel(spreadsheet, fname=None):
 
             thisCell = None
 
-            x = c.address().split('!')
-            thisSheet = x[0]
-            if len(x) > 1:
-                thisCell =x[1]
+            thisAddress = c.address().split('!')
+            thisSheet = thisAddress[0]
+            if len(thisAddress) > 1:
+                thisCell = thisAddress[1]
+
+            #thisCell=None
+            # thisSheet = c.address().split('!')[0]
+            # if len(c.address().)
 
             thisFormula = c.formula
             if thisFormula is not None and thisFormula.find('=') != 0: thisFormula = '=' + thisFormula
@@ -83,6 +86,7 @@ def to_excel(spreadsheet, fname=None):
     create sheets from theDict
     '''
     for sheetName in theDict.keys():
+        print('   creating sheet... ', sheetName)
         wb.create_sheet(sheetName)
 
     '''
@@ -117,7 +121,11 @@ def to_excel(spreadsheet, fname=None):
         wb.defined_names.append(theRange)
 
     print('saving wb')
-    wb.save(fname + '.xlsx')
+    try:
+        wb.close()
+        wb.save(fname + '.xlsx')
+    except Exception as e:
+        print('error saving wb: "' + str(e)+'"')
 
 def absolute_addr(theAddress):
     #make the address absolute
